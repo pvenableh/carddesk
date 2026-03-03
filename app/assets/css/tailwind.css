@@ -19,3 +19,25 @@ input, textarea, [contenteditable] {
   user-select: text;
   -webkit-user-select: text;
 }
+
+/* ═══ Modern Theme ═══ */
+html[data-theme="modern"] {
+  color-scheme: light;
+}
+html[data-theme="modern"] body {
+  background: #f5f5f7;
+  color: #1d1d1f;
+}
+html[data-theme="modern"] :root {
+  --cd-bg: #f5f5f7;
+  --cd-bg2: #ffffff;
+  --cd-bdr: #e5e5ea;
+  --cd-text: #1d1d1f;
+  --cd-muted: #6e6e73;
+  --cd-dim: #aeaeb2;
+  --cd-accent: #007aff;
+  --cd-blue: #007aff;
+  --cd-orange: #ff6b35;
+  --cd-purple: #af52de;
+  --cd-ice: #5ac8fa;
+}

@@ -14,6 +14,70 @@
   --cd-ice: #a8d8ea;
 }
 
+/* ═══ Modern Theme Overrides ═══ */
+html[data-theme="modern"] :root {
+  --cd-bg: #f5f5f7;
+  --cd-bg2: #ffffff;
+  --cd-bdr: #e5e5ea;
+  --cd-text: #1d1d1f;
+  --cd-muted: #6e6e73;
+  --cd-dim: #aeaeb2;
+  --cd-accent: #007aff;
+  --cd-blue: #007aff;
+  --cd-orange: #ff6b35;
+  --cd-purple: #af52de;
+  --cd-ice: #5ac8fa;
+}
+
+/* Modern theme: flatten gradients to clean flat cards */
+html[data-theme="modern"] .cd-vc.hype,
+html[data-theme="modern"] .cd-vc.cold-vc,
+html[data-theme="modern"] .cd-vc.warn {
+  background: var(--cd-bg2);
+  border-color: var(--cd-bdr);
+}
+html[data-theme="modern"] .cd-sess-entry {
+  background: var(--cd-bg2);
+  border-color: var(--cd-bdr);
+}
+html[data-theme="modern"] .cd-mood {
+  background: var(--cd-bg2);
+  border-color: var(--cd-bdr);
+}
+html[data-theme="modern"] .cd-scard.tc,
+html[data-theme="modern"] .cd-scard.hc {
+  background: var(--cd-bg2);
+  border-color: var(--cd-bdr);
+}
+html[data-theme="modern"] .cd-hero {
+  background: var(--cd-bg2);
+  border-color: var(--cd-bdr);
+}
+html[data-theme="modern"] .cd-streak {
+  background: var(--cd-bg2);
+  border-color: var(--cd-bdr);
+}
+html[data-theme="modern"] .cd-scan-zone {
+  background: var(--cd-bg2);
+}
+html[data-theme="modern"] .cd-scan-captured {
+  background: var(--cd-bg2);
+}
+html[data-theme="modern"] .cd-det-hero {
+  background: var(--cd-bg2);
+}
+html[data-theme="modern"] .cd-cold-card {
+  background: var(--cd-bg2);
+}
+
+/* Modern theme: typography - tracked out sans-serif */
+html[data-theme="modern"] .cd-stitle {
+  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 /* ── Screen layout ── */
 .cd-screen {
   display: none;
