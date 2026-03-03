@@ -35,6 +35,8 @@ const selectedId = ref<string | null>(null);
 const editing = ref(false);
 const openCold = ref<Set<string>>(new Set());
 const moodIdx = ref(0);
+const currentTime = ref("");
+const screenAnim = ref("");
 const toughIdx = ref(0);
 const hypeIdx = ref(0);
 const sessionMode = ref<"tough" | "hype" | null>(null);
@@ -361,8 +363,29 @@ function fireConfetti() {
 }
 
 // ── Navigation ─────────────────────────────────────────────────────────────
+const MAIN_TABS: Screen[] = ["vibe", "session", "cold", "home", "contacts"];
+let animTimeout: ReturnType<typeof setTimeout> | null = null;
+
 function nav(s: Screen) {
+  const from = screen.value;
+  if (from === s) return;
+
+  if (animTimeout) clearTimeout(animTimeout);
+
+  if (MAIN_TABS.includes(from) && !MAIN_TABS.includes(s)) {
+    screenAnim.value = "cd-anim-push";
+  } else if (!MAIN_TABS.includes(from) && MAIN_TABS.includes(s)) {
+    screenAnim.value = "cd-anim-pop";
+  } else {
+    screenAnim.value = "cd-anim-fade";
+  }
+
   screen.value = s;
+
+  animTimeout = setTimeout(() => {
+    screenAnim.value = "";
+    animTimeout = null;
+  }, 400);
 }
 function goDetail(id: string) {
   selectedId.value = id;
@@ -512,29 +535,33 @@ async function doScan() {
   }
 }
 
+// ── Clock ───────────────────────────────────────────────────────────────────
+function updateClock() {
+  currentTime.value = new Date().toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 // ── Init ───────────────────────────────────────────────────────────────────
 onMounted(async () => {
+  updateClock();
+  const timer = setInterval(updateClock, 1000);
+  onBeforeUnmount(() => clearInterval(timer));
   await Promise.all([fetchContacts(), loadXp()]);
 });
 </script>
 <template>
   <div class="cd-root">
-    <!-- ══ PHONE ══════════════════════════════════════════════════════════════ -->
-    <div class="cd-phone-col">
-      <div class="cd-phone">
-        <div class="cd-notch"></div>
-        <div class="cd-inner">
-          <div class="cd-sbar">
-            <span>{{
-              new Date().toLocaleTimeString("en-US", {
-                hour: "numeric",
-                minute: "2-digit",
-              })
-            }}</span>
-            <span style="font-family: monospace"
-              >Card<span style="color: #00ff87">Desk</span></span
-            >
-          </div>
+      <div class="cd-sbar">
+        <span>{{ currentTime }}</span>
+        <span style="font-family: monospace"
+          >Card<span style="color: #00ff87">Desk</span></span
+        >
+      </div>
+
+      <!-- ══ SCREENS ══════════════════════════════════════════════════════════ -->
+      <div class="cd-screens" :class="screenAnim">
 
           <!-- ■ VIBE ■ -->
           <div class="cd-screen" :class="{ on: screen === 'vibe' }">
@@ -644,28 +671,6 @@ onMounted(async () => {
                 </div>
               </div>
             </div>
-            <nav class="cd-bnav">
-              <button class="cd-bn on">
-                <span class="cd-bni">⚡</span>Vibe
-              </button>
-              <button class="cd-bn" @click="nav('session')">
-                <span class="cd-bni">🎙</span>Session
-              </button>
-              <button class="cd-bn" @click="nav('cold')">
-                <span class="cd-bni">❄️</span>Cold
-              </button>
-              <button class="cd-bn" @click="nav('home')">
-                <span class="cd-bni">🏠</span>Home
-              </button>
-              <button
-                class="cd-bn"
-                @click="nav('contacts')"
-                style="position: relative"
-              >
-                <span v-if="alertCs.length" class="cd-nav-dot"></span>
-                <span class="cd-bni">👥</span>Network
-              </button>
-            </nav>
           </div>
 
           <!-- ■ SESSION ■ -->
@@ -770,23 +775,6 @@ onMounted(async () => {
                 </div>
               </div>
             </div>
-            <nav class="cd-bnav">
-              <button class="cd-bn" @click="nav('vibe')">
-                <span class="cd-bni">⚡</span>Vibe
-              </button>
-              <button class="cd-bn on">
-                <span class="cd-bni">🎙</span>Session
-              </button>
-              <button class="cd-bn" @click="nav('cold')">
-                <span class="cd-bni">❄️</span>Cold
-              </button>
-              <button class="cd-bn" @click="nav('home')">
-                <span class="cd-bni">🏠</span>Home
-              </button>
-              <button class="cd-bn" @click="nav('contacts')">
-                <span class="cd-bni">👥</span>Network
-              </button>
-            </nav>
           </div>
 
           <!-- ■ COLD ■ -->
@@ -879,23 +867,6 @@ onMounted(async () => {
                 </div>
               </template>
             </div>
-            <nav class="cd-bnav">
-              <button class="cd-bn" @click="nav('vibe')">
-                <span class="cd-bni">⚡</span>Vibe
-              </button>
-              <button class="cd-bn" @click="nav('session')">
-                <span class="cd-bni">🎙</span>Session
-              </button>
-              <button class="cd-bn on">
-                <span class="cd-bni">❄️</span>Cold
-              </button>
-              <button class="cd-bn" @click="nav('home')">
-                <span class="cd-bni">🏠</span>Home
-              </button>
-              <button class="cd-bn" @click="nav('contacts')">
-                <span class="cd-bni">👥</span>Network
-              </button>
-            </nav>
           </div>
 
           <!-- ■ HOME ■ -->
@@ -1132,23 +1103,6 @@ onMounted(async () => {
                 Sign Out
               </button>
             </div>
-            <nav class="cd-bnav">
-              <button class="cd-bn" @click="nav('vibe')">
-                <span class="cd-bni">⚡</span>Vibe
-              </button>
-              <button class="cd-bn" @click="nav('session')">
-                <span class="cd-bni">🎙</span>Session
-              </button>
-              <button class="cd-bn" @click="nav('cold')">
-                <span class="cd-bni">❄️</span>Cold
-              </button>
-              <button class="cd-bn on">
-                <span class="cd-bni">🏠</span>Home
-              </button>
-              <button class="cd-bn" @click="nav('contacts')">
-                <span class="cd-bni">👥</span>Network
-              </button>
-            </nav>
           </div>
 
           <!-- ■ CONTACTS ■ -->
@@ -1250,23 +1204,6 @@ onMounted(async () => {
                 </div>
               </div>
             </div>
-            <nav class="cd-bnav">
-              <button class="cd-bn" @click="nav('vibe')">
-                <span class="cd-bni">⚡</span>Vibe
-              </button>
-              <button class="cd-bn" @click="nav('session')">
-                <span class="cd-bni">🎙</span>Session
-              </button>
-              <button class="cd-bn" @click="nav('cold')">
-                <span class="cd-bni">❄️</span>Cold
-              </button>
-              <button class="cd-bn" @click="nav('home')">
-                <span class="cd-bni">🏠</span>Home
-              </button>
-              <button class="cd-bn on">
-                <span class="cd-bni">👥</span>Network
-              </button>
-            </nav>
           </div>
 
           <!-- ■ DETAIL ■ -->
@@ -1632,23 +1569,6 @@ onMounted(async () => {
                 </div>
               </template>
             </template>
-            <nav class="cd-bnav">
-              <button class="cd-bn" @click="nav('vibe')">
-                <span class="cd-bni">⚡</span>Vibe
-              </button>
-              <button class="cd-bn" @click="nav('session')">
-                <span class="cd-bni">🎙</span>Session
-              </button>
-              <button class="cd-bn" @click="nav('cold')">
-                <span class="cd-bni">❄️</span>Cold
-              </button>
-              <button class="cd-bn" @click="nav('home')">
-                <span class="cd-bni">🏠</span>Home
-              </button>
-              <button class="cd-bn on" @click="nav('contacts')">
-                <span class="cd-bni">👥</span>Network
-              </button>
-            </nav>
           </div>
 
           <!-- ■ ADD ■ -->
@@ -1830,46 +1750,70 @@ onMounted(async () => {
                 SAVE + EARN 25 XP →
               </button>
             </div>
-            <nav class="cd-bnav">
-              <button class="cd-bn" @click="nav('vibe')">
-                <span class="cd-bni">⚡</span>Vibe
-              </button>
-              <button class="cd-bn" @click="nav('session')">
-                <span class="cd-bni">🎙</span>Session
-              </button>
-              <button class="cd-bn" @click="nav('cold')">
-                <span class="cd-bni">❄️</span>Cold
-              </button>
-              <button class="cd-bn" @click="nav('home')">
-                <span class="cd-bni">🏠</span>Home
-              </button>
-              <button class="cd-bn on">
-                <span class="cd-bni">📷</span>Add
-              </button>
-            </nav>
           </div>
 
-          <!-- XP Toast -->
-          <Transition name="cd-toast">
-            <div v-if="toast" class="cd-toast">
-              <span style="font-size: 18px">{{ toast.icon }}</span>
-              <span
-                style="
-                  font-family: &quot;Bebas Neue&quot;, sans-serif;
-                  font-size: 20px;
-                  color: #00ff87;
-                  letter-spacing: 1px;
-                "
-                >{{ toast.xp }}</span
-              >
-              <span style="font-size: 11px; color: #8898b0; font-weight: 600">{{
-                toast.msg
-              }}</span>
-            </div>
-          </Transition>
-        </div>
       </div>
-    </div>
+
+      <!-- ══ UNIFIED NAV BAR ═══════════════════════════════════════════════════ -->
+      <nav class="cd-bnav">
+        <button
+          class="cd-bn"
+          :class="{ on: screen === 'vibe' }"
+          @click="nav('vibe')"
+        >
+          <span class="cd-bni">⚡</span>Vibe
+        </button>
+        <button
+          class="cd-bn"
+          :class="{ on: screen === 'session' }"
+          @click="nav('session')"
+        >
+          <span class="cd-bni">🎙</span>Session
+        </button>
+        <button
+          class="cd-bn"
+          :class="{ on: screen === 'cold' }"
+          @click="nav('cold')"
+        >
+          <span class="cd-bni">❄️</span>Cold
+        </button>
+        <button
+          class="cd-bn"
+          :class="{ on: screen === 'home' }"
+          @click="nav('home')"
+        >
+          <span class="cd-bni">🏠</span>Home
+        </button>
+        <button
+          class="cd-bn"
+          :class="{ on: ['contacts', 'detail', 'add'].includes(screen) }"
+          @click="nav('contacts')"
+          style="position: relative"
+        >
+          <span v-if="alertCs.length" class="cd-nav-dot"></span>
+          <span class="cd-bni">{{ screen === 'add' ? '📷' : '👥' }}</span>
+          {{ screen === 'add' ? 'Add' : 'Network' }}
+        </button>
+      </nav>
+
+      <!-- XP Toast -->
+      <Transition name="cd-toast">
+        <div v-if="toast" class="cd-toast">
+          <span style="font-size: 18px">{{ toast.icon }}</span>
+          <span
+            style="
+              font-family: &quot;Bebas Neue&quot;, sans-serif;
+              font-size: 20px;
+              color: #00ff87;
+              letter-spacing: 1px;
+            "
+            >{{ toast.xp }}</span
+          >
+          <span style="font-size: 11px; color: #8898b0; font-weight: 600">{{
+            toast.msg
+          }}</span>
+        </div>
+      </Transition>
   </div>
 </template>
 
@@ -1887,60 +1831,36 @@ onMounted(async () => {
   --cd-purple: #b87dff;
   --cd-ice: #a8d8ea;
   display: flex;
+  flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: var(--cd-bg);
   color: var(--cd-text);
   font-family: "Barlow", sans-serif;
-  align-items: center;
-  justify-content: center;
-}
-.cd-phone-col {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-.cd-phone {
-  width: 354px;
-  height: 742px;
-  background: var(--cd-bg);
-  border-radius: 44px;
-  overflow: hidden;
   position: relative;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.06),
-    0 32px 80px rgba(0, 0, 0, 0.95);
-}
-.cd-notch {
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 88px;
-  height: 26px;
-  background: #000;
-  border-radius: 20px;
-  z-index: 100;
-}
-.cd-inner {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
 }
 .cd-sbar {
-  padding: 44px 20px 0;
+  padding: calc(env(safe-area-inset-top, 8px) + 6px) 20px 6px;
   display: flex;
   justify-content: space-between;
   font-size: 12px;
   font-weight: 700;
   flex-shrink: 0;
   color: var(--cd-muted);
+  background: var(--cd-bg);
+  z-index: 10;
+}
+.cd-screens {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
 }
 .cd-screen {
   display: none;
   flex-direction: column;
-  flex: 1;
+  position: absolute;
+  inset: 0;
   overflow: hidden;
 }
 .cd-screen.on {
@@ -1949,6 +1869,8 @@ onMounted(async () => {
 .cd-scrl {
   flex: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 .cd-scrl::-webkit-scrollbar {
   display: none;
@@ -1968,9 +1890,14 @@ onMounted(async () => {
 .cd-bnav {
   display: flex;
   background: rgba(6, 8, 16, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--cd-bdr);
-  padding: 7px 0 18px;
+  padding: 7px 0 calc(env(safe-area-inset-bottom, 8px) + 4px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
   flex-shrink: 0;
+  z-index: 10;
 }
 .cd-bn {
   flex: 1;
@@ -2883,8 +2810,8 @@ onMounted(async () => {
   border-color: rgba(0, 255, 135, 0.6);
 }
 .cd-toast {
-  position: absolute;
-  bottom: 80px;
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 8px) + 70px);
   left: 50%;
   transform: translateX(-50%);
   background: var(--cd-bg2);
@@ -2944,5 +2871,75 @@ onMounted(async () => {
 .cd-expand-leave-to {
   opacity: 0;
   transform: translateY(-6px);
+}
+
+/* ── iOS-like screen transitions ─────────────────────────────────────────── */
+.cd-anim-fade > .cd-screen.on {
+  animation: cd-screen-fade 0.25s ease;
+}
+.cd-anim-push > .cd-screen.on {
+  animation: cd-screen-push 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.cd-anim-pop > .cd-screen.on {
+  animation: cd-screen-pop 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes cd-screen-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes cd-screen-push {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes cd-screen-pop {
+  from {
+    opacity: 0;
+    transform: translateX(-40%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ── Responsive padding for larger screens ───────────────────────────────── */
+@media (min-width: 768px) {
+  .cd-pad {
+    padding: 10px 24px;
+  }
+  .cd-shdr {
+    padding: 12px 24px 8px;
+  }
+}
+@media (min-width: 1024px) {
+  .cd-screens {
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+  }
+  .cd-bnav {
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .cd-sbar {
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+  }
 }
 </style>
