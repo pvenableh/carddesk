@@ -68,7 +68,7 @@ function onClickOutside(e: MouseEvent) {
 <template>
   <div class="cd-sbar">
     <span class="cd-sbar-time">{{ time }}</span>
-    <span class="cd-sbar-logo">Card<span class="cd-sbar-logo-accent">Desk</span></span>
+    <span class="cd-sbar-logo">CARD<span class="cd-sbar-logo-accent">DESK</span></span>
     <div ref="dropdownRef" class="cd-avatar-wrap">
       <button class="cd-avatar" @click="toggleDropdown">
         {{ initials }}
@@ -127,6 +127,8 @@ function onClickOutside(e: MouseEvent) {
 }
 .cd-sbar-logo {
   font-family: monospace;
+  font-size: 15px;
+  letter-spacing: 2px;
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
