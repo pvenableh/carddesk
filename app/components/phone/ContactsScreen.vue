@@ -3,8 +3,6 @@ import { RATINGS, RATING_ORDER, getRating, cEmoji } from '~/composables/useConst
 
 const { contacts, followUpStatus } = useContacts()
 const { nav, goDetail } = useNavigation()
-const { openCamera } = useCardScan()
-const { earn } = useXp()
 
 const cSearch = ref('')
 const cFilter = ref('')
@@ -28,15 +26,6 @@ const filteredCs = computed(() => {
 const alertCs = computed(() =>
   contacts.value.filter((c) => !c.hibernated && followUpStatus(c) === 'overdue')
 )
-
-async function doScan() {
-  try {
-    await openCamera()
-    nav('add')
-  } catch (err: any) {
-    if (err?.message !== 'Cancelled') console.error('[scan]', err)
-  }
-}
 </script>
 
 <template>
@@ -62,7 +51,7 @@ async function doScan() {
       <div v-if="!contacts.length" class="cd-empty">
         <div style="font-size: 40px; margin-bottom: 10px">🃏</div>
         <div style="font-size: 18px; font-weight: 800; margin-bottom: 12px">No contacts yet</div>
-        <button class="cd-abtn g" @click="doScan">📷 Scan First Card</button>
+        <button class="cd-abtn g" @click="nav('add')">📷 Scan First Card</button>
       </div>
       <div v-for="c in filteredCs" :key="c.id" class="cd-crd" @click="goDetail(c.id)">
         <div class="cd-cbar" :class="c.rating || 'none'"></div>

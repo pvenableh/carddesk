@@ -20,7 +20,7 @@ const token = computed(() => (route.query.token as string) || '')
           Request a new link →
         </button>
       </div>
-      <PasswordResetForm v-else :token="token" @login="router.push('/login')" />
+      <AuthPasswordResetForm v-else :token="token" @login="router.push('/login')" />
     </div>
   </div>
 </template>

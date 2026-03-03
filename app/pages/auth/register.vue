@@ -10,7 +10,7 @@ const router = useRouter()
         CARD<span style="color: #00ff87">DESK</span>
       </div>
       <p class="auth-tagline">Your network. Gamified.</p>
-      <RegisterForm @login="router.push('/login')" />
+      <AuthRegisterForm @login="router.push('/login')" />
     </div>
   </div>
 </template>

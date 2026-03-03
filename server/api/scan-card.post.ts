@@ -4,15 +4,62 @@ export default defineEventHandler(async (event) => {
   const session = await getUserSession(event);
   if (!session?.user?.access_token)
     throw createError({ statusCode: 401, message: "Not authenticated" });
-  const { image, mediaType } = await readBody(event);
-  if (!image)
+  const body = await readBody(event);
+
+  // Support both { image, mediaType } (legacy) and { images: [{ data, mediaType }] }
+  const imageContents: Anthropic.ImageBlockParam[] = [];
+  if (body.images && Array.isArray(body.images)) {
+    for (const img of body.images) {
+      if (!img.data) continue;
+      imageContents.push({
+        type: "image",
+        source: {
+          type: "base64",
+          media_type: (img.mediaType || "image/jpeg") as "image/jpeg",
+          data: img.data,
+        },
+      });
+    }
+  } else if (body.image) {
+    imageContents.push({
+      type: "image",
+      source: {
+        type: "base64",
+        media_type: (body.mediaType || "image/jpeg") as "image/jpeg",
+        data: body.image,
+      },
+    });
+  }
+
+  if (!imageContents.length)
     throw createError({ statusCode: 400, message: "No image provided" });
+
   const config = useRuntimeConfig();
   if (!config.anthropicApiKey)
     throw createError({
       statusCode: 500,
       message: "Anthropic API key not configured",
     });
+
+  const isMultiSide = imageContents.length > 1;
+  const prompt = isMultiSide
+    ? `These are photos of the front and back of a business card. Extract and merge all contact info from both sides into a single result. Return ONLY JSON (no markdown):
+{
+  "first_name": string|null, "last_name": string|null, "name": string|null,
+  "title": string|null, "company": string|null, "email": string|null,
+  "phone": string|null, "website": string|null, "linkedin": string|null,
+  "address": string|null, "industry": string|null
+}
+Rules: name=full name combined. Industry: infer from context (Technology/Finance/Healthcare/Real Estate/Legal/Marketing/Venture Capital/Other). Merge info from both sides — the front typically has name/title/company, the back may have additional contact details. Return ONLY the JSON.`
+    : `Extract contact info from this business card. Return ONLY JSON (no markdown):
+{
+  "first_name": string|null, "last_name": string|null, "name": string|null,
+  "title": string|null, "company": string|null, "email": string|null,
+  "phone": string|null, "website": string|null, "linkedin": string|null,
+  "address": string|null, "industry": string|null
+}
+Rules: name=full name combined. Industry: infer from context (Technology/Finance/Healthcare/Real Estate/Legal/Marketing/Venture Capital/Other). Return ONLY the JSON.`;
+
   const client = new Anthropic({ apiKey: config.anthropicApiKey });
   try {
     const response = await client.messages.create({
@@ -22,25 +69,8 @@ export default defineEventHandler(async (event) => {
         {
           role: "user",
           content: [
-            {
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: mediaType || "image/jpeg",
-                data: image,
-              },
-            },
-            {
-              type: "text",
-              text: `Extract contact info from this business card. Return ONLY JSON (no markdown):
-{
-  "first_name": string|null, "last_name": string|null, "name": string|null,
-  "title": string|null, "company": string|null, "email": string|null,
-  "phone": string|null, "website": string|null, "linkedin": string|null,
-  "address": string|null, "industry": string|null
-}
-Rules: name=full name combined. Industry: infer from context (Technology/Finance/Healthcare/Real Estate/Legal/Marketing/Venture Capital/Other). Return ONLY the JSON.`,
-            },
+            ...imageContents,
+            { type: "text", text: prompt },
           ],
         },
       ],
