@@ -1,5 +1,6 @@
 /* ═══ CardDesk Shared Component Styles ═══ */
 
+/* ── Default: Sleeper Dark ── */
 :root {
   --cd-bg: #060810;
   --cd-bg2: #0d1018;
@@ -12,6 +13,95 @@
   --cd-orange: #ff6b35;
   --cd-purple: #b87dff;
   --cd-ice: #a8d8ea;
+}
+
+/* ── Sleeper Light ── */
+html[data-theme="sleeper"][data-mode="light"] :root {
+  --cd-bg: #f0f2f5;
+  --cd-bg2: #ffffff;
+  --cd-bdr: #d4d8e0;
+  --cd-text: #1a1e2a;
+  --cd-muted: #5c6478;
+  --cd-dim: #9aa0b0;
+  --cd-accent: #00c268;
+  --cd-blue: #3d8fd6;
+  --cd-orange: #e85d2f;
+  --cd-purple: #9260d4;
+  --cd-ice: #4ba8c8;
+}
+
+/* ── Modern Light ── */
+html[data-theme="modern"][data-mode="light"] :root {
+  --cd-bg: #f5f5f7;
+  --cd-bg2: #ffffff;
+  --cd-bdr: #e5e5ea;
+  --cd-text: #1d1d1f;
+  --cd-muted: #6e6e73;
+  --cd-dim: #aeaeb2;
+  --cd-accent: #007aff;
+  --cd-blue: #007aff;
+  --cd-orange: #ff6b35;
+  --cd-purple: #af52de;
+  --cd-ice: #5ac8fa;
+}
+
+/* ── Modern Dark ── */
+html[data-theme="modern"][data-mode="dark"] :root {
+  --cd-bg: #1c1c1e;
+  --cd-bg2: #2c2c2e;
+  --cd-bdr: #3a3a3c;
+  --cd-text: #f5f5f7;
+  --cd-muted: #98989d;
+  --cd-dim: #636366;
+  --cd-accent: #0a84ff;
+  --cd-blue: #0a84ff;
+  --cd-orange: #ff6b35;
+  --cd-purple: #bf5af2;
+  --cd-ice: #64d2ff;
+}
+
+/* ── Light mode: flatten dark gradients to flat cards ── */
+html[data-mode="light"] .cd-vc.hype,
+html[data-mode="light"] .cd-vc.cold-vc,
+html[data-mode="light"] .cd-vc.warn,
+html[data-mode="light"] .cd-sess-entry,
+html[data-mode="light"] .cd-mood,
+html[data-mode="light"] .cd-scard.tc,
+html[data-mode="light"] .cd-scard.hc,
+html[data-mode="light"] .cd-hero,
+html[data-mode="light"] .cd-streak,
+html[data-mode="light"] .cd-scan-zone,
+html[data-mode="light"] .cd-scan-captured,
+html[data-mode="light"] .cd-det-hero,
+html[data-mode="light"] .cd-cold-card {
+  background: var(--cd-bg2);
+  border-color: var(--cd-bdr);
+}
+
+/* ── Modern theme: flatten gradients (both modes) ── */
+html[data-theme="modern"] .cd-vc.hype,
+html[data-theme="modern"] .cd-vc.cold-vc,
+html[data-theme="modern"] .cd-vc.warn,
+html[data-theme="modern"] .cd-sess-entry,
+html[data-theme="modern"] .cd-mood,
+html[data-theme="modern"] .cd-scard.tc,
+html[data-theme="modern"] .cd-scard.hc,
+html[data-theme="modern"] .cd-hero,
+html[data-theme="modern"] .cd-streak,
+html[data-theme="modern"] .cd-scan-zone,
+html[data-theme="modern"] .cd-scan-captured,
+html[data-theme="modern"] .cd-det-hero,
+html[data-theme="modern"] .cd-cold-card {
+  background: var(--cd-bg2);
+  border-color: var(--cd-bdr);
+}
+
+/* ── Modern theme: typography — tracked out sans-serif ── */
+html[data-theme="modern"] .cd-stitle {
+  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 /* ── Screen layout ── */

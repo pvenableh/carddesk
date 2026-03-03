@@ -37,7 +37,7 @@ const tabs: { key: Screen; icon: string; label: string }[] = [
 <style scoped>
 .cd-bnav {
   display: flex;
-  background: rgba(6, 8, 16, 0.97);
+  background: color-mix(in srgb, var(--cd-bg) 97%, transparent);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--cd-bdr);

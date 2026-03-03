@@ -2,6 +2,12 @@
 const { loggedIn } = useUserSession()
 const { loadXp } = useXp()
 const { fetchContacts } = useContacts()
+const { init: initTheme } = useTheme()
+
+onMounted(() => {
+  initTheme()
+})
+
 watch(loggedIn, async (val) => {
   if (val) await Promise.all([loadXp(), fetchContacts()])
 }, { immediate: true })

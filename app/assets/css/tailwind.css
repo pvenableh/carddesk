@@ -19,3 +19,26 @@ input, textarea, [contenteditable] {
   user-select: text;
   -webkit-user-select: text;
 }
+
+/* ═══ Light mode (any theme) ═══ */
+html[data-mode="light"] {
+  color-scheme: light;
+}
+
+/* ═══ Sleeper Light ═══ */
+html[data-theme="sleeper"][data-mode="light"] body {
+  background: #f0f2f5;
+  color: #1a1e2a;
+}
+
+/* ═══ Modern Light ═══ */
+html[data-theme="modern"][data-mode="light"] body {
+  background: #f5f5f7;
+  color: #1d1d1f;
+}
+
+/* ═══ Modern Dark ═══ */
+html[data-theme="modern"][data-mode="dark"] body {
+  background: #1c1c1e;
+  color: #f5f5f7;
+}
