@@ -21,7 +21,7 @@ export default defineNuxtConfig({
     '@vueuse/nuxt',
     'shadcn-nuxt',
   ],
-  css: ['~/assets/css/tailwind.css', '~/assets/css/carddesk.css', '~/assets/css/auth.css'],
+  css: ['~/assets/css/tailwind.css', '~/assets/css/fonts.css', '~/assets/css/carddesk.css', '~/assets/css/auth.css'],
   vite: {
     plugins: [
       (await import('@tailwindcss/vite')).default(),

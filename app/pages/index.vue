@@ -75,7 +75,7 @@ onMounted(async () => {
   font-family: 'Barlow', sans-serif;
 }
 .cd-root.cd-modern {
-  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  font-family: "Proxima Nova", sans-serif;
   letter-spacing: 0.01em;
 }
 .cd-screens {

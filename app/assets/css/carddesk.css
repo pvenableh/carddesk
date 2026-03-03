@@ -96,12 +96,33 @@ html[data-theme="modern"] .cd-cold-card {
   border-color: var(--cd-bdr);
 }
 
-/* ── Modern theme: typography — tracked out sans-serif ── */
+/* ── Modern theme: typography — Proxima Nova with weight hierarchy ── */
 html[data-theme="modern"] .cd-stitle {
-  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-family: "Proxima Nova", sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+html[data-theme="modern"] .cd-stat-n {
+  font-family: "Proxima Nova", sans-serif;
+  font-weight: 100;
+}
+html[data-theme="modern"] .cd-vch,
+html[data-theme="modern"] .cd-se-ttl,
+html[data-theme="modern"] .cd-mc-t,
+html[data-theme="modern"] .cd-mc-lbl,
+html[data-theme="modern"] .cd-sc-q,
+html[data-theme="modern"] .cd-cc-nm,
+html[data-theme="modern"] .cd-cnm,
+html[data-theme="modern"] .cd-fu-t {
+  font-family: "Proxima Nova", sans-serif;
+  font-weight: 400;
+}
+html[data-theme="modern"] .cd-sc-eye,
+html[data-theme="modern"] .cd-sec-lbl,
+html[data-theme="modern"] .cd-lbl {
+  font-family: "Proxima Nova", sans-serif;
+  font-weight: 300;
 }
 
 /* ── Screen layout ── */
