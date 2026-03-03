@@ -16,96 +16,29 @@ onMounted(async () => {
 
 <template>
   <div class="cd-root">
-    <div class="cd-phone-col">
-      <div class="cd-phone">
-        <div class="cd-notch"></div>
-        <div class="cd-inner">
-          <div class="cd-sbar">
-            <span>{{ new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) }}</span>
-            <span style="font-family: monospace">Card<span style="color: #00ff87">Desk</span></span>
-          </div>
+    <div class="cd-sbar">
+      <span>{{ new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) }}</span>
+      <span style="font-family: monospace">Card<span style="color: #00ff87">Desk</span></span>
+    </div>
 
-          <!-- Screens -->
-          <VibeScreen v-show="screen === 'vibe'" />
-          <SessionScreen v-show="screen === 'session'" />
-          <ColdScreen v-show="screen === 'cold'" />
-          <HomeScreen v-show="screen === 'home'" />
-          <ContactsScreen v-show="screen === 'contacts'" />
-          <DetailScreen v-show="screen === 'detail'" />
-          <AddContactScreen v-show="screen === 'add'" />
+    <!-- Screens -->
+    <PhoneVibeScreen v-show="screen === 'vibe'" />
+    <PhoneSessionScreen v-show="screen === 'session'" />
+    <PhoneColdScreen v-show="screen === 'cold'" />
+    <PhoneHomeScreen v-show="screen === 'home'" />
+    <PhoneContactsScreen v-show="screen === 'contacts'" />
+    <PhoneDetailScreen v-show="screen === 'detail'" />
+    <PhoneAddContactScreen v-show="screen === 'add'" />
 
-          <!-- Bottom Nav -->
-          <BottomNav
-            :active="screen"
-            :alert-count="alertCs.length"
-            @nav="nav"
-          />
+    <!-- Bottom Nav -->
+    <PhoneBottomNav
+      :active="screen"
+      :alert-count="alertCs.length"
+      @nav="nav"
+    />
 
-          <!-- XP Toast -->
-          <XpToast :toast="toast" />
-        </div>
-      </div>
-
-      <!-- ══ UNIFIED NAV BAR ═══════════════════════════════════════════════════ -->
-      <nav class="cd-bnav">
-        <button
-          class="cd-bn"
-          :class="{ on: screen === 'vibe' }"
-          @click="nav('vibe')"
-        >
-          <span class="cd-bni">⚡</span>Vibe
-        </button>
-        <button
-          class="cd-bn"
-          :class="{ on: screen === 'session' }"
-          @click="nav('session')"
-        >
-          <span class="cd-bni">🎙</span>Session
-        </button>
-        <button
-          class="cd-bn"
-          :class="{ on: screen === 'cold' }"
-          @click="nav('cold')"
-        >
-          <span class="cd-bni">❄️</span>Cold
-        </button>
-        <button
-          class="cd-bn"
-          :class="{ on: screen === 'home' }"
-          @click="nav('home')"
-        >
-          <span class="cd-bni">🏠</span>Home
-        </button>
-        <button
-          class="cd-bn"
-          :class="{ on: ['contacts', 'detail', 'add'].includes(screen) }"
-          @click="nav('contacts')"
-          style="position: relative"
-        >
-          <span v-if="alertCs.length" class="cd-nav-dot"></span>
-          <span class="cd-bni">{{ screen === 'add' ? '📷' : '👥' }}</span>
-          {{ screen === 'add' ? 'Add' : 'Network' }}
-        </button>
-      </nav>
-
-      <!-- XP Toast -->
-      <Transition name="cd-toast">
-        <div v-if="toast" class="cd-toast">
-          <span style="font-size: 18px">{{ toast.icon }}</span>
-          <span
-            style="
-              font-family: &quot;Bebas Neue&quot;, sans-serif;
-              font-size: 20px;
-              color: #00ff87;
-              letter-spacing: 1px;
-            "
-            >{{ toast.xp }}</span
-          >
-          <span style="font-size: 11px; color: #8898b0; font-weight: 600">{{
-            toast.msg
-          }}</span>
-        </div>
-      </Transition>
+    <!-- XP Toast -->
+    <PhoneXpToast :toast="toast" />
   </div>
 </template>
 
@@ -130,22 +63,6 @@ onMounted(async () => {
   background: var(--cd-bg);
   color: var(--cd-text);
   font-family: 'Barlow', sans-serif;
-  align-items: center;
-  justify-content: center;
-}
-.cd-phone-col {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-.cd-phone {
-  width: 354px;
-  height: 742px;
-  background: var(--cd-bg);
-  border-radius: 44px;
-  overflow: hidden;
-  position: relative;
 }
 .cd-sbar {
   padding: calc(env(safe-area-inset-top, 8px) + 6px) 20px 6px;
@@ -157,10 +74,5 @@ onMounted(async () => {
   color: var(--cd-muted);
   background: var(--cd-bg);
   z-index: 10;
-}
-.cd-screens {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
 }
 </style>

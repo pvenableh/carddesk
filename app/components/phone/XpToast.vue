@@ -23,8 +23,8 @@ defineProps<{
 
 <style scoped>
 .cd-toast {
-  position: absolute;
-  bottom: 80px;
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 8px) + 70px);
   left: 50%;
   transform: translateX(-50%);
   background: var(--cd-bg2);

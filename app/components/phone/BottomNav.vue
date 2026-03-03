@@ -38,9 +38,14 @@ const tabs: { key: Screen; icon: string; label: string }[] = [
 .cd-bnav {
   display: flex;
   background: rgba(6, 8, 16, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--cd-bdr);
-  padding: 7px 0 18px;
+  padding: 7px 0 calc(env(safe-area-inset-bottom, 8px) + 4px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
   flex-shrink: 0;
+  z-index: 10;
 }
 .cd-bn {
   flex: 1;
