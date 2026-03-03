@@ -2,6 +2,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   future: { compatibilityVersion: 4 },
   app: {
+    pageTransition: { name: 'page', mode: 'out-in' },
     head: {
       meta: [
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },

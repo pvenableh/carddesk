@@ -5,10 +5,14 @@ export interface ScannedCard {
   address: string | null; industry: string | null
 }
 
+export type ScanStep = 'idle' | 'captured-front' | 'processing'
+
 export function useCardScan() {
   const scanning = ref(false)
+  const scanStep = ref<ScanStep>('idle')
   const error = ref<string | null>(null)
   const result = ref<ScannedCard | null>(null)
+  const frontImage = ref<{ data: string; mediaType: string } | null>(null)
 
   async function fileToBase64(file: File): Promise<{ data: string; mediaType: string }> {
     return new Promise((resolve, reject) => {
@@ -29,37 +33,67 @@ export function useCardScan() {
     })
   }
 
-  async function scanFile(file: File): Promise<ScannedCard> {
-    scanning.value = true; error.value = null; result.value = null
-    try {
-      const { data, mediaType } = await fileToBase64(file)
-      const scanned = await $fetch<ScannedCard>('/api/scan-card', {
-        method: 'POST', body: { image: data, mediaType },
-      })
-      result.value = scanned
-      return scanned
-    } catch (err: any) {
-      const msg = err?.data?.message ?? 'Scan failed — try a clearer photo'
-      error.value = msg; throw new Error(msg)
-    } finally { scanning.value = false }
-  }
-
-  function openCamera(): Promise<ScannedCard> {
+  function captureImage(): Promise<File> {
     return new Promise((resolve, reject) => {
       const input = document.createElement('input')
       input.type = 'file'; input.accept = 'image/*'; input.capture = 'environment'
-      input.onchange = async () => {
+      input.onchange = () => {
         const file = input.files?.[0]
         if (!file) { reject(new Error('No file selected')); return }
-        try { resolve(await scanFile(file)) } catch (err) { reject(err) }
+        resolve(file)
       }
       input.oncancel = () => reject(new Error('Cancelled'))
       input.click()
     })
   }
 
+  async function captureFront(): Promise<void> {
+    error.value = null
+    const file = await captureImage()
+    frontImage.value = await fileToBase64(file)
+    scanStep.value = 'captured-front'
+  }
+
+  async function captureBackAndScan(): Promise<ScannedCard> {
+    error.value = null
+    const file = await captureImage()
+    const backImage = await fileToBase64(file)
+    return await processImages([frontImage.value!, backImage])
+  }
+
+  async function scanFrontOnly(): Promise<ScannedCard> {
+    return await processImages([frontImage.value!])
+  }
+
+  async function processImages(images: { data: string; mediaType: string }[]): Promise<ScannedCard> {
+    scanning.value = true; scanStep.value = 'processing'; error.value = null; result.value = null
+    try {
+      const scanned = await $fetch<ScannedCard>('/api/scan-card', {
+        method: 'POST', body: { images },
+      })
+      result.value = scanned
+      return scanned
+    } catch (err: any) {
+      const msg = err?.data?.message ?? 'Scan failed — try a clearer photo'
+      error.value = msg; throw new Error(msg)
+    } finally {
+      scanning.value = false
+      scanStep.value = 'idle'
+      frontImage.value = null
+    }
+  }
+
+  // Legacy: single image scan (used by quick scan)
+  async function openCamera(): Promise<ScannedCard> {
+    error.value = null; result.value = null
+    const file = await captureImage()
+    const imageData = await fileToBase64(file)
+    return await processImages([imageData])
+  }
+
   return {
-    scanning, error, result, scanFile, openCamera,
-    reset: () => { result.value = null; error.value = null },
+    scanning, scanStep, error, result, frontImage,
+    captureFront, captureBackAndScan, scanFrontOnly, openCamera,
+    reset: () => { result.value = null; error.value = null; scanStep.value = 'idle'; frontImage.value = null },
   }
 }

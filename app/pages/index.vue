@@ -1,9 +1,30 @@
 <script setup lang="ts">
+import type { Screen } from '~/composables/useNavigation'
+import PhoneVibeScreen from '~/components/phone/VibeScreen.vue'
+import PhoneSessionScreen from '~/components/phone/SessionScreen.vue'
+import PhoneColdScreen from '~/components/phone/ColdScreen.vue'
+import PhoneHomeScreen from '~/components/phone/HomeScreen.vue'
+import PhoneContactsScreen from '~/components/phone/ContactsScreen.vue'
+import PhoneDetailScreen from '~/components/phone/DetailScreen.vue'
+import PhoneAddContactScreen from '~/components/phone/AddContactScreen.vue'
+
 definePageMeta({ middleware: 'auth' })
 
 const { fetchContacts, followUpStatus, contacts } = useContacts()
 const { toast, loadXp } = useXp()
-const { screen, nav } = useNavigation()
+const { screen, nav, transitionName } = useNavigation()
+
+const screenComponents: Record<Screen, Component> = {
+  vibe: PhoneVibeScreen,
+  session: PhoneSessionScreen,
+  cold: PhoneColdScreen,
+  home: PhoneHomeScreen,
+  contacts: PhoneContactsScreen,
+  detail: PhoneDetailScreen,
+  add: PhoneAddContactScreen,
+}
+
+const currentScreen = computed(() => screenComponents[screen.value])
 
 const alertCs = computed(() =>
   contacts.value.filter((c) => !c.hibernated && followUpStatus(c) === 'overdue')
@@ -21,14 +42,14 @@ onMounted(async () => {
       <span style="font-family: monospace">Card<span style="color: #00ff87">Desk</span></span>
     </div>
 
-    <!-- Screens -->
-    <PhoneVibeScreen v-show="screen === 'vibe'" />
-    <PhoneSessionScreen v-show="screen === 'session'" />
-    <PhoneColdScreen v-show="screen === 'cold'" />
-    <PhoneHomeScreen v-show="screen === 'home'" />
-    <PhoneContactsScreen v-show="screen === 'contacts'" />
-    <PhoneDetailScreen v-show="screen === 'detail'" />
-    <PhoneAddContactScreen v-show="screen === 'add'" />
+    <!-- Screens with iOS-like transitions -->
+    <div class="cd-screens">
+      <Transition :name="transitionName" mode="out-in">
+        <KeepAlive>
+          <component :is="currentScreen" :key="screen" />
+        </KeepAlive>
+      </Transition>
+    </div>
 
     <!-- Bottom Nav -->
     <PhoneBottomNav
@@ -74,5 +95,10 @@ onMounted(async () => {
   color: var(--cd-muted);
   background: var(--cd-bg);
   z-index: 10;
+}
+.cd-screens {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
 }
 </style>

@@ -20,7 +20,7 @@ const token = computed(() => (route.query.token as string) || '')
           Go to sign in →
         </button>
       </div>
-      <AcceptInviteForm v-else :token="token" @login="router.push('/login')" />
+      <AuthAcceptInviteForm v-else :token="token" @login="router.push('/login')" />
     </div>
   </div>
 </template>

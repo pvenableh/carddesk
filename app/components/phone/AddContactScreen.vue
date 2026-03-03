@@ -4,7 +4,7 @@ import confettiLib from 'canvas-confetti'
 
 const { contacts, createContact } = useContacts()
 const { state: xp, earn } = useXp()
-const { scanning, error: scanError, openCamera } = useCardScan()
+const { scanning, scanStep, error: scanError, captureFront, captureBackAndScan, scanFrontOnly, reset: resetScan } = useCardScan()
 const { nav, goDetail } = useNavigation()
 
 const addForm = ref({
@@ -20,25 +20,46 @@ function fireConfetti() {
   confettiLib({ particleCount: 60, spread: 70, origin: { y: 0.6 }, colors: ['#00ff87', '#ffd700', '#ff6b35', '#4da6ff', '#b87dff'] })
 }
 
-async function doScan() {
+function applyResult(result: any) {
+  addForm.value = {
+    firstName: result.first_name ?? '',
+    lastName: result.last_name ?? '',
+    title: result.title ?? '',
+    company: result.company ?? '',
+    email: result.email ?? '',
+    phone: result.phone ?? '',
+    industry: result.industry ?? '',
+    metAt: addForm.value.metAt,
+    rating: '',
+    notes: [result.website, result.linkedin, result.address].filter(Boolean).join('\n'),
+  }
+  earn(50, '📷', 'Card scanned!', { total_scans: (xp.value.total_scans ?? 0) + 1 })
+  fireConfetti()
+}
+
+async function doScanFront() {
   try {
-    const result = await openCamera()
-    addForm.value = {
-      firstName: result.first_name ?? '',
-      lastName: result.last_name ?? '',
-      title: result.title ?? '',
-      company: result.company ?? '',
-      email: result.email ?? '',
-      phone: result.phone ?? '',
-      industry: result.industry ?? '',
-      metAt: addForm.value.metAt,
-      rating: '',
-      notes: [result.website, result.linkedin, result.address].filter(Boolean).join('\n'),
-    }
-    earn(50, '📷', 'Card scanned!', { total_scans: (xp.value.total_scans ?? 0) + 1 })
-    fireConfetti()
+    await captureFront()
   } catch (err: any) {
     if (err?.message !== 'Cancelled') console.error('[scan]', err)
+  }
+}
+
+async function doScanBack() {
+  try {
+    const result = await captureBackAndScan()
+    applyResult(result)
+  } catch (err: any) {
+    if (err?.message !== 'Cancelled') console.error('[scan]', err)
+  }
+}
+
+async function doSkipBack() {
+  try {
+    const result = await scanFrontOnly()
+    applyResult(result)
+  } catch (err: any) {
+    console.error('[scan]', err)
   }
 }
 
@@ -62,6 +83,7 @@ async function doSaveContact() {
     firstName: '', lastName: '', title: '', company: '',
     email: '', phone: '', industry: '', metAt: '', rating: '', notes: '',
   }
+  resetScan()
   goDetail(contact.id)
 }
 </script>
@@ -73,20 +95,51 @@ async function doSaveContact() {
       <div class="cd-stitle">Add Contact</div>
     </div>
     <div class="cd-scrl cd-pad">
-      <div class="cd-scan-zone" @click="doScan">
-        <div v-if="scanning" style="font-size: 44px; animation: cd-wig 0.6s infinite">⏳</div>
-        <div v-else style="font-size: 44px; margin-bottom: 8px">📷</div>
+      <!-- Scan Zone: Idle state -->
+      <div v-if="scanStep === 'idle' && !scanning" class="cd-scan-zone" @click="doScanFront">
+        <div style="font-size: 44px; margin-bottom: 8px">📷</div>
         <div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: #00ff87; margin-bottom: 4px">
-          {{ scanning ? 'Reading card...' : 'Scan Business Card' }}
+          Scan Business Card
         </div>
         <div style="font-size: 11px; color: #3e4f68">
-          {{ scanning ? 'Claude AI is extracting the details' : 'AI reads name, email, phone, company instantly' }}
+          AI reads both sides — name, email, phone, company
         </div>
         <span class="cd-xpb" style="margin-top: 9px; display: inline-block">+50 XP</span>
       </div>
+
+      <!-- Scan Zone: Front captured, prompt for back -->
+      <div v-else-if="scanStep === 'captured-front'" class="cd-scan-captured">
+        <div style="font-size: 36px; margin-bottom: 6px">✅</div>
+        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; color: #00ff87; margin-bottom: 4px">
+          Front Captured
+        </div>
+        <div style="font-size: 11px; color: #8898b0; margin-bottom: 14px">
+          Flip the card to scan the back, or skip if single-sided
+        </div>
+        <div style="display: flex; gap: 8px">
+          <button class="cd-abtn g" style="font-size: 13px; padding: 10px" @click="doScanBack">
+            📷 Scan Back
+          </button>
+          <button class="cd-abtn b" style="font-size: 13px; padding: 10px" @click="doSkipBack">
+            Skip →
+          </button>
+        </div>
+      </div>
+
+      <!-- Scan Zone: Processing -->
+      <div v-else class="cd-scan-zone" style="pointer-events: none">
+        <div style="font-size: 44px; animation: cd-wig 0.6s infinite">⏳</div>
+        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: #00ff87; margin-bottom: 4px">
+          Reading card...
+        </div>
+        <div style="font-size: 11px; color: #3e4f68">
+          Claude AI is extracting the details
+        </div>
+      </div>
+
       <div
         v-if="scanError"
-        style="background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.3); border-radius: 10px; padding: 10px 13px; margin-bottom: 10px; font-size: 12px; color: #ff6b35"
+        style="background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.3); border-radius: 10px; padding: 10px 13px; margin-top: 8px; margin-bottom: 10px; font-size: 12px; color: #ff6b35"
       >{{ scanError }}</div>
       <div style="display: flex; align-items: center; gap: 10px; color: #3e4f68; font-size: 10px; margin: 12px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700">
         <div style="flex: 1; height: 1px; background: #1c2330"></div>
