@@ -15,10 +15,11 @@ const initials = computed(() => {
   return email.charAt(0).toUpperCase()
 })
 
-const time = ref(new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }))
+const time = ref('')
 let timer: ReturnType<typeof setInterval> | undefined
 
 onMounted(() => {
+  time.value = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
   timer = setInterval(() => {
     time.value = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
   }, 10000)
@@ -96,7 +97,7 @@ function onClickOutside(e: MouseEvent) {
           </button>
           <div class="cd-dd-row">
             <span class="cd-dd-row-label">Dark Mode</span>
-            <UiDarkModeToggle />
+            <PhoneDarkModeToggle />
           </div>
           <div class="cd-dd-divider" />
           <button class="cd-dd-item cd-dd-logout" @click="handleLogout">

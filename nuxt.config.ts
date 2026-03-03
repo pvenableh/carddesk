@@ -13,7 +13,6 @@ export default defineNuxtConfig({
     },
   },
   modules: [
-    '@nuxtjs/color-mode',
     '@nuxt/icon',
     '@nuxt/image',
     '@nuxt/fonts',
@@ -38,6 +37,5 @@ export default defineNuxtConfig({
     },
   },
   shadcn: { prefix: '', componentDir: './app/components/ui' },
-  colorMode: { classSuffix: '', defaultValue: 'dark' },
   typescript: { strict: true },
 })

@@ -16,7 +16,7 @@
 }
 
 /* ── Sleeper Light ── */
-html[data-theme="sleeper"][data-mode="light"] :root {
+html[data-theme="sleeper"][data-mode="light"] {
   --cd-bg: #f0f2f5;
   --cd-bg2: #ffffff;
   --cd-bdr: #d4d8e0;
@@ -31,7 +31,7 @@ html[data-theme="sleeper"][data-mode="light"] :root {
 }
 
 /* ── Modern Light — white on white ── */
-html[data-theme="modern"][data-mode="light"] :root {
+html[data-theme="modern"][data-mode="light"] {
   --cd-bg: #f2f2f7;
   --cd-bg2: #ffffff;
   --cd-bdr: rgba(0, 0, 0, 0.04);
@@ -46,7 +46,7 @@ html[data-theme="modern"][data-mode="light"] :root {
 }
 
 /* ── Modern Dark ── */
-html[data-theme="modern"][data-mode="dark"] :root {
+html[data-theme="modern"][data-mode="dark"] {
   --cd-bg: #000000;
   --cd-bg2: #1c1c1e;
   --cd-bdr: rgba(255, 255, 255, 0.08);

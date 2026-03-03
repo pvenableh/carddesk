@@ -13,7 +13,6 @@ const emit = defineEmits<{
 const tabs: { key: Screen; icon: string; lucide: string; label: string }[] = [
   { key: 'vibe', icon: '⚡', lucide: 'lucide:zap', label: 'Vibe' },
   { key: 'session', icon: '🎙', lucide: 'lucide:mic', label: 'Session' },
-  { key: 'cold', icon: '❄️', lucide: 'lucide:snowflake', label: 'Cold' },
   { key: 'home', icon: '📊', lucide: 'lucide:bar-chart-3', label: 'Stats' },
   { key: 'contacts', icon: '👥', lucide: 'lucide:users', label: 'Network' },
 ]
@@ -22,7 +21,26 @@ const tabs: { key: Screen; icon: string; lucide: string; label: string }[] = [
 <template>
   <nav class="cd-bnav">
     <button
-      v-for="t in tabs"
+      v-for="t in tabs.slice(0, 2)"
+      :key="t.key"
+      class="cd-bn"
+      :class="{ on: active === t.key }"
+      @click="emit('nav', t.key)"
+    >
+      <span class="cd-bni"><CdIcon :emoji="t.icon" :icon="t.lucide" /></span>{{ t.label }}
+    </button>
+
+    <button
+      class="cd-bn cd-bn-scan"
+      :class="{ on: active === 'add' }"
+      @click="emit('nav', 'add')"
+    >
+      <span class="cd-scan-btn"><CdIcon emoji="📷" icon="lucide:scan" :size="20" /></span>
+      <span class="cd-scan-lbl">Scan</span>
+    </button>
+
+    <button
+      v-for="t in tabs.slice(2)"
       :key="t.key"
       class="cd-bn"
       :class="{ on: active === t.key }"
@@ -72,6 +90,31 @@ const tabs: { key: Screen; icon: string; lucide: string; label: string }[] = [
 .cd-bni {
   font-size: 18px;
   line-height: 1.1;
+}
+.cd-bn-scan {
+  position: relative;
+}
+.cd-scan-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--cd-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -22px;
+  box-shadow: 0 2px 12px rgba(0, 255, 135, 0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
+  color: #060810;
+  font-size: 20px;
+}
+.cd-bn-scan:hover .cd-scan-btn,
+.cd-bn-scan.on .cd-scan-btn {
+  transform: scale(1.08);
+  box-shadow: 0 4px 18px rgba(0, 255, 135, 0.4);
+}
+.cd-scan-lbl {
+  margin-top: 1px;
 }
 .cd-nav-dot {
   position: absolute;

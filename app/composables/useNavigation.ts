@@ -1,8 +1,8 @@
 export type Screen = "vibe" | "session" | "cold" | "home" | "contacts" | "detail" | "add"
 
-const PUSH_SCREENS = new Set<Screen>(["detail", "add"])
+const PUSH_SCREENS = new Set<Screen>(["detail", "add", "cold"])
 const TAB_INDEX: Record<string, number> = {
-  vibe: 0, session: 1, cold: 2, home: 3, contacts: 4,
+  vibe: 0, session: 1, home: 2, contacts: 3,
 }
 
 export function useNavigation() {
