@@ -73,9 +73,6 @@ onMounted(async () => {
   background: var(--cd-bg);
   color: var(--cd-text);
   font-family: 'Barlow', sans-serif;
-  max-width: 480px;
-  margin: 0 auto;
-  width: 100%;
 }
 .cd-root.cd-modern {
   font-family: "Proxima Nova", sans-serif;
@@ -85,5 +82,8 @@ onMounted(async () => {
   flex: 1;
   overflow: hidden;
   position: relative;
+  max-width: 768px;
+  margin: 0 auto;
+  width: 100%;
 }
 </style>
