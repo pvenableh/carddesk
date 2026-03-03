@@ -11,4 +11,11 @@ body {
   background: #060810;
   color: #f0f4ff;
   margin: 0;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input, textarea, [contenteditable] {
+  user-select: text;
+  -webkit-user-select: text;
 }

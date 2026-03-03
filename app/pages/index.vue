@@ -45,7 +45,67 @@ onMounted(async () => {
           <XpToast :toast="toast" />
         </div>
       </div>
-    </div>
+
+      <!-- ══ UNIFIED NAV BAR ═══════════════════════════════════════════════════ -->
+      <nav class="cd-bnav">
+        <button
+          class="cd-bn"
+          :class="{ on: screen === 'vibe' }"
+          @click="nav('vibe')"
+        >
+          <span class="cd-bni">⚡</span>Vibe
+        </button>
+        <button
+          class="cd-bn"
+          :class="{ on: screen === 'session' }"
+          @click="nav('session')"
+        >
+          <span class="cd-bni">🎙</span>Session
+        </button>
+        <button
+          class="cd-bn"
+          :class="{ on: screen === 'cold' }"
+          @click="nav('cold')"
+        >
+          <span class="cd-bni">❄️</span>Cold
+        </button>
+        <button
+          class="cd-bn"
+          :class="{ on: screen === 'home' }"
+          @click="nav('home')"
+        >
+          <span class="cd-bni">🏠</span>Home
+        </button>
+        <button
+          class="cd-bn"
+          :class="{ on: ['contacts', 'detail', 'add'].includes(screen) }"
+          @click="nav('contacts')"
+          style="position: relative"
+        >
+          <span v-if="alertCs.length" class="cd-nav-dot"></span>
+          <span class="cd-bni">{{ screen === 'add' ? '📷' : '👥' }}</span>
+          {{ screen === 'add' ? 'Add' : 'Network' }}
+        </button>
+      </nav>
+
+      <!-- XP Toast -->
+      <Transition name="cd-toast">
+        <div v-if="toast" class="cd-toast">
+          <span style="font-size: 18px">{{ toast.icon }}</span>
+          <span
+            style="
+              font-family: &quot;Bebas Neue&quot;, sans-serif;
+              font-size: 20px;
+              color: #00ff87;
+              letter-spacing: 1px;
+            "
+            >{{ toast.xp }}</span
+          >
+          <span style="font-size: 11px; color: #8898b0; font-weight: 600">{{
+            toast.msg
+          }}</span>
+        </div>
+      </Transition>
   </div>
 </template>
 
@@ -63,7 +123,9 @@ onMounted(async () => {
   --cd-purple: #b87dff;
   --cd-ice: #a8d8ea;
   display: flex;
+  flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: var(--cd-bg);
   color: var(--cd-text);
@@ -84,33 +146,21 @@ onMounted(async () => {
   border-radius: 44px;
   overflow: hidden;
   position: relative;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.06),
-    0 32px 80px rgba(0, 0, 0, 0.95);
-}
-.cd-notch {
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 88px;
-  height: 26px;
-  background: #000;
-  border-radius: 20px;
-  z-index: 100;
-}
-.cd-inner {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
 }
 .cd-sbar {
-  padding: 44px 20px 0;
+  padding: calc(env(safe-area-inset-top, 8px) + 6px) 20px 6px;
   display: flex;
   justify-content: space-between;
   font-size: 12px;
   font-weight: 700;
   flex-shrink: 0;
   color: var(--cd-muted);
+  background: var(--cd-bg);
+  z-index: 10;
+}
+.cd-screens {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
 }
 </style>
