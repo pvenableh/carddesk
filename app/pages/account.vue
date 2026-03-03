@@ -3,7 +3,7 @@ definePageMeta({ middleware: 'auth' })
 
 const { user } = useUserSession()
 const { logout } = useAuth()
-const { theme, setTheme, THEMES } = useTheme()
+const { theme, isDark, setTheme, toggleDarkMode, THEMES } = useTheme()
 
 const email = computed(() => (user.value?.email as string) ?? '')
 const initial = computed(() => email.value.charAt(0).toUpperCase() || '?')
@@ -36,6 +36,16 @@ const initial = computed(() => email.value.charAt(0).toUpperCase() || '?')
             </div>
             <span class="acct-theme-check">{{ theme === t.id ? '✓' : '' }}</span>
           </button>
+        </div>
+      </div>
+
+      <div class="acct-section">
+        <div class="acct-dm-row">
+          <div>
+            <div class="acct-dm-label">Dark Mode</div>
+            <div class="acct-dm-desc">{{ isDark ? 'On' : 'Off' }}</div>
+          </div>
+          <UiDarkModeToggle />
         </div>
       </div>
 
@@ -165,6 +175,24 @@ const initial = computed(() => email.value.charAt(0).toUpperCase() || '?')
   font-weight: 700;
   width: 20px;
   text-align: center;
+}
+.acct-dm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: var(--cd-bg2);
+  border: 1.5px solid var(--cd-bdr);
+  border-radius: 12px;
+}
+.acct-dm-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cd-text);
+}
+.acct-dm-desc {
+  font-size: 11px;
+  color: var(--cd-dim);
 }
 .acct-logout {
   width: 100%;

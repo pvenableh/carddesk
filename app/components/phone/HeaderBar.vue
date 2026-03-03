@@ -3,7 +3,7 @@ import type { ThemeId } from '~/composables/useTheme'
 
 const { user } = useUserSession()
 const { logout } = useAuth()
-const { theme, setTheme, THEMES } = useTheme()
+const { theme, isDark, setTheme, toggleDarkMode, THEMES } = useTheme()
 const router = useRouter()
 
 const dropdownOpen = ref(false)
@@ -94,6 +94,10 @@ function onClickOutside(e: MouseEvent) {
               <span class="cd-dd-theme-desc">{{ t.description }}</span>
             </span>
           </button>
+          <div class="cd-dd-row">
+            <span class="cd-dd-row-label">Dark Mode</span>
+            <UiDarkModeToggle />
+          </div>
           <div class="cd-dd-divider" />
           <button class="cd-dd-item cd-dd-logout" @click="handleLogout">
             <span class="cd-dd-icon">↪</span>
@@ -227,6 +231,17 @@ function onClickOutside(e: MouseEvent) {
   font-size: 10px;
   color: var(--cd-dim);
   font-weight: 500;
+}
+.cd-dd-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+}
+.cd-dd-row-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cd-text);
 }
 .cd-dd-logout {
   color: #f87171;

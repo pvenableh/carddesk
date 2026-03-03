@@ -11,32 +11,45 @@ export const THEMES: ThemeOption[] = [
   { id: 'modern', label: 'Modern', description: 'Clean & minimal' },
 ]
 
-const STORAGE_KEY = 'cd-theme'
+const THEME_KEY = 'cd-theme'
+const MODE_KEY = 'cd-dark-mode'
 
 export function useTheme() {
   const theme = useState<ThemeId>('cd-theme', () => 'sleeper')
+  const isDark = useState<boolean>('cd-dark-mode', () => true)
 
-  function applyTheme(id: ThemeId) {
+  function apply() {
     if (import.meta.client) {
-      document.documentElement.setAttribute('data-theme', id)
-      localStorage.setItem(STORAGE_KEY, id)
+      document.documentElement.setAttribute('data-theme', theme.value)
+      document.documentElement.setAttribute('data-mode', isDark.value ? 'dark' : 'light')
+      localStorage.setItem(THEME_KEY, theme.value)
+      localStorage.setItem(MODE_KEY, isDark.value ? 'dark' : 'light')
     }
   }
 
   function setTheme(id: ThemeId) {
     theme.value = id
-    applyTheme(id)
+    apply()
+  }
+
+  function toggleDarkMode() {
+    isDark.value = !isDark.value
+    apply()
   }
 
   function init() {
     if (import.meta.client) {
-      const saved = localStorage.getItem(STORAGE_KEY) as ThemeId | null
-      if (saved && THEMES.some((t) => t.id === saved)) {
-        theme.value = saved
+      const savedTheme = localStorage.getItem(THEME_KEY) as ThemeId | null
+      if (savedTheme && THEMES.some((t) => t.id === savedTheme)) {
+        theme.value = savedTheme
       }
-      applyTheme(theme.value)
+      const savedMode = localStorage.getItem(MODE_KEY)
+      if (savedMode === 'light' || savedMode === 'dark') {
+        isDark.value = savedMode === 'dark'
+      }
+      apply()
     }
   }
 
-  return { theme, setTheme, init, THEMES }
+  return { theme, isDark, setTheme, toggleDarkMode, init, THEMES }
 }
