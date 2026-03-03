@@ -27,7 +27,9 @@ export function useContacts() {
           note: payload.met_at ? `Met at ${payload.met_at}` : null,
         },
       })
-    } catch { /* activity logging is best-effort */ }
+    } catch (err: any) {
+      console.error('[useContacts] Failed to log contact_added activity:', err?.data?.message ?? err)
+    }
     contacts.value = [{ ...contact, activities: activity ? [activity] : [] }, ...contacts.value]
     return contact
   }

@@ -34,7 +34,9 @@ export default defineEventHandler(async (event) => {
         updateItem("cd_xp_state", (existing[0] as any).id, payload),
       );
     return await directus.request(createItem("cd_xp_state", payload));
-  } catch {
-    throw createError({ statusCode: 500, message: "Failed to save XP" });
+  } catch (err: any) {
+    console.error("[POST /api/xp] Directus error:", err?.errors ?? err?.message ?? err);
+    const msg = err?.errors?.[0]?.message ?? err?.message ?? "Failed to save XP";
+    throw createError({ statusCode: err?.status ?? 500, message: msg });
   }
 });

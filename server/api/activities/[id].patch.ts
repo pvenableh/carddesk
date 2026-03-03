@@ -17,10 +17,9 @@ export default defineEventHandler(async (event) => {
         response_note: body.response_note ?? "Responded",
       }),
     );
-  } catch {
-    throw createError({
-      statusCode: 500,
-      message: "Failed to update activity",
-    });
+  } catch (err: any) {
+    console.error("[PATCH /api/activities] Directus error:", err?.errors ?? err?.message ?? err);
+    const msg = err?.errors?.[0]?.message ?? err?.message ?? "Failed to update activity";
+    throw createError({ statusCode: err?.status ?? 500, message: msg });
   }
 });
