@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   try {
     const directus = createDirectus(config.public.directusUrl)
       .with(authentication("json")).with(rest())
-    const result = await directus.login(email, password)
+    const result = await directus.login({ email, password })
     if (!result?.access_token)
       throw createError({ statusCode: 401, message: "Invalid credentials" })
     await setUserSession(event, {
