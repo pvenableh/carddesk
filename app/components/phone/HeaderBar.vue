@@ -76,7 +76,7 @@ function onClickOutside(e: MouseEvent) {
       <Transition name="cd-dropdown">
         <div v-if="dropdownOpen" class="cd-dropdown">
           <button class="cd-dd-item" @click="goAccount">
-            <span class="cd-dd-icon">👤</span>
+            <span class="cd-dd-icon"><CdIcon emoji="👤" icon="lucide:user" /></span>
             Account
           </button>
           <div class="cd-dd-divider" />
@@ -100,7 +100,7 @@ function onClickOutside(e: MouseEvent) {
           </div>
           <div class="cd-dd-divider" />
           <button class="cd-dd-item cd-dd-logout" @click="handleLogout">
-            <span class="cd-dd-icon">↪</span>
+            <span class="cd-dd-icon"><CdIcon emoji="↪" icon="lucide:log-out" /></span>
             Log Out
           </button>
         </div>

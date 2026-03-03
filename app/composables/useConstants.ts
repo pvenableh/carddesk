@@ -1,17 +1,17 @@
 export const RATINGS = [
-  { key: "hot", label: "Hot", emoji: "🔥", color: "#ff6b35" },
-  { key: "warm", label: "Warm", emoji: "👍", color: "#ffe033" },
-  { key: "nurture", label: "Nurture", emoji: "🌱", color: "#00c268" },
-  { key: "cold", label: "Cold", emoji: "❄️", color: "#4da6ff" },
+  { key: "hot", label: "Hot", emoji: "🔥", lucide: "lucide:flame", color: "#ff6b35" },
+  { key: "warm", label: "Warm", emoji: "👍", lucide: "lucide:thumbs-up", color: "#ffe033" },
+  { key: "nurture", label: "Nurture", emoji: "🌱", lucide: "lucide:sprout", color: "#00c268" },
+  { key: "cold", label: "Cold", emoji: "❄️", lucide: "lucide:snowflake", color: "#4da6ff" },
 ] as const
 
 export const ACT_TYPES = [
-  { key: "email", label: "Email", icon: "📧" },
-  { key: "text", label: "Text", icon: "📱" },
-  { key: "call", label: "Call", icon: "📞" },
-  { key: "meeting", label: "Meeting", icon: "🤝" },
-  { key: "linkedin", label: "LinkedIn", icon: "🔗" },
-  { key: "other", label: "Other", icon: "💬" },
+  { key: "email", label: "Email", icon: "📧", lucide: "lucide:mail" },
+  { key: "text", label: "Text", icon: "📱", lucide: "lucide:smartphone" },
+  { key: "call", label: "Call", icon: "📞", lucide: "lucide:phone" },
+  { key: "meeting", label: "Meeting", icon: "🤝", lucide: "lucide:handshake" },
+  { key: "linkedin", label: "LinkedIn", icon: "🔗", lucide: "lucide:link" },
+  { key: "other", label: "Other", icon: "💬", lucide: "lucide:message-circle" },
 ] as const
 
 export const INDUSTRIES = [
@@ -31,28 +31,28 @@ export const EMOJIS = [
 ] as const
 
 export const MISSIONS = [
-  { key: "scan", icon: "📷", label: "Scan a Business Card", hype: "Done. Like a machine.", xp: 50 },
-  { key: "followup", icon: "✉️", label: "Log a Follow-up", hype: "They'll remember you.", xp: 25 },
-  { key: "hot", icon: "🔥", label: "Follow Up a Hot Lead", hype: "Don't leave them hanging.", xp: 50 },
-  { key: "response", icon: "✅", label: "Log a Response", hype: "They came back. Of course they did.", xp: 100 },
+  { key: "scan", icon: "📷", lucide: "lucide:camera", label: "Scan a Business Card", hype: "Done. Like a machine.", xp: 50 },
+  { key: "followup", icon: "✉️", lucide: "lucide:send", label: "Log a Follow-up", hype: "They'll remember you.", xp: 25 },
+  { key: "hot", icon: "🔥", lucide: "lucide:flame", label: "Follow Up a Hot Lead", hype: "Don't leave them hanging.", xp: 50 },
+  { key: "response", icon: "✅", lucide: "lucide:check-circle", label: "Log a Response", hype: "They came back. Of course they did.", xp: 100 },
 ] as const
 
 export const BADGES = [
-  { key: "card_shark", emoji: "🃏", label: "Card Shark", desc: "Scan 5 cards" },
-  { key: "hot_streak", emoji: "🔥", label: "Hot Streak", desc: "7-day streak" },
-  { key: "speed_dialer", emoji: "⚡", label: "Speed Dialer", desc: "Follow up within 24h" },
-  { key: "networker", emoji: "🌐", label: "Networker", desc: "Add 10 contacts" },
-  { key: "dealmaker", emoji: "💎", label: "Dealmaker", desc: "Response from Hot lead" },
-  { key: "connector", emoji: "🌉", label: "Connector", desc: "Make 3 intros" },
-  { key: "legend", emoji: "👑", label: "Legend", desc: "Reach Level 9" },
+  { key: "card_shark", emoji: "🃏", lucide: "lucide:credit-card", label: "Card Shark", desc: "Scan 5 cards" },
+  { key: "hot_streak", emoji: "🔥", lucide: "lucide:flame", label: "Hot Streak", desc: "7-day streak" },
+  { key: "speed_dialer", emoji: "⚡", lucide: "lucide:zap", label: "Speed Dialer", desc: "Follow up within 24h" },
+  { key: "networker", emoji: "🌐", lucide: "lucide:globe", label: "Networker", desc: "Add 10 contacts" },
+  { key: "dealmaker", emoji: "💎", lucide: "lucide:gem", label: "Dealmaker", desc: "Response from Hot lead" },
+  { key: "connector", emoji: "🌉", lucide: "lucide:git-merge", label: "Connector", desc: "Make 3 intros" },
+  { key: "legend", emoji: "👑", lucide: "lucide:crown", label: "Legend", desc: "Reach Level 9" },
 ] as const
 
 export const VIBE_MOODS = [
-  { e: "😶‍🌫️", title: "Feeling antisocial?", color: "blue", body: "One message. You don't have to be 'on' — just human." },
-  { e: "🔥", title: "You are killing it.", color: "green", body: "Contacts growing, streak alive. This is real momentum." },
-  { e: "😴", title: "A little tired today?", color: "blue", body: "A 2-second reaction keeps the connection warm." },
-  { e: "🏆", title: "You are brilliant at this.", color: "green", body: "You show up and follow through. That's rare." },
-  { e: "🛋️", title: "Introverted this week?", color: "purple", body: "3 hot leads. One message each. Done in 5 minutes." },
+  { e: "😶‍🌫️", lucide: "lucide:cloud", title: "Feeling antisocial?", color: "blue", body: "One message. You don't have to be 'on' — just human." },
+  { e: "🔥", lucide: "lucide:flame", title: "You are killing it.", color: "green", body: "Contacts growing, streak alive. This is real momentum." },
+  { e: "😴", lucide: "lucide:moon", title: "A little tired today?", color: "blue", body: "A 2-second reaction keeps the connection warm." },
+  { e: "🏆", lucide: "lucide:trophy", title: "You are brilliant at this.", color: "green", body: "You show up and follow through. That's rare." },
+  { e: "🛋️", lucide: "lucide:armchair", title: "Introverted this week?", color: "purple", body: "3 hot leads. One message each. Done in 5 minutes." },
 ] as const
 
 export const TOUGH_CARDS = [

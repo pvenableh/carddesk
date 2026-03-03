@@ -11,6 +11,9 @@ dependencies:
   '@directus/sdk':
     specifier: ^20.1.0
     version: 20.3.0
+  '@iconify-json/lucide':
+    specifier: ^1.2.95
+    version: 1.2.95
   '@nuxt/fonts':
     specifier: ^0.12.1
     version: 0.12.1(vite@7.3.1)
@@ -1146,6 +1149,12 @@ packages:
   /@humanwhocodes/retry@0.4.3:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
+
+  /@iconify-json/lucide@1.2.95:
+    resolution: {integrity: sha512-SxDM/NEJtcGGAiLAnaZ7rcmVxkJI8esswTZLCm5BfNcoPf/yawIImb4nNfsu4dtFzP/Cl6KRg+vZq521zOUOnQ==}
+    dependencies:
+      '@iconify/types': 2.0.0
+    dev: false
 
   /@iconify/collections@1.0.656:
     resolution: {integrity: sha512-X17vsrStihw4gEdgT2+46E+ioM506JJh/Jp/reJGZ2URcWhhS4aMnsi9onoGTQ8ppydZ0GJrPuvOyhySiteKsA==}

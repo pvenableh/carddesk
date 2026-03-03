@@ -22,12 +22,12 @@ const curHype = computed(() => HYPE_CARDS[hypeIdx.value % HYPE_CARDS.length])
       </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px">
         <div class="cd-mcard tg" :class="{ sel: sessionMode === 'tough' }" @click="sessionMode = 'tough'">
-          <div style="font-size: 28px; margin-bottom: 6px">💪</div>
+          <div style="font-size: 28px; margin-bottom: 6px"><CdIcon emoji="💪" icon="lucide:dumbbell" :size="28" /></div>
           <div class="cd-mc-lbl">Need a talking to</div>
           <div class="cd-mc-sub">Real talk. Time to move.</div>
         </div>
         <div class="cd-mcard pk" :class="{ sel: sessionMode === 'hype' }" @click="sessionMode = 'hype'">
-          <div style="font-size: 28px; margin-bottom: 6px">🏆</div>
+          <div style="font-size: 28px; margin-bottom: 6px"><CdIcon emoji="🏆" icon="lucide:trophy" :size="28" /></div>
           <div class="cd-mc-lbl">Picker upper</div>
           <div class="cd-mc-sub">Pure hype.</div>
         </div>
@@ -38,7 +38,7 @@ const curHype = computed(() => HYPE_CARDS[hypeIdx.value % HYPE_CARDS.length])
           <div class="cd-sc-q">"{{ curTough.q }}"</div>
           <div class="cd-sc-b" v-html="curTough.b"></div>
           <button class="cd-abtn o" @click="earn(25, '✉️', 'Sent.'); toughIdx++">
-            ✉ Send one text +25 XP
+            <CdIcon emoji="✉" icon="lucide:send" :size="14" /> Send one text +25 XP
           </button>
           <div class="cd-nxt" @click="toughIdx++">Another one →</div>
         </div>
@@ -49,13 +49,13 @@ const curHype = computed(() => HYPE_CARDS[hypeIdx.value % HYPE_CARDS.length])
           <div class="cd-sc-q">"{{ curHype.q }}"</div>
           <div class="cd-sc-b" v-html="curHype.b"></div>
           <button class="cd-abtn g" @click="earn(25, '🚀', 'Logged.'); hypeIdx++">
-            🚀 Log a touchpoint +25 XP
+            <CdIcon emoji="🚀" icon="lucide:rocket" :size="14" /> Log a touchpoint +25 XP
           </button>
           <div class="cd-nxt" @click="hypeIdx++">Another one →</div>
         </div>
       </Transition>
       <div v-if="sessionMode" class="cd-lucky">
-        <div style="font-size: 18px; margin-bottom: 4px">✨</div>
+        <div style="font-size: 18px; margin-bottom: 4px"><CdIcon emoji="✨" icon="lucide:sparkles" :size="18" /></div>
         <div style="font-size: 15px; font-weight: 800; color: #00ff87; margin-bottom: 3px">Remember</div>
         <div style="font-size: 12px; color: #8898b0; line-height: 1.6">
           <em style="color: #f0f4ff">They are the lucky ones to hear from you.</em><br />

@@ -20,6 +20,7 @@ const { isDark, toggleDarkMode } = useTheme()
         <Icon
           :name="isDark ? 'lucide:moon' : 'lucide:sun'"
           class="cd-dm-icon"
+          :size="10"
         />
       </span>
     </button>

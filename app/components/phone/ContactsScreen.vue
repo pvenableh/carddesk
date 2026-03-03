@@ -44,27 +44,27 @@ const alertCs = computed(() =>
           class="cd-pill"
           :class="[{ on: cFilter === r.key }, r.key]"
           @click="cFilter = cFilter === r.key ? '' : r.key"
-        >{{ r.emoji }} {{ r.label }}</button>
+        ><CdIcon :emoji="r.emoji" :icon="r.lucide" :size="12" /> {{ r.label }}</button>
       </div>
     </div>
     <div class="cd-scrl" style="padding: 4px 14px 8px">
       <div v-if="!contacts.length" class="cd-empty">
-        <div style="font-size: 40px; margin-bottom: 10px">🃏</div>
+        <div style="font-size: 40px; margin-bottom: 10px"><CdIcon emoji="🃏" icon="lucide:credit-card" :size="40" /></div>
         <div style="font-size: 18px; font-weight: 800; margin-bottom: 12px">No contacts yet</div>
-        <button class="cd-abtn g" @click="nav('add')">📷 Scan First Card</button>
+        <button class="cd-abtn g" @click="nav('add')"><CdIcon emoji="📷" icon="lucide:camera" :size="14" /> Scan First Card</button>
       </div>
       <div v-for="c in filteredCs" :key="c.id" class="cd-crd" @click="goDetail(c.id)">
         <div class="cd-cbar" :class="c.rating || 'none'"></div>
-        <div class="cd-cav">{{ cEmoji(c) }}</div>
+        <div class="cd-cav"><CdIcon :emoji="cEmoji(c)" icon="lucide:user" :size="19" /></div>
         <div style="flex: 1; min-width: 0">
           <div class="cd-cnm">{{ c.name }}</div>
           <div class="cd-csb">{{ [c.title, c.company].filter(Boolean).join(' · ') }}</div>
         </div>
         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0">
           <span v-if="c.rating" class="cd-rpill" :class="c.rating">
-            {{ getRating(c.rating)?.emoji }} {{ getRating(c.rating)?.label }}
+            <CdIcon :emoji="getRating(c.rating)?.emoji ?? ''" :icon="getRating(c.rating)?.lucide" :size="10" /> {{ getRating(c.rating)?.label }}
           </span>
-          <span v-if="followUpStatus(c) === 'overdue'" style="font-size: 9px; color: #ff6b35; font-weight: 700">⚡ overdue</span>
+          <span v-if="followUpStatus(c) === 'overdue'" style="font-size: 9px; color: #ff6b35; font-weight: 700"><CdIcon emoji="⚡" icon="lucide:alert-triangle" :size="9" /> overdue</span>
         </div>
       </div>
     </div>

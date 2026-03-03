@@ -10,12 +10,12 @@ const emit = defineEmits<{
   nav: [screen: Screen]
 }>()
 
-const tabs: { key: Screen; icon: string; label: string }[] = [
-  { key: 'vibe', icon: '⚡', label: 'Vibe' },
-  { key: 'session', icon: '🎙', label: 'Session' },
-  { key: 'cold', icon: '❄️', label: 'Cold' },
-  { key: 'home', icon: '🏠', label: 'Home' },
-  { key: 'contacts', icon: '👥', label: 'Network' },
+const tabs: { key: Screen; icon: string; lucide: string; label: string }[] = [
+  { key: 'vibe', icon: '⚡', lucide: 'lucide:zap', label: 'Vibe' },
+  { key: 'session', icon: '🎙', lucide: 'lucide:mic', label: 'Session' },
+  { key: 'cold', icon: '❄️', lucide: 'lucide:snowflake', label: 'Cold' },
+  { key: 'home', icon: '🏠', lucide: 'lucide:home', label: 'Home' },
+  { key: 'contacts', icon: '👥', lucide: 'lucide:users', label: 'Network' },
 ]
 </script>
 
@@ -29,7 +29,7 @@ const tabs: { key: Screen; icon: string; label: string }[] = [
       @click="emit('nav', t.key)"
     >
       <span v-if="t.key === 'contacts' && alertCount" class="cd-nav-dot"></span>
-      <span class="cd-bni">{{ t.icon }}</span>{{ t.label }}
+      <span class="cd-bni"><CdIcon :emoji="t.icon" :icon="t.lucide" /></span>{{ t.label }}
     </button>
   </nav>
 </template>

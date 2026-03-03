@@ -32,7 +32,7 @@ function doMission(key: string) {
     <div class="cd-scrl cd-pad">
       <div class="cd-hero">
         <div style="font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 2px; color: #00ff87; margin-bottom: 2px">
-          🏆 Rockstar Networker
+          <CdIcon emoji="🏆" icon="lucide:trophy" :size="11" /> Rockstar Networker
         </div>
         <div style="font-family: 'Bebas Neue', sans-serif; font-size: 40px; line-height: 1">
           {{ curLevel.title }}
@@ -59,7 +59,7 @@ function doMission(key: string) {
           <div class="cd-stat-l">Contacts</div>
         </div>
         <div class="cd-stat">
-          <div class="cd-stat-n" style="color: #ff6b35">🔥{{ hotCount }}</div>
+          <div class="cd-stat-n" style="color: #ff6b35"><CdIcon emoji="🔥" icon="lucide:flame" />{{ hotCount }}</div>
           <div class="cd-stat-l">Hot</div>
         </div>
         <div class="cd-stat">
@@ -69,7 +69,7 @@ function doMission(key: string) {
       </div>
 
       <div class="cd-streak">
-        <div style="font-size: 34px; animation: cd-wig 1.8s ease-in-out infinite; flex-shrink: 0">🔥</div>
+        <div style="font-size: 34px; animation: cd-wig 1.8s ease-in-out infinite; flex-shrink: 0"><CdIcon emoji="🔥" icon="lucide:flame" :size="34" /></div>
         <div style="flex: 1">
           <div style="font-family: 'Bebas Neue', sans-serif; font-size: 40px; color: #ff4500; line-height: 1">{{ xp.streak }}</div>
           <div style="font-size: 11px; font-weight: 700; color: #8898b0; text-transform: uppercase">Day Streak</div>
@@ -87,13 +87,13 @@ function doMission(key: string) {
         @click="doMission(m.key)"
       >
         <div class="cd-msn-glow" :class="xp.completed_missions.includes(m.key) ? 'g' : 'o'"></div>
-        <span style="font-size: 20px; width: 30px; text-align: center; flex-shrink: 0">{{ m.icon }}</span>
+        <span style="font-size: 20px; width: 30px; text-align: center; flex-shrink: 0"><CdIcon :emoji="m.icon" :icon="m.lucide" :size="20" /></span>
         <div style="flex: 1">
           <div style="font-size: 13px; font-weight: 700">{{ m.label }}</div>
           <div style="font-size: 10px; color: #3e4f68; font-style: italic">{{ m.hype }}</div>
         </div>
         <span v-if="!xp.completed_missions.includes(m.key)" class="cd-xpb">+{{ m.xp }} XP</span>
-        <span v-else>✅</span>
+        <span v-else><CdIcon emoji="✅" icon="lucide:check-circle" :size="16" /></span>
       </div>
 
       <div style="display: flex; gap: 7px; overflow-x: auto; padding: 4px 0 8px; margin-top: 8px">
@@ -106,7 +106,7 @@ function doMission(key: string) {
           <div
             style="font-size: 22px; margin-bottom: 3px"
             :style="xp.unlocked_badges.includes(b.key) ? '' : 'filter:grayscale(1);opacity:0.2'"
-          >{{ b.emoji }}</div>
+          ><CdIcon :emoji="b.emoji" :icon="b.lucide" :size="22" /></div>
           <div
             style="font-size: 9px; text-transform: uppercase; font-weight: 700"
             :style="xp.unlocked_badges.includes(b.key) ? 'color:#ffd700' : 'color:#3e4f68'"
