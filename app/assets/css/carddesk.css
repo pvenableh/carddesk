@@ -30,32 +30,32 @@ html[data-theme="sleeper"][data-mode="light"] :root {
   --cd-ice: #4ba8c8;
 }
 
-/* ── Modern Light ── */
+/* ── Modern Light — white on white ── */
 html[data-theme="modern"][data-mode="light"] :root {
-  --cd-bg: #f5f5f7;
+  --cd-bg: #f2f2f7;
   --cd-bg2: #ffffff;
-  --cd-bdr: #e5e5ea;
-  --cd-text: #1d1d1f;
-  --cd-muted: #6e6e73;
-  --cd-dim: #aeaeb2;
+  --cd-bdr: rgba(0, 0, 0, 0.04);
+  --cd-text: #1c1c1e;
+  --cd-muted: #8e8e93;
+  --cd-dim: #c7c7cc;
   --cd-accent: #007aff;
   --cd-blue: #007aff;
-  --cd-orange: #ff6b35;
+  --cd-orange: #ff9500;
   --cd-purple: #af52de;
   --cd-ice: #5ac8fa;
 }
 
 /* ── Modern Dark ── */
 html[data-theme="modern"][data-mode="dark"] :root {
-  --cd-bg: #1c1c1e;
-  --cd-bg2: #2c2c2e;
-  --cd-bdr: #3a3a3c;
+  --cd-bg: #000000;
+  --cd-bg2: #1c1c1e;
+  --cd-bdr: rgba(255, 255, 255, 0.08);
   --cd-text: #f5f5f7;
   --cd-muted: #98989d;
-  --cd-dim: #636366;
+  --cd-dim: #48484a;
   --cd-accent: #0a84ff;
   --cd-blue: #0a84ff;
-  --cd-orange: #ff6b35;
+  --cd-orange: #ff9f0a;
   --cd-purple: #bf5af2;
   --cd-ice: #64d2ff;
 }
@@ -123,6 +123,62 @@ html[data-theme="modern"] .cd-sec-lbl,
 html[data-theme="modern"] .cd-lbl {
   font-family: "Proxima Nova", sans-serif;
   font-weight: 300;
+}
+
+/* ── Modern theme: iOS spacing ── */
+html[data-theme="modern"] .cd-pad { padding: 16px 20px; }
+html[data-theme="modern"] .cd-shdr { padding: 16px 20px 12px; }
+html[data-theme="modern"] .cd-vc { border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+html[data-theme="modern"] .cd-sess-entry { border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+html[data-theme="modern"] .cd-scard { border-radius: 16px; padding: 18px; margin-bottom: 12px; }
+html[data-theme="modern"] .cd-cold-card { border-radius: 16px; margin-bottom: 10px; }
+html[data-theme="modern"] .cd-crd { border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; }
+html[data-theme="modern"] .cd-hero { border-radius: 16px; padding: 18px; margin-bottom: 12px; }
+html[data-theme="modern"] .cd-streak { border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; }
+html[data-theme="modern"] .cd-mission { border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; }
+html[data-theme="modern"] .cd-mood { border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+html[data-theme="modern"] .cd-mcard { border-radius: 16px; padding: 16px 14px; }
+html[data-theme="modern"] .cd-stat { border-radius: 14px; padding: 12px 8px; }
+html[data-theme="modern"] .cd-det-hero { border-radius: 16px; padding: 18px; margin-bottom: 14px; }
+html[data-theme="modern"] .cd-log-sec { border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+html[data-theme="modern"] .cd-info-grid { border-radius: 14px; margin-bottom: 14px; }
+html[data-theme="modern"] .cd-fu-banner { border-radius: 14px; padding: 12px 14px; margin-bottom: 14px; }
+html[data-theme="modern"] .cd-scan-zone { border-radius: 16px; padding: 28px 20px; }
+html[data-theme="modern"] .cd-scan-captured { border-radius: 16px; padding: 28px 20px; }
+html[data-theme="modern"] .cd-abtn { border-radius: 14px; }
+html[data-theme="modern"] .cd-pill { border-radius: 20px; }
+html[data-theme="modern"] .cd-rpill { border-radius: 20px; }
+html[data-theme="modern"] .cd-inp { border-radius: 12px; padding: 11px 14px; }
+
+/* ── Modern theme: card elevation (light mode) ── */
+html[data-theme="modern"][data-mode="light"] .cd-vc,
+html[data-theme="modern"][data-mode="light"] .cd-sess-entry,
+html[data-theme="modern"][data-mode="light"] .cd-mood,
+html[data-theme="modern"][data-mode="light"] .cd-scard,
+html[data-theme="modern"][data-mode="light"] .cd-hero,
+html[data-theme="modern"][data-mode="light"] .cd-streak,
+html[data-theme="modern"][data-mode="light"] .cd-mission,
+html[data-theme="modern"][data-mode="light"] .cd-stat,
+html[data-theme="modern"][data-mode="light"] .cd-mcard,
+html[data-theme="modern"][data-mode="light"] .cd-cold-card,
+html[data-theme="modern"][data-mode="light"] .cd-crd,
+html[data-theme="modern"][data-mode="light"] .cd-det-hero,
+html[data-theme="modern"][data-mode="light"] .cd-log-sec,
+html[data-theme="modern"][data-mode="light"] .cd-info-grid,
+html[data-theme="modern"][data-mode="light"] .cd-fu-banner,
+html[data-theme="modern"][data-mode="light"] .cd-scan-zone,
+html[data-theme="modern"][data-mode="light"] .cd-scan-captured {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+/* ── Modern theme: bottom nav iOS style ── */
+html[data-theme="modern"] .cd-bnav {
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+html[data-theme="modern"][data-mode="light"] .cd-bnav {
+  background: rgba(255, 255, 255, 0.85);
+  border-top-color: rgba(0, 0, 0, 0.06);
 }
 
 /* ── Screen layout ── */

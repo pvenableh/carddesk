@@ -26,10 +26,10 @@ function fuInfo(c: any) {
   const la = lastActivity(c) as any
   const d = daysSince(c)
   return {
-    overdue: { ico: '⚡', cls: 'overdue', title: `${d} days overdue`, sub: `Last: ${la?.label ?? 'Contact'} on ${fmtFull(la?.date)}` },
-    due: { ico: '⏰', cls: 'due', title: `${d} days — right on the line`, sub: 'A quick touch now resets the clock.' },
-    ok: { ico: '✓', cls: 'ok', title: "You're on top of this one", sub: `Last: ${la?.label ?? 'Contact'} on ${fmtFull(la?.date)}` },
-    new: { ico: '👋', cls: 'new', title: 'No activity yet', sub: 'Log your first touchpoint below.' },
+    overdue: { ico: '⚡', lucide: 'lucide:alert-triangle', cls: 'overdue', title: `${d} days overdue`, sub: `Last: ${la?.label ?? 'Contact'} on ${fmtFull(la?.date)}` },
+    due: { ico: '⏰', lucide: 'lucide:clock', cls: 'due', title: `${d} days — right on the line`, sub: 'A quick touch now resets the clock.' },
+    ok: { ico: '✓', lucide: 'lucide:check', cls: 'ok', title: "You're on top of this one", sub: `Last: ${la?.label ?? 'Contact'} on ${fmtFull(la?.date)}` },
+    new: { ico: '👋', lucide: 'lucide:hand', cls: 'new', title: 'No activity yet', sub: 'Log your first touchpoint below.' },
   }[s]
 }
 
@@ -114,7 +114,7 @@ async function doHibernate(id: string) {
               class="cd-rpick"
               :style="editForm.rating === r.key ? 'background:' + r.color + '22;border-color:' + r.color + ';color:' + r.color : ''"
               @click="editForm.rating = editForm.rating === r.key ? '' : r.key"
-            >{{ r.emoji }} {{ r.label }}</button>
+            ><CdIcon :emoji="r.emoji" :icon="r.lucide" :size="12" /> {{ r.label }}</button>
           </div>
           <label class="cd-lbl">Notes</label>
           <textarea v-model="editForm.notes" class="cd-inp" style="min-height: 60px; resize: vertical"></textarea>
@@ -126,7 +126,7 @@ async function doHibernate(id: string) {
           <button class="cd-back" @click="nav('contacts')">← Back</button>
           <div class="cd-det-hero">
             <div style="display: flex; align-items: center; gap: 11px; margin-bottom: 10px">
-              <div class="cd-det-av">{{ cEmoji(selContact) }}</div>
+              <div class="cd-det-av"><CdIcon :emoji="cEmoji(selContact)" icon="lucide:user" :size="24" /></div>
               <div>
                 <div style="font-family: 'Bebas Neue', sans-serif; font-size: 26px; line-height: 1; margin-bottom: 3px">{{ selContact.name }}</div>
                 <div style="font-size: 12px; color: #8898b0">
@@ -136,7 +136,7 @@ async function doHibernate(id: string) {
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap">
               <span v-if="selContact.rating" class="cd-rpill" :class="selContact.rating">
-                {{ getRating(selContact.rating)?.emoji }} {{ getRating(selContact.rating)?.label }}
+                <CdIcon :emoji="getRating(selContact.rating)?.emoji ?? ''" :icon="getRating(selContact.rating)?.lucide" :size="10" /> {{ getRating(selContact.rating)?.label }}
               </span>
               <span v-if="(selContact as any).industry" class="cd-tag-ind">{{ (selContact as any).industry }}</span>
               <span v-if="(selContact as any).met_at" class="cd-tag-ind">@ {{ (selContact as any).met_at }}</span>
@@ -144,7 +144,7 @@ async function doHibernate(id: string) {
           </div>
 
           <div class="cd-fu-banner" :class="followUpStatus(selContact)">
-            <span style="font-size: 20px; flex-shrink: 0">{{ fuInfo(selContact)?.ico }}</span>
+            <span style="font-size: 20px; flex-shrink: 0"><CdIcon :emoji="fuInfo(selContact)?.ico ?? ''" :icon="fuInfo(selContact)?.lucide" :size="20" /></span>
             <div>
               <div class="cd-fu-t">{{ fuInfo(selContact)?.title }}</div>
               <div class="cd-fu-s">{{ fuInfo(selContact)?.sub }}</div>
@@ -153,11 +153,11 @@ async function doHibernate(id: string) {
 
           <div v-if="(selContact as any).email || (selContact as any).phone" class="cd-info-grid">
             <div v-if="(selContact as any).email" class="cd-info-row">
-              <span class="cd-info-k">📧</span>
+              <span class="cd-info-k"><CdIcon emoji="📧" icon="lucide:mail" :size="11" /></span>
               <a :href="'mailto:' + (selContact as any).email" class="cd-info-v" style="color: #4da6ff">{{ (selContact as any).email }}</a>
             </div>
             <div v-if="(selContact as any).phone" class="cd-info-row">
-              <span class="cd-info-k">📞</span>
+              <span class="cd-info-k"><CdIcon emoji="📞" icon="lucide:phone" :size="11" /></span>
               <a :href="'tel:' + (selContact as any).phone" class="cd-info-v" style="color: #4da6ff">{{ (selContact as any).phone }}</a>
             </div>
           </div>
@@ -174,14 +174,14 @@ async function doHibernate(id: string) {
                 :class="{ sel: actType === t.key }"
                 @click="actType = t.key"
               >
-                <span style="font-size: 14px; display: block; margin-bottom: 2px">{{ t.icon }}</span>{{ t.label }}
+                <span style="font-size: 14px; display: block; margin-bottom: 2px"><CdIcon :emoji="t.icon" :icon="t.lucide" :size="14" /></span>{{ t.label }}
               </button>
             </div>
             <input v-model="actNote" class="cd-inp" placeholder="Quick note..." style="margin-bottom: 7px" />
             <div style="display: flex; gap: 6px">
               <input v-model="actDate" type="date" class="cd-inp" style="flex: 0 0 130px; margin-bottom: 0" />
-              <button class="cd-abtn g" style="flex: 1; font-size: 12px; padding: 9px 6px" @click="doLogAct(false)">✅ Log +25 XP</button>
-              <button class="cd-abtn b" style="flex: 1; font-size: 12px; padding: 9px 6px" @click="doLogAct(true)">🎉 Replied! +100</button>
+              <button class="cd-abtn g" style="flex: 1; font-size: 12px; padding: 9px 6px" @click="doLogAct(false)"><CdIcon emoji="✅" icon="lucide:check-circle" :size="12" /> Log +25 XP</button>
+              <button class="cd-abtn b" style="flex: 1; font-size: 12px; padding: 9px 6px" @click="doLogAct(true)"><CdIcon emoji="🎉" icon="lucide:party-popper" :size="12" /> Replied! +100</button>
             </div>
           </div>
 
@@ -194,7 +194,7 @@ async function doHibernate(id: string) {
               v-if="i < sortedActs.length - 1"
               style="position: absolute; left: 17px; top: 36px; width: 2px; bottom: -13px; background: #1c2330"
             ></div>
-            <div class="cd-tl-dot" :class="act.type">{{ getAct(act.type).icon }}</div>
+            <div class="cd-tl-dot" :class="act.type"><CdIcon :emoji="getAct(act.type).icon" :icon="getAct(act.type).lucide" :size="17" /></div>
             <div style="flex: 1; background: #0d1018; border: 1px solid #1c2330; border-radius: 12px; padding: 10px 12px">
               <div style="display: flex; justify-content: space-between; margin-bottom: 4px">
                 <div style="font-size: 14px; font-weight: 800">{{ act.label }}</div>
@@ -216,12 +216,12 @@ async function doHibernate(id: string) {
               class="cd-abtn"
               style="flex: 1; background: transparent; color: #8898b0; border-color: #1c2330; font-size: 12px; padding: 9px"
               @click="startEdit"
-            >✏️ Edit</button>
+            ><CdIcon emoji="✏️" icon="lucide:pencil" :size="12" /> Edit</button>
             <button
               class="cd-abtn"
               style="flex: 1; background: transparent; color: #3e4f68; border-color: #1c2330; font-size: 12px; padding: 9px"
               @click="doHibernate(selContact.id)"
-            >😴 Hibernate</button>
+            ><CdIcon emoji="😴" icon="lucide:moon" :size="12" /> Hibernate</button>
           </div>
         </div>
       </template>

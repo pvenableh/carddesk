@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { Moon, Sun } from 'lucide-vue-next'
-
 const { isDark, toggleDarkMode } = useTheme()
 </script>
 
@@ -19,11 +17,10 @@ const { isDark, toggleDarkMode } = useTheme()
         class="cd-dm-thumb"
         :class="isDark ? 'cd-dm-thumb-on' : 'cd-dm-thumb-off'"
       >
-        <component
-          :is="isDark ? Moon : Sun"
+        <Icon
+          :name="isDark ? 'lucide:moon' : 'lucide:sun'"
           class="cd-dm-icon"
           :size="10"
-          :stroke-width="2.5"
         />
       </span>
     </button>

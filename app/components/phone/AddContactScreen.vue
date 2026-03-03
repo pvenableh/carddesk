@@ -91,13 +91,13 @@ async function doSaveContact() {
 <template>
   <div class="cd-screen on">
     <div class="cd-shdr">
-      <button class="cd-back" @click="nav('contacts')">← Back</button>
+      <button class="cd-back" @click="nav('contacts')"><CdIcon emoji="←" icon="lucide:arrow-left" :size="14" /> Back</button>
       <div class="cd-stitle">Add Contact</div>
     </div>
     <div class="cd-scrl cd-pad">
       <!-- Scan Zone: Idle state -->
       <div v-if="scanStep === 'idle' && !scanning" class="cd-scan-zone" @click="doScanFront">
-        <div style="font-size: 44px; margin-bottom: 8px">📷</div>
+        <div style="font-size: 44px; margin-bottom: 8px"><CdIcon emoji="📷" icon="lucide:camera" :size="44" /></div>
         <div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: #00ff87; margin-bottom: 4px">
           Scan Business Card
         </div>
@@ -109,7 +109,7 @@ async function doSaveContact() {
 
       <!-- Scan Zone: Front captured, prompt for back -->
       <div v-else-if="scanStep === 'captured-front'" class="cd-scan-captured">
-        <div style="font-size: 36px; margin-bottom: 6px">✅</div>
+        <div style="font-size: 36px; margin-bottom: 6px"><CdIcon emoji="✅" icon="lucide:check-circle" :size="36" /></div>
         <div style="font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; color: #00ff87; margin-bottom: 4px">
           Front Captured
         </div>
@@ -118,7 +118,7 @@ async function doSaveContact() {
         </div>
         <div style="display: flex; gap: 8px">
           <button class="cd-abtn g" style="font-size: 13px; padding: 10px" @click="doScanBack">
-            📷 Scan Back
+            <CdIcon emoji="📷" icon="lucide:camera" :size="14" /> Scan Back
           </button>
           <button class="cd-abtn b" style="font-size: 13px; padding: 10px" @click="doSkipBack">
             Skip →
@@ -128,7 +128,7 @@ async function doSaveContact() {
 
       <!-- Scan Zone: Processing -->
       <div v-else class="cd-scan-zone" style="pointer-events: none">
-        <div style="font-size: 44px; animation: cd-wig 0.6s infinite">⏳</div>
+        <div style="font-size: 44px; animation: cd-wig 0.6s infinite"><CdIcon emoji="⏳" icon="lucide:loader" :size="44" /></div>
         <div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: #00ff87; margin-bottom: 4px">
           Reading card...
         </div>
@@ -174,7 +174,7 @@ async function doSaveContact() {
           class="cd-rpick"
           :style="addForm.rating === r.key ? 'background:' + r.color + '22;border-color:' + r.color + ';color:' + r.color : ''"
           @click="addForm.rating = addForm.rating === r.key ? '' : r.key"
-        >{{ r.emoji }} {{ r.label }}</button>
+        ><CdIcon :emoji="r.emoji" :icon="r.lucide" :size="14" /> {{ r.label }}</button>
       </div>
       <label class="cd-lbl">Notes</label>
       <textarea v-model="addForm.notes" class="cd-inp" style="min-height: 60px; resize: vertical" placeholder="Anything useful..."></textarea>
