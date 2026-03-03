@@ -10,7 +10,7 @@ export default defineNuxtConfig({
     '@vueuse/nuxt',
     'shadcn-nuxt',
   ],
-  css: ['~/assets/css/tailwind.css'],
+  css: ['~/assets/css/tailwind.css', '~/assets/css/carddesk.css', '~/assets/css/auth.css'],
   vite: {
     plugins: [
       (await import('@tailwindcss/vite')).default(),
@@ -23,6 +23,7 @@ export default defineNuxtConfig({
       directusUrl: process.env.DIRECTUS_URL || 'http://localhost:8055',
       websocketUrl: process.env.DIRECTUS_WEBSOCKET_URL || 'ws://localhost:8055/websocket',
       directusRoleUser: process.env.NUXT_PUBLIC_DIRECTUS_ROLE_USER || '',
+      appUrl: process.env.APP_URL || 'http://localhost:3000',
     },
   },
   shadcn: { prefix: '', componentDir: './app/components/ui' },
