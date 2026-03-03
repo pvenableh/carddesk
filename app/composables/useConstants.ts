@@ -12,6 +12,7 @@ export const ACT_TYPES = [
   { key: "meeting", label: "Meeting", icon: "🤝", lucide: "lucide:handshake" },
   { key: "linkedin", label: "LinkedIn", icon: "🔗", lucide: "lucide:link" },
   { key: "other", label: "Other", icon: "💬", lucide: "lucide:message-circle" },
+  { key: "contact_added", label: "Contact Added", icon: "➕", lucide: "lucide:user-plus" },
 ] as const
 
 export const INDUSTRIES = [

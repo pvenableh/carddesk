@@ -95,31 +95,47 @@ function goDetail(id: string) {
         <button class="cd-abtn o" @click.stop="goDetail(alertCs[0].id)"><CdIcon emoji="⚡" icon="lucide:zap" :size="14" /> Follow up now</button>
       </div>
 
-      <div v-if="recentActivity.length" class="cd-feed">
+      <div class="cd-feed">
         <div class="cd-feed-hdr">
           <CdIcon emoji="📡" icon="lucide:activity" :size="13" />
           <span>Recent Activity</span>
         </div>
-        <div
-          v-for="(item, i) in recentActivity"
-          :key="item.act.id"
-          class="cd-feed-row"
-          @click="goDetail(item.contact.id)"
-        >
-          <div class="cd-feed-dot" :class="item.act.type">
-            <CdIcon :emoji="getAct(item.act.type).icon" :icon="getAct(item.act.type).lucide" :size="14" />
+        <template v-if="recentActivity.length">
+          <div
+            v-for="(item, i) in recentActivity"
+            :key="item.act.id"
+            class="cd-feed-row"
+            @click="goDetail(item.contact.id)"
+          >
+            <div class="cd-feed-dot" :class="item.act.type">
+              <CdIcon :emoji="getAct(item.act.type).icon" :icon="getAct(item.act.type).lucide" :size="14" />
+            </div>
+            <div class="cd-feed-body">
+              <div class="cd-feed-top">
+                <span class="cd-feed-who">{{ item.contact.name }}</span>
+                <span class="cd-feed-when">{{ fmtRelative(item.act.date) }}</span>
+              </div>
+              <div class="cd-feed-what">
+                {{ item.act.label }}<template v-if="item.act.note"> — {{ item.act.note }}</template>
+              </div>
+              <div v-if="item.act.is_response" class="cd-feed-resp">
+                <CdIcon emoji="✓" icon="lucide:check" :size="10" /> replied
+              </div>
+            </div>
           </div>
-          <div class="cd-feed-body">
-            <div class="cd-feed-top">
-              <span class="cd-feed-who">{{ item.contact.name }}</span>
-              <span class="cd-feed-when">{{ fmtRelative(item.act.date) }}</span>
-            </div>
-            <div class="cd-feed-what">
-              {{ item.act.label }}<template v-if="item.act.note"> — {{ item.act.note }}</template>
-            </div>
-            <div v-if="item.act.is_response" class="cd-feed-resp">
-              <CdIcon emoji="✓" icon="lucide:check" :size="10" /> replied
-            </div>
+        </template>
+        <div v-else class="cd-feed-empty">
+          <div class="cd-feed-empty-msg">No activity yet — get started!</div>
+          <div class="cd-feed-actions">
+            <button class="cd-feed-action" @click="nav('add')">
+              <CdIcon emoji="📷" icon="lucide:scan" :size="14" /> Scan a Card
+            </button>
+            <button class="cd-feed-action" @click="nav('contacts')">
+              <CdIcon emoji="👥" icon="lucide:users" :size="14" /> View Contacts
+            </button>
+            <button class="cd-feed-action" @click="nav('session')">
+              <CdIcon emoji="🎙" icon="lucide:mic" :size="14" /> Start Session
+            </button>
           </div>
         </div>
       </div>
