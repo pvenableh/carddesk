@@ -1,0 +1,117 @@
+/* =============================================================================
+   CUSTOM FONT DECLARATIONS
+   Bauer Bodoni - Elegant serif for headings
+   Proxima Nova - Clean sans-serif for body text
+   AvenirNext - Modern sans-serif alternative
+   Gaegu - Handwriting/signature font
+   ============================================================================= */
+
+/* Bauer Bodoni Pro - Roman (Heading Serif) */
+@font-face {
+  font-family: "Bauer Bodoni";
+  src:
+    url("fonts/BauerBodoniPro1W01-Roman.woff2") format("woff2"),
+    url("fonts/6f3fed9b-35a6-421e-804d-af9573e695dd.woff2") format("woff2"),
+    url("fonts/53e1fe4c-fb2e-4939-baf2-03539bd1ea27.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Proxima Nova - Light */
+@font-face {
+  font-family: "Proxima Nova";
+  src:
+    url("fonts/122f8a1b-fa6b-4246-8d37-911edb4ac556.woff2") format("woff2"),
+    url("fonts/0f51d8b8-bda2-4557-9b56-0a4e94ab63d9.woff") format("woff");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Proxima Nova - Thin */
+@font-face {
+  font-family: "Proxima Nova";
+  src:
+    url("fonts/ad4a2691-471a-4c43-b88f-0d144d680661.woff2") format("woff2"),
+    url("fonts/1da53474-ed78-41a6-872b-7397556eceee.woff") format("woff");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Proxima Nova - Regular */
+@font-face {
+  font-family: "Proxima Nova";
+  src:
+    url("fonts/b38b8bd9-d96f-4bf9-add1-adbd2b08b802.woff2") format("woff2"),
+    url("fonts/52ed7b2d-8a31-4b18-a1d5-8685608b0889.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Avenir Next - UltraLight */
+@font-face {
+  font-family: "Avenir Next";
+  src:
+    url("fonts/AvenirNextLTW01-UltraLight.woff2") format("woff2"),
+    url("fonts/AvenirNextLTW01-UltraLight.woff") format("woff");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Avenir Next - Regular */
+@font-face {
+  font-family: "Avenir Next";
+  src:
+    url("fonts/AvenirNextLTW01-Regular.woff2") format("woff2"),
+    url("fonts/AvenirNextLTW01-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Avenir Next - Medium */
+@font-face {
+  font-family: "Avenir Next";
+  src:
+    url("fonts/AvenirNextLTW01-Medium.woff2") format("woff2"),
+    url("fonts/AvenirNextLTW01-Medium.woff") format("woff");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Gaegu - Handwriting / Signature */
+@font-face {
+  font-family: "Gaegu";
+  src: url("fonts/Gaegu-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Gaegu";
+  src: url("fonts/Gaegu-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Gaegu";
+  src: url("fonts/Gaegu-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}

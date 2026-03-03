@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./fonts.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -15,7 +16,9 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-input, textarea, [contenteditable] {
+input,
+textarea,
+[contenteditable] {
   user-select: text;
   -webkit-user-select: text;
 }
