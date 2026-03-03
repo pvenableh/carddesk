@@ -31,7 +31,8 @@ export default defineEventHandler(async (event) => {
       completed_missions: r.completed_missions ?? [],
       missions_date: r.missions_date ?? "",
     };
-  } catch {
+  } catch (err: any) {
+    console.error("[GET /api/xp] Directus error:", err?.errors ?? err?.message ?? err);
     return null;
   }
 });

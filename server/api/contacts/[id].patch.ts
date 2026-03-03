@@ -12,7 +12,9 @@ export default defineEventHandler(async (event) => {
   const directus = getUserDirectus(session.user.access_token);
   try {
     return await directus.request(updateItem("cd_contacts", id, body));
-  } catch {
-    throw createError({ statusCode: 500, message: "Failed to update contact" });
+  } catch (err: any) {
+    console.error("[PATCH /api/contacts] Directus error:", err?.errors ?? err?.message ?? err);
+    const msg = err?.errors?.[0]?.message ?? err?.message ?? "Failed to update contact";
+    throw createError({ statusCode: err?.status ?? 500, message: msg });
   }
 });

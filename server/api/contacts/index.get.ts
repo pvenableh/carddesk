@@ -43,7 +43,9 @@ export default defineEventHandler(async (event) => {
         limit: 200,
       }),
     );
-  } catch {
-    throw createError({ statusCode: 500, message: "Failed to load contacts" });
+  } catch (err: any) {
+    console.error("[GET /api/contacts] Directus error:", err?.errors ?? err?.message ?? err);
+    const msg = err?.errors?.[0]?.message ?? err?.message ?? "Failed to load contacts";
+    throw createError({ statusCode: err?.status ?? 500, message: msg });
   }
 });
