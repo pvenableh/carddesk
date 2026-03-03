@@ -14,7 +14,7 @@ const tabs: { key: Screen; icon: string; lucide: string; label: string }[] = [
   { key: 'vibe', icon: '⚡', lucide: 'lucide:zap', label: 'Vibe' },
   { key: 'session', icon: '🎙', lucide: 'lucide:mic', label: 'Session' },
   { key: 'cold', icon: '❄️', lucide: 'lucide:snowflake', label: 'Cold' },
-  { key: 'home', icon: '🏠', lucide: 'lucide:home', label: 'Home' },
+  { key: 'home', icon: '📊', lucide: 'lucide:bar-chart-3', label: 'Stats' },
   { key: 'contacts', icon: '👥', lucide: 'lucide:users', label: 'Network' },
 ]
 </script>

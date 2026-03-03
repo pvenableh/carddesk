@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { VIBE_MOODS } from '~/composables/useConstants'
+import { VIBE_MOODS, getAct, cEmoji } from '~/composables/useConstants'
+import { fmtRelative } from '~/composables/useFormatters'
+import type { CdActivity, CdContact } from '~/types/directus'
 
 const { contacts, followUpStatus, daysSince } = useContacts()
 const { state: xp, earn } = useXp()
@@ -11,6 +13,18 @@ const coldCs = computed(() =>
 const alertCs = computed(() =>
   contacts.value.filter((c) => !c.hibernated && followUpStatus(c) === 'overdue')
 )
+
+const recentActivity = computed(() => {
+  const items: { act: CdActivity; contact: CdContact }[] = []
+  for (const c of contacts.value) {
+    for (const a of (c.activities as CdActivity[]) ?? []) {
+      items.push({ act: a, contact: c })
+    }
+  }
+  return items
+    .sort((a, b) => new Date(b.act.date).getTime() - new Date(a.act.date).getTime())
+    .slice(0, 5)
+})
 
 const moodIdx = ref(0)
 const curMood = computed(() => VIBE_MOODS[moodIdx.value % VIBE_MOODS.length])
@@ -79,6 +93,35 @@ function goDetail(id: string) {
           </div>
         </div>
         <button class="cd-abtn o" @click.stop="goDetail(alertCs[0].id)"><CdIcon emoji="⚡" icon="lucide:zap" :size="14" /> Follow up now</button>
+      </div>
+
+      <div v-if="recentActivity.length" class="cd-feed">
+        <div class="cd-feed-hdr">
+          <CdIcon emoji="📡" icon="lucide:activity" :size="13" />
+          <span>Recent Activity</span>
+        </div>
+        <div
+          v-for="(item, i) in recentActivity"
+          :key="item.act.id"
+          class="cd-feed-row"
+          @click="goDetail(item.contact.id)"
+        >
+          <div class="cd-feed-dot" :class="item.act.type">
+            <CdIcon :emoji="getAct(item.act.type).icon" :icon="getAct(item.act.type).lucide" :size="14" />
+          </div>
+          <div class="cd-feed-body">
+            <div class="cd-feed-top">
+              <span class="cd-feed-who">{{ item.contact.name }}</span>
+              <span class="cd-feed-when">{{ fmtRelative(item.act.date) }}</span>
+            </div>
+            <div class="cd-feed-what">
+              {{ item.act.label }}<template v-if="item.act.note"> — {{ item.act.note }}</template>
+            </div>
+            <div v-if="item.act.is_response" class="cd-feed-resp">
+              <CdIcon emoji="✓" icon="lucide:check" :size="10" /> replied
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="cd-mood" @click="moodIdx++">

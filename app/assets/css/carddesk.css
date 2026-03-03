@@ -66,6 +66,7 @@ html[data-mode="light"] .cd-vc.cold-vc,
 html[data-mode="light"] .cd-vc.warn,
 html[data-mode="light"] .cd-sess-entry,
 html[data-mode="light"] .cd-mood,
+html[data-mode="light"] .cd-feed,
 html[data-mode="light"] .cd-scard.tc,
 html[data-mode="light"] .cd-scard.hc,
 html[data-mode="light"] .cd-hero,
@@ -84,6 +85,7 @@ html[data-theme="modern"] .cd-vc.cold-vc,
 html[data-theme="modern"] .cd-vc.warn,
 html[data-theme="modern"] .cd-sess-entry,
 html[data-theme="modern"] .cd-mood,
+html[data-theme="modern"] .cd-feed,
 html[data-theme="modern"] .cd-scard.tc,
 html[data-theme="modern"] .cd-scard.hc,
 html[data-theme="modern"] .cd-hero,
@@ -136,6 +138,7 @@ html[data-theme="modern"] .cd-crd { border-radius: 14px; padding: 12px 14px; mar
 html[data-theme="modern"] .cd-hero { border-radius: 16px; padding: 18px; margin-bottom: 12px; }
 html[data-theme="modern"] .cd-streak { border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; }
 html[data-theme="modern"] .cd-mission { border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; }
+html[data-theme="modern"] .cd-feed { border-radius: 16px; margin-bottom: 12px; }
 html[data-theme="modern"] .cd-mood { border-radius: 16px; padding: 16px; margin-bottom: 12px; }
 html[data-theme="modern"] .cd-mcard { border-radius: 16px; padding: 16px 14px; }
 html[data-theme="modern"] .cd-stat { border-radius: 14px; padding: 12px 8px; }
@@ -160,6 +163,7 @@ html[data-theme="modern"][data-mode="light"] .cd-streak,
 html[data-theme="modern"][data-mode="light"] .cd-mission,
 html[data-theme="modern"][data-mode="light"] .cd-stat,
 html[data-theme="modern"][data-mode="light"] .cd-mcard,
+html[data-theme="modern"][data-mode="light"] .cd-feed,
 html[data-theme="modern"][data-mode="light"] .cd-cold-card,
 html[data-theme="modern"][data-mode="light"] .cd-crd,
 html[data-theme="modern"][data-mode="light"] .cd-det-hero,
@@ -455,6 +459,97 @@ html[data-theme="modern"][data-mode="light"] .cd-bnav {
   font-size: 11px;
   color: var(--cd-muted);
   line-height: 1.6;
+}
+
+/* ── Activity feed ── */
+.cd-feed {
+  background: var(--cd-bg2);
+  border: 1px solid var(--cd-bdr);
+  border-radius: 14px;
+  margin-bottom: 9px;
+  overflow: hidden;
+}
+.cd-feed-hdr {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--cd-dim);
+}
+.cd-feed-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-top: 1px solid var(--cd-bdr);
+}
+.cd-feed-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+.cd-feed-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  border: 1px solid;
+  margin-top: 1px;
+}
+.cd-feed-dot.email { background: rgba(77, 166, 255, 0.1); border-color: rgba(77, 166, 255, 0.25); }
+.cd-feed-dot.call { background: rgba(0, 255, 135, 0.08); border-color: rgba(0, 255, 135, 0.2); }
+.cd-feed-dot.text { background: rgba(184, 125, 255, 0.1); border-color: rgba(184, 125, 255, 0.25); }
+.cd-feed-dot.meeting { background: rgba(255, 215, 0, 0.08); border-color: rgba(255, 215, 0, 0.2); }
+.cd-feed-dot.linkedin,
+.cd-feed-dot.other { background: rgba(255, 255, 255, 0.04); border-color: var(--cd-bdr); }
+.cd-feed-body {
+  flex: 1;
+  min-width: 0;
+}
+.cd-feed-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+.cd-feed-who {
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cd-feed-when {
+  font-size: 10px;
+  color: var(--cd-dim);
+  font-family: monospace;
+  flex-shrink: 0;
+}
+.cd-feed-what {
+  font-size: 11px;
+  color: var(--cd-muted);
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cd-feed-resp {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--cd-accent);
+  margin-top: 2px;
 }
 
 /* ── Session mode cards ── */

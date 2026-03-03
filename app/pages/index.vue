@@ -82,5 +82,8 @@ onMounted(async () => {
   flex: 1;
   overflow: hidden;
   position: relative;
+  max-width: 768px;
+  margin: 0 auto;
+  width: 100%;
 }
 </style>
