@@ -1,0 +1,31 @@
+export default defineNuxtConfig({
+  compatibilityDate: '2024-11-01',
+  future: { compatibilityVersion: 4 },
+  modules: [
+    '@nuxtjs/color-mode',
+    '@nuxt/icon',
+    '@nuxt/image',
+    '@nuxt/fonts',
+    'nuxt-auth-utils',
+    '@vueuse/nuxt',
+    'shadcn-nuxt',
+  ],
+  css: ['~/assets/css/tailwind.css'],
+  vite: {
+    plugins: [
+      (await import('@tailwindcss/vite')).default(),
+    ],
+  },
+  runtimeConfig: {
+    directusStaticToken: process.env.DIRECTUS_STATIC_TOKEN,
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+    public: {
+      directusUrl: process.env.DIRECTUS_URL || 'http://localhost:8055',
+      websocketUrl: process.env.DIRECTUS_WEBSOCKET_URL || 'ws://localhost:8055/websocket',
+      directusRoleUser: process.env.NUXT_PUBLIC_DIRECTUS_ROLE_USER || '',
+    },
+  },
+  shadcn: { prefix: '', componentDir: './app/components/ui' },
+  colorMode: { classSuffix: '', defaultValue: 'dark' },
+  typescript: { strict: true },
+})
