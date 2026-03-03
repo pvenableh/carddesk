@@ -510,6 +510,41 @@ html[data-theme="modern"][data-mode="light"] .cd-bnav {
 .cd-feed-dot.meeting { background: rgba(255, 215, 0, 0.08); border-color: rgba(255, 215, 0, 0.2); }
 .cd-feed-dot.linkedin,
 .cd-feed-dot.other { background: rgba(255, 255, 255, 0.04); border-color: var(--cd-bdr); }
+.cd-feed-dot.contact_added { background: rgba(0, 255, 135, 0.1); border-color: rgba(0, 255, 135, 0.25); }
+.cd-feed-empty {
+  padding: 16px 12px;
+  text-align: center;
+  border-top: 1px solid var(--cd-bdr);
+}
+.cd-feed-empty-msg {
+  font-size: 12px;
+  color: var(--cd-dim);
+  margin-bottom: 12px;
+}
+.cd-feed-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+.cd-feed-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--cd-bdr);
+  background: var(--cd-bg2);
+  color: var(--cd-text);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cd-feed-action:hover {
+  border-color: var(--cd-accent);
+  color: var(--cd-accent);
+}
 .cd-feed-body {
   flex: 1;
   min-width: 0;

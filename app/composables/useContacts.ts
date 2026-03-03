@@ -14,7 +14,21 @@ export function useContacts() {
 
   async function createContact(payload: Partial<CdContact>): Promise<CdContact> {
     const contact = await $fetch<CdContact>('/api/contacts', { method: 'POST', body: payload })
-    contacts.value = [{ ...contact, activities: [] }, ...contacts.value]
+    const now = new Date().toISOString().slice(0, 10)
+    let activity: CdActivity | null = null
+    try {
+      activity = await $fetch<CdActivity>('/api/activities', {
+        method: 'POST',
+        body: {
+          contact: contact.id,
+          type: 'contact_added',
+          label: 'Added to network',
+          date: now,
+          note: payload.met_at ? `Met at ${payload.met_at}` : null,
+        },
+      })
+    } catch { /* activity logging is best-effort */ }
+    contacts.value = [{ ...contact, activities: activity ? [activity] : [] }, ...contacts.value]
     return contact
   }
 
