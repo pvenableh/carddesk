@@ -22,8 +22,12 @@ export default defineEventHandler(async (event) => {
     const isLead = ["hot", "warm"].includes(rating);
     const isClient = c.isClient;
     const status = isClient ? "CLIENT" : isLead ? `LEAD (${rating})` : rating === "nurture" ? "NURTURE" : rating === "cold" ? "COLD" : "NEW CONTACT";
-    let line = `- ${c.name}${c.company ? ` (${c.company})` : ""}${c.title ? ` — ${c.title}` : ""} [${status}]`;
+    let line = `- [ID:${c.id}] ${c.name}${c.company ? ` (${c.company})` : ""}${c.title ? ` — ${c.title}` : ""} [${status}]`;
     if (c.industry) line += ` | Industry: ${c.industry}`;
+    const channels: string[] = [];
+    if (c.hasPhone) channels.push("phone");
+    if (c.hasEmail) channels.push("email");
+    if (channels.length) line += ` | Channels: ${channels.join(", ")}`;
     if (c.daysSince !== null) line += ` | Last activity: ${c.daysSince} days ago`;
     else line += ` | No activity logged`;
     if (c.followUpStatus === "overdue") line += ` ⚠️ OVERDUE`;
@@ -72,8 +76,16 @@ RULES:
 3. For leads: suggest the next step based on their activity (e.g. "Follow up with [Name] — it's been X days since..." or "[Name] replied — time to propose a meeting")
 4. Prioritize overdue and due contacts first
 5. If there are no contacts, suggest ways to add new ones
+6. For each suggestion, include the contact's ID (from the [ID:xxx] tag) and recommend a specific action type
+7. Choose the action based on the contact's available channels and activity pattern:
+   - If they replied to an email → suggest "call" to escalate
+   - If you last called them → suggest "email" or "text" to follow up
+   - If they've gone cold → suggest "text" for a low-pressure check-in
+   - If they're a hot lead → suggest "call" to close
+   - Only suggest "call" or "text" if they have a phone number, and "email" if they have an email
+   - If no contact info is available, use "view" as the action
 
-Return ONLY a JSON array of 3 objects: [{"icon": "emoji", "title": "short title (3-5 words)", "body": "1-2 sentence suggestion"}]
+Return ONLY a JSON array of 3 objects: [{"icon": "emoji", "title": "short title (3-5 words)", "body": "1-2 sentence suggestion", "contactId": "the contact ID from [ID:xxx]", "action": "call|text|email|view"}]
 Use relevant emoji icons. Be specific — mention numbers, contact names, and concrete actions. No generic advice.`;
 
   const client = new Anthropic({ apiKey: config.anthropicApiKey });
