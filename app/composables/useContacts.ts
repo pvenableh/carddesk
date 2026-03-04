@@ -67,6 +67,25 @@ export function useContacts() {
     })
   }
 
+  async function updateActivity(contactId: string, activityId: string, payload: Partial<CdActivity>) {
+    const updated = await $fetch<CdActivity>(`/api/activities/${activityId}`, {
+      method: 'PATCH', body: payload,
+    })
+    contacts.value = contacts.value.map((c) => {
+      if (c.id !== contactId) return c
+      return { ...c, activities: (c.activities as CdActivity[]).map((a) => a.id === activityId ? { ...a, ...updated } : a) }
+    })
+    return updated
+  }
+
+  async function deleteActivity(contactId: string, activityId: string) {
+    await $fetch(`/api/activities/${activityId}`, { method: 'DELETE' })
+    contacts.value = contacts.value.map((c) => {
+      if (c.id !== contactId) return c
+      return { ...c, activities: (c.activities as CdActivity[]).filter((a) => a.id !== activityId) }
+    })
+  }
+
   function lastActivity(contact: CdContact): CdActivity | null {
     const acts = (contact.activities as CdActivity[]) ?? []
     if (!acts.length) return null
@@ -91,6 +110,6 @@ export function useContacts() {
 
   return {
     contacts, loading, error, fetchContacts, createContact, updateContact,
-    hibernate, wake, logActivity, markResponded, lastActivity, daysSince, followUpStatus,
+    hibernate, wake, logActivity, markResponded, updateActivity, deleteActivity, lastActivity, daysSince, followUpStatus,
   }
 }

@@ -1223,6 +1223,10 @@ html[data-theme="modern"][data-mode="light"] .cd-bnav {
   from { opacity: 0; transform: translateY(12px) scale(0.97); }
   to { opacity: 1; transform: none; }
 }
+@keyframes cd-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
 .cd-expand-enter-active,
 .cd-expand-leave-active {
   transition: all 0.2s ease;

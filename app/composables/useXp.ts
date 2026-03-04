@@ -70,6 +70,16 @@ export function useXp() {
     syncXp()
   }
 
+  function deduct(amount: number, icon: string, msg: string, extras: Record<string, any> = {}) {
+    const s = state.value
+    s.total_xp = Math.max(0, s.total_xp - amount)
+    Object.assign(s, extras)
+    for (let i = LEVELS.length - 1; i >= 0; i--)
+      if (s.total_xp >= LEVELS[i].xp) { s.level = LEVELS[i].level; break }
+    showToast(icon, `-${amount} XP`, msg)
+    syncXp()
+  }
+
   async function syncXp() {
     try { await $fetch('/api/xp', { method: 'POST', body: state.value }) }
     catch { if (import.meta.client) localStorage.setItem('cd_xp_backup', JSON.stringify(state.value)) }
@@ -87,5 +97,5 @@ export function useXp() {
     }
   }
 
-  return { state, toast, curLevel, nextLevel, xpPct, earn, loadXp }
+  return { state, toast, curLevel, nextLevel, xpPct, earn, deduct, loadXp }
 }

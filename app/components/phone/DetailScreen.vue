@@ -3,8 +3,8 @@ import { RATINGS, ACT_TYPES, getRating, getAct, cEmoji } from '~/composables/use
 import { todayStr, fmtFull } from '~/composables/useFormatters'
 import confettiLib from 'canvas-confetti'
 
-const { contacts, updateContact, hibernate, logActivity, markResponded, lastActivity, daysSince, followUpStatus } = useContacts()
-const { state: xp, earn } = useXp()
+const { contacts, updateContact, hibernate, logActivity, markResponded, updateActivity, deleteActivity, lastActivity, daysSince, followUpStatus } = useContacts()
+const { state: xp, earn, deduct } = useXp()
 const { selectedId, editing, nav } = useNavigation()
 const { profile } = useProfile()
 
@@ -131,6 +131,49 @@ async function shareContact() {
     shareCopied.value = true
     setTimeout(() => (shareCopied.value = false), 2000)
   }
+}
+
+// Activity edit/delete
+const editingActId = ref<string | null>(null)
+const editActForm = ref<{ type: string; note: string; date: string }>({ type: '', note: '', date: '' })
+const confirmDeleteId = ref<string | null>(null)
+
+function startEditAct(act: any) {
+  editingActId.value = act.id
+  editActForm.value = { type: act.type, note: act.note ?? '', date: act.date }
+}
+
+function cancelEditAct() {
+  editingActId.value = null
+}
+
+async function doSaveAct() {
+  if (!selContact.value || !editingActId.value) return
+  const c = selContact.value as any
+  await updateActivity(c.id, editingActId.value, {
+    type: editActForm.value.type,
+    label: getAct(editActForm.value.type).label,
+    note: editActForm.value.note || undefined,
+    date: editActForm.value.date,
+  } as any)
+  editingActId.value = null
+}
+
+function xpForActivity(act: any): number {
+  if (act.type === 'converted_client') return 200
+  if (act.is_response) return 100
+  const c = selContact.value as any
+  if (c?.rating === 'hot') return 50
+  return 25
+}
+
+async function doDeleteAct(act: any) {
+  if (!selContact.value) return
+  const c = selContact.value as any
+  const amount = xpForActivity(act)
+  await deleteActivity(c.id, act.id)
+  deduct(amount, '🗑️', 'Activity removed.')
+  confirmDeleteId.value = null
 }
 
 // AI suggestions
@@ -291,18 +334,68 @@ async function loadSuggestions() {
             ></div>
             <div class="cd-tl-dot" :class="act.type"><CdIcon :emoji="getAct(act.type).icon" :icon="getAct(act.type).lucide" :size="17" /></div>
             <div style="flex: 1; background: #0d1018; border: 1px solid #1c2330; border-radius: 12px; padding: 10px 12px">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 4px">
-                <div style="font-size: 14px; font-weight: 800">{{ act.label }}</div>
-                <div style="font-size: 10px; color: #3e4f68; font-family: monospace">{{ fmtFull(act.date) }}</div>
-              </div>
-              <div v-if="act.note" style="font-size: 12px; color: #8898b0; line-height: 1.5; margin-bottom: 7px">{{ act.note }}</div>
-              <div
-                class="cd-tl-resp"
-                :class="act.is_response ? 'yes' : 'no'"
-                @click="!act.is_response && doMarkResponded(act.id)"
-              >
-                {{ act.is_response ? '✓ ' + (act.response_note || 'Responded') : '○ No reply — tap to mark' }}
-              </div>
+              <template v-if="editingActId === act.id">
+                <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #4da6ff; margin-bottom: 6px">Edit Activity</div>
+                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px">
+                  <button
+                    v-for="t in ACT_TYPES.slice(0, 6)"
+                    :key="t.key"
+                    class="cd-act-type"
+                    :class="{ sel: editActForm.type === t.key }"
+                    style="font-size: 9px; padding: 3px 5px"
+                    @click="editActForm.type = t.key"
+                  >
+                    <CdIcon :emoji="t.icon" :icon="t.lucide" :size="11" /> {{ t.label }}
+                  </button>
+                </div>
+                <input v-model="editActForm.note" class="cd-inp" placeholder="Note..." style="margin-bottom: 5px; font-size: 12px; padding: 6px 8px" />
+                <div style="display: flex; gap: 5px">
+                  <input v-model="editActForm.date" type="date" class="cd-inp" style="flex: 0 0 120px; margin-bottom: 0; font-size: 11px; padding: 5px 6px" />
+                  <button class="cd-abtn g" style="flex: 1; font-size: 11px; padding: 6px" @click="doSaveAct">Save</button>
+                  <button class="cd-abtn" style="font-size: 11px; padding: 6px; background: transparent; color: #8898b0; border-color: #1c2330" @click="cancelEditAct">Cancel</button>
+                </div>
+              </template>
+              <template v-else>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px">
+                  <div style="font-size: 14px; font-weight: 800">{{ act.label }}</div>
+                  <div style="display: flex; align-items: center; gap: 6px">
+                    <div style="font-size: 10px; color: #3e4f68; font-family: monospace">{{ fmtFull(act.date) }}</div>
+                    <button
+                      style="background: none; border: none; cursor: pointer; padding: 2px; font-size: 10px; color: #3e4f68"
+                      title="Edit"
+                      @click="startEditAct(act)"
+                    ><CdIcon emoji="✏️" icon="lucide:pencil" :size="10" /></button>
+                    <button
+                      style="background: none; border: none; cursor: pointer; padding: 2px; font-size: 10px; color: #3e4f68"
+                      title="Delete"
+                      @click="confirmDeleteId = act.id"
+                    ><CdIcon emoji="🗑" icon="lucide:trash-2" :size="10" /></button>
+                  </div>
+                </div>
+                <div v-if="act.note" style="font-size: 12px; color: #8898b0; line-height: 1.5; margin-bottom: 7px">{{ act.note }}</div>
+                <div v-if="confirmDeleteId === act.id" style="background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); border-radius: 8px; padding: 8px; margin-bottom: 7px">
+                  <div style="font-size: 11px; font-weight: 700; color: #f87171; margin-bottom: 6px">Delete this activity? You'll lose {{ xpForActivity(act) }} XP.</div>
+                  <div style="display: flex; gap: 6px">
+                    <button
+                      class="cd-abtn"
+                      style="flex: 1; font-size: 11px; padding: 6px; background: rgba(248,113,113,0.15); border-color: rgba(248,113,113,0.3); color: #f87171"
+                      @click="doDeleteAct(act)"
+                    ><CdIcon emoji="🗑" icon="lucide:trash-2" :size="10" /> Delete</button>
+                    <button
+                      class="cd-abtn"
+                      style="flex: 1; font-size: 11px; padding: 6px; background: transparent; color: #8898b0; border-color: #1c2330"
+                      @click="confirmDeleteId = null"
+                    >Cancel</button>
+                  </div>
+                </div>
+                <div
+                  class="cd-tl-resp"
+                  :class="act.is_response ? 'yes' : 'no'"
+                  @click="!act.is_response && doMarkResponded(act.id)"
+                >
+                  {{ act.is_response ? '✓ ' + (act.response_note || 'Responded') : '○ No reply — tap to mark' }}
+                </div>
+              </template>
             </div>
           </div>
 
