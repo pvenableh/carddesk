@@ -14,11 +14,30 @@ export default defineEventHandler(async (event) => {
   } catch { /* use empty defaults */ }
 
   const body = await readBody(event);
-  const { contacts, recentActivity, xp } = body;
+  const { contacts, recentActivity, xp, contactDetails } = body;
 
-  const prompt = `You are a sharp, motivating networking coach inside a CRM app called CardDesk. The user wants to know what they should do next to grow their leads and pipeline. Based on their profile, contacts, recent activity, and progress — give exactly 3 specific, actionable suggestions for growing their leads.
+  // Build per-contact summaries for the AI
+  const contactSummaries = (contactDetails ?? []).map((c: any) => {
+    const rating = c.rating || "unrated";
+    const isLead = ["hot", "warm"].includes(rating);
+    const isClient = c.isClient;
+    const status = isClient ? "CLIENT" : isLead ? `LEAD (${rating})` : rating === "nurture" ? "NURTURE" : rating === "cold" ? "COLD" : "NEW CONTACT";
+    let line = `- ${c.name}${c.company ? ` (${c.company})` : ""}${c.title ? ` — ${c.title}` : ""} [${status}]`;
+    if (c.industry) line += ` | Industry: ${c.industry}`;
+    if (c.daysSince !== null) line += ` | Last activity: ${c.daysSince} days ago`;
+    else line += ` | No activity logged`;
+    if (c.followUpStatus === "overdue") line += ` ⚠️ OVERDUE`;
+    else if (c.followUpStatus === "due") line += ` ⏰ DUE`;
+    if (c.lastActivityType) line += ` | Last: ${c.lastActivityType}${c.lastActivityNote ? ` (${c.lastActivityNote})` : ""}`;
+    if (c.lastActivityWasResponse) line += " [THEY REPLIED]";
+    return line;
+  }).join("\n");
 
-Be direct, specific, and reference real data from their profile. Keep the tone punchy and confident — like a coach who knows their stuff. Each suggestion should be 1-2 sentences max.
+  const prompt = `You are a sharp, motivating networking coach inside a CRM app called CardDesk. The user wants to know what they should do next to grow their leads and pipeline.
+
+YOUR PRIMARY TASK: Look at each of the user's actual contacts below. For contacts that are NOT yet leads (cold, unrated, nurture), suggest specific actions to convert them into warm/hot leads. For contacts that ARE already leads (hot, warm), read their recent activity and suggest the best next step to advance the relationship. For overdue contacts, prioritize them.
+
+Be direct, specific, and ALWAYS reference contacts by name. Keep the tone punchy and confident — like a coach who knows their stuff. Each suggestion should be 1-2 sentences max.
 
 User Profile:
 - Name: ${[profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Unknown"}
@@ -36,6 +55,9 @@ Portfolio Summary:
 - Clients: ${contacts?.clients ?? 0}
 - Overdue follow-ups: ${contacts?.overdue ?? 0}
 
+CONTACTS (read each one carefully):
+${contactSummaries || "No contacts yet."}
+
 Recent Activity (last 5):
 ${recentActivity?.length ? recentActivity.map((a: any) => `- ${a.date}: ${a.type} with ${a.contactName}${a.note ? ` (${a.note})` : ""}${a.isResponse ? " [REPLIED]" : ""}`).join("\n") : "No recent activity."}
 
@@ -44,8 +66,15 @@ Progress:
 - Total XP: ${xp?.totalXp ?? 0}
 - Streak: ${xp?.streak ?? 0} days
 
+RULES:
+1. ALWAYS mention specific contact names in your suggestions
+2. For non-leads: suggest how to turn them into a lead (e.g. "Reach out to [Name] about..." or "Upgrade [Name] to warm — they...")
+3. For leads: suggest the next step based on their activity (e.g. "Follow up with [Name] — it's been X days since..." or "[Name] replied — time to propose a meeting")
+4. Prioritize overdue and due contacts first
+5. If there are no contacts, suggest ways to add new ones
+
 Return ONLY a JSON array of 3 objects: [{"icon": "emoji", "title": "short title (3-5 words)", "body": "1-2 sentence suggestion"}]
-Use relevant emoji icons. Be specific — mention numbers, contact names if provided, and concrete actions. No generic advice.`;
+Use relevant emoji icons. Be specific — mention numbers, contact names, and concrete actions. No generic advice.`;
 
   const client = new Anthropic({ apiKey: config.anthropicApiKey });
   try {

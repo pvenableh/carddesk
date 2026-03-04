@@ -110,11 +110,34 @@ async function loadLeadSuggestions() {
       isResponse: item.act.is_response,
     }))
 
+    // Build per-contact details so AI can give specific suggestions
+    const contactDetails = contacts.value
+      .filter((c) => !c.hibernated)
+      .slice(0, 20) // limit to 20 most relevant
+      .map((c) => {
+        const la = ((c.activities as CdActivity[]) ?? [])
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+        return {
+          name: c.name,
+          company: c.company,
+          title: c.title,
+          industry: c.industry,
+          rating: c.rating,
+          isClient: (c as any).is_client,
+          daysSince: daysSince(c),
+          followUpStatus: followUpStatus(c),
+          lastActivityType: la?.type,
+          lastActivityNote: la?.note,
+          lastActivityWasResponse: la?.is_response,
+        }
+      })
+
     const data = await $fetch<Array<{ icon: string; title: string; body: string }>>('/api/ai-lead-suggestions', {
       method: 'POST',
       body: {
         contacts: { total: contacts.value.length, hot, warm, cold, clients, overdue },
         recentActivity: recent,
+        contactDetails,
         xp: { level: xp.value.level, levelTitle: curLevel.value.title, totalXp: xp.value.total_xp, streak: xp.value.streak },
       },
     })
@@ -277,7 +300,7 @@ async function loadLeadSuggestions() {
           </div>
           <button
             class="cd-abtn"
-            style="font-size: 10px; padding: 4px 10px; background: transparent; border-color: #1c2330; color: #4da6ff"
+            style="font-size: 10px; padding: 4px 10px; background: transparent; border-color: #1c2330; color: #4da6ff; width: auto; flex-shrink: 0"
             :disabled="leadSugLoading"
             @click="loadLeadSuggestions"
           >
