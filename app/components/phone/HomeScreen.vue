@@ -6,6 +6,7 @@ const { state: xp, curLevel, nextLevel, xpPct, earn } = useXp()
 const { logout } = useAuth()
 
 const hotCount = computed(() => contacts.value.filter((c) => c.rating === 'hot').length)
+const clientCount = computed(() => contacts.value.filter((c) => (c as any).is_client).length)
 const alertCs = computed(() =>
   contacts.value.filter((c) => !c.hibernated && followUpStatus(c) === 'overdue')
 )
@@ -53,7 +54,7 @@ function doMission(key: string) {
         </div>
       </div>
 
-      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 11px">
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 11px">
         <div class="cd-stat">
           <div class="cd-stat-n" style="color: #00ff87">{{ contacts.length }}</div>
           <div class="cd-stat-l">Contacts</div>
@@ -61,6 +62,10 @@ function doMission(key: string) {
         <div class="cd-stat">
           <div class="cd-stat-n" style="color: #ff6b35"><CdIcon emoji="🔥" icon="lucide:flame" />{{ hotCount }}</div>
           <div class="cd-stat-l">Hot</div>
+        </div>
+        <div class="cd-stat">
+          <div class="cd-stat-n" style="color: #4da6ff"><CdIcon emoji="💰" icon="lucide:badge-check" />{{ clientCount }}</div>
+          <div class="cd-stat-l">Clients</div>
         </div>
         <div class="cd-stat">
           <div class="cd-stat-n" style="color: #ffe033">{{ alertCs.length }}</div>

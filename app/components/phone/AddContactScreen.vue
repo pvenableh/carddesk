@@ -2,7 +2,7 @@
 import { RATINGS, INDUSTRIES } from '~/composables/useConstants'
 import confettiLib from 'canvas-confetti'
 
-const { contacts, createContact } = useContacts()
+const { contacts, createContact, logActivity } = useContacts()
 const { state: xp, earn } = useXp()
 const { scanning, scanStep, error: scanError, captureFront, captureBackAndScan, scanFrontOnly, reset: resetScan } = useCardScan()
 const { nav, goDetail } = useNavigation()
@@ -11,6 +11,7 @@ const addForm = ref({
   firstName: '', lastName: '', title: '', company: '',
   email: '', phone: '', industry: '', metAt: '', rating: '', notes: '',
 })
+const wasScanned = ref(false)
 
 const addName = computed(() =>
   [addForm.value.firstName, addForm.value.lastName].filter(Boolean).join(' ')
@@ -33,6 +34,7 @@ function applyResult(result: any) {
     rating: '',
     notes: [result.website, result.linkedin, result.address].filter(Boolean).join('\n'),
   }
+  wasScanned.value = true
   earn(50, '📷', 'Card scanned!', { total_scans: (xp.value.total_scans ?? 0) + 1 })
   fireConfetti()
 }
@@ -78,11 +80,25 @@ async function doSaveContact() {
     rating: (addForm.value.rating as any) || undefined,
     notes: addForm.value.notes || undefined,
   })
+  if (wasScanned.value) {
+    try {
+      await logActivity({
+        contact: contact.id,
+        type: 'card_scanned',
+        label: 'Card Scanned',
+        date: new Date().toISOString().slice(0, 10),
+        note: contact.company ? `Scanned card from ${contact.company}` : null,
+      } as any)
+    } catch (err: any) {
+      console.error('[AddContact] Failed to log card_scanned activity:', err?.data?.message ?? err)
+    }
+  }
   earn(25, '💾', "They're in your network.", { total_contacts: contacts.value.length })
   addForm.value = {
     firstName: '', lastName: '', title: '', company: '',
     email: '', phone: '', industry: '', metAt: '', rating: '', notes: '',
   }
+  wasScanned.value = false
   resetScan()
   goDetail(contact.id)
 }

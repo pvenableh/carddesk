@@ -13,6 +13,18 @@ export const ACT_TYPES = [
   { key: "linkedin", label: "LinkedIn", icon: "🔗", lucide: "lucide:link" },
   { key: "other", label: "Other", icon: "💬", lucide: "lucide:message-circle" },
   { key: "contact_added", label: "Contact Added", icon: "➕", lucide: "lucide:user-plus" },
+  { key: "card_scanned", label: "Card Scanned", icon: "📷", lucide: "lucide:camera" },
+  { key: "converted_client", label: "Converted to Client", icon: "💰", lucide: "lucide:badge-check" },
+] as const
+
+export const NETWORKING_GOALS = [
+  "Find investors",
+  "Build sales pipeline",
+  "Grow professional network",
+  "Find co-founders/partners",
+  "Recruit talent",
+  "Learn & get mentorship",
+  "Other",
 ] as const
 
 export const INDUSTRIES = [
@@ -45,6 +57,7 @@ export const BADGES = [
   { key: "networker", emoji: "🌐", lucide: "lucide:globe", label: "Networker", desc: "Add 10 contacts" },
   { key: "dealmaker", emoji: "💎", lucide: "lucide:gem", label: "Dealmaker", desc: "Response from Hot lead" },
   { key: "connector", emoji: "🌉", lucide: "lucide:git-merge", label: "Connector", desc: "Make 3 intros" },
+  { key: "closer", emoji: "💰", lucide: "lucide:badge-check", label: "Closer", desc: "Convert a client" },
   { key: "legend", emoji: "👑", lucide: "lucide:crown", label: "Legend", desc: "Reach Level 9" },
 ] as const
 

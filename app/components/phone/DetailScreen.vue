@@ -6,6 +6,7 @@ import confettiLib from 'canvas-confetti'
 const { contacts, updateContact, hibernate, logActivity, markResponded, lastActivity, daysSince, followUpStatus } = useContacts()
 const { state: xp, earn } = useXp()
 const { selectedId, editing, nav } = useNavigation()
+const { profile } = useProfile()
 
 const selContact = computed(() => contacts.value.find((c) => c.id === selectedId.value) ?? null)
 
@@ -90,6 +91,71 @@ async function doHibernate(id: string) {
   await hibernate(id)
   nav('contacts')
 }
+
+// Mark as client
+async function doMarkClient() {
+  if (!selContact.value) return
+  const c = selContact.value as any
+  if (c.is_client) return
+  await updateContact(c.id, { is_client: true, client_at: new Date().toISOString().slice(0, 10) } as any)
+  try {
+    await logActivity({
+      contact: c.id,
+      type: 'converted_client',
+      label: 'Converted to Client',
+      date: new Date().toISOString().slice(0, 10),
+      note: c.company ? `${c.name} at ${c.company} is now a client` : `${c.name} is now a client`,
+    } as any)
+  } catch (err: any) {
+    console.error('[Detail] Failed to log converted_client activity:', err?.data?.message ?? err)
+  }
+  earn(200, '💰', 'Client converted! You closed the deal.', { total_clients: (xp.value.total_clients ?? 0) + 1 })
+  fireConfetti()
+}
+
+// Share contact
+const shareCopied = ref(false)
+async function shareContact() {
+  const c = selContact.value as any
+  if (!c) return
+  const lines = [c.name]
+  if (c.title || c.company) lines.push([c.title, c.company].filter(Boolean).join(' at '))
+  if (c.email) lines.push(`Email: ${c.email}`)
+  if (c.phone) lines.push(`Phone: ${c.phone}`)
+  const text = lines.join('\n')
+  if (navigator.share) {
+    try { await navigator.share({ title: c.name, text }) }
+    catch (err: any) { if (err.name !== 'AbortError') console.error('Share failed:', err) }
+  } else {
+    await navigator.clipboard.writeText(text)
+    shareCopied.value = true
+    setTimeout(() => (shareCopied.value = false), 2000)
+  }
+}
+
+// AI suggestions
+const suggestions = ref<Array<{ icon: string; title: string; body: string }>>([])
+const sugLoading = ref(false)
+const sugError = ref<string | null>(null)
+
+async function loadSuggestions() {
+  if (!selContact.value) return
+  const c = selContact.value as any
+  sugLoading.value = true; sugError.value = null; suggestions.value = []
+  try {
+    const data = await $fetch<Array<{ icon: string; title: string; body: string }>>('/api/ai-suggestions', {
+      method: 'POST',
+      body: {
+        contact: { name: c.name, title: c.title, company: c.company, industry: c.industry, rating: c.rating, notes: c.notes },
+        activities: sortedActs.value.slice(0, 10).map((a: any) => ({ date: a.date, label: a.label, note: a.note, is_response: a.is_response })),
+        daysSinceLastActivity: daysSince(c),
+        profile: profile.value,
+      },
+    })
+    suggestions.value = data
+  } catch { sugError.value = 'Could not load suggestions' }
+  finally { sugLoading.value = false }
+}
 </script>
 
 <template>
@@ -138,6 +204,9 @@ async function doHibernate(id: string) {
               <span v-if="selContact.rating" class="cd-rpill" :class="selContact.rating">
                 <CdIcon :emoji="getRating(selContact.rating)?.emoji ?? ''" :icon="getRating(selContact.rating)?.lucide" :size="10" /> {{ getRating(selContact.rating)?.label }}
               </span>
+              <span v-if="(selContact as any).is_client" style="background: rgba(0,255,135,0.12); border: 1px solid rgba(0,255,135,0.3); border-radius: 6px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #00ff87">
+                <CdIcon emoji="💰" icon="lucide:badge-check" :size="10" /> Client
+              </span>
               <span v-if="(selContact as any).industry" class="cd-tag-ind">{{ (selContact as any).industry }}</span>
               <span v-if="(selContact as any).met_at" class="cd-tag-ind">@ {{ (selContact as any).met_at }}</span>
             </div>
@@ -159,6 +228,32 @@ async function doHibernate(id: string) {
             <div v-if="(selContact as any).phone" class="cd-info-row">
               <span class="cd-info-k"><CdIcon emoji="📞" icon="lucide:phone" :size="11" /></span>
               <a :href="'tel:' + (selContact as any).phone" class="cd-info-v" style="color: #4da6ff">{{ (selContact as any).phone }}</a>
+            </div>
+          </div>
+
+          <div class="cd-log-sec" style="margin-bottom: 16px">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
+              <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: #3e4f68">
+                Next Steps
+              </div>
+              <button
+                class="cd-abtn"
+                style="font-size: 11px; padding: 5px 10px; background: transparent; border-color: #1c2330; color: #4da6ff"
+                :disabled="sugLoading"
+                @click="loadSuggestions"
+              >
+                <CdIcon emoji="🤖" icon="lucide:sparkles" :size="11" />
+                {{ sugLoading ? 'Thinking...' : suggestions.length ? 'Refresh' : 'Get AI Ideas' }}
+              </button>
+            </div>
+            <div v-if="sugError" style="font-size: 12px; color: #f87171; margin-bottom: 8px">{{ sugError }}</div>
+            <div
+              v-for="(s, i) in suggestions"
+              :key="i"
+              style="background: #0d1018; border: 1px solid #1c2330; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px"
+            >
+              <div style="font-size: 14px; font-weight: 700; margin-bottom: 3px">{{ s.icon }} {{ s.title }}</div>
+              <div style="font-size: 12px; color: #8898b0; line-height: 1.5">{{ s.body }}</div>
             </div>
           </div>
 
@@ -211,12 +306,24 @@ async function doHibernate(id: string) {
             </div>
           </div>
 
+          <button
+            v-if="!(selContact as any).is_client"
+            class="cd-abtn"
+            style="width: 100%; margin: 8px 0; background: rgba(0,255,135,0.08); border-color: rgba(0,255,135,0.3); color: #00ff87; font-size: 14px; padding: 12px; font-weight: 800"
+            @click="doMarkClient"
+          ><CdIcon emoji="💰" icon="lucide:badge-check" :size="14" /> Mark as Client +200 XP</button>
+
           <div style="display: flex; gap: 7px; margin: 8px 0 20px">
             <button
               class="cd-abtn"
               style="flex: 1; background: transparent; color: #8898b0; border-color: #1c2330; font-size: 12px; padding: 9px"
               @click="startEdit"
             ><CdIcon emoji="✏️" icon="lucide:pencil" :size="12" /> Edit</button>
+            <button
+              class="cd-abtn"
+              style="flex: 1; background: transparent; color: #8898b0; border-color: #1c2330; font-size: 12px; padding: 9px"
+              @click="shareContact"
+            ><CdIcon emoji="📤" icon="lucide:share-2" :size="12" /> {{ shareCopied ? 'Copied!' : 'Share' }}</button>
             <button
               class="cd-abtn"
               style="flex: 1; background: transparent; color: #3e4f68; border-color: #1c2330; font-size: 12px; padding: 9px"

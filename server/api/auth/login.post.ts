@@ -1,4 +1,5 @@
 import { authentication, createDirectus, rest } from "@directus/sdk"
+import { fetchUserProfile } from "../../utils/profile"
 
 export default defineEventHandler(async (event) => {
   const { email, password } = await readBody(event)
@@ -11,11 +12,20 @@ export default defineEventHandler(async (event) => {
     const result = await directus.login({ email, password })
     if (!result?.access_token)
       throw createError({ statusCode: 401, message: "Invalid credentials" })
+
+    let profile: Record<string, any> = {}
+    try {
+      profile = await fetchUserProfile(result.access_token)
+    } catch (err) {
+      console.error("[login] Failed to fetch user profile:", err)
+    }
+
     await setUserSession(event, {
       user: {
         email, access_token: result.access_token,
         refresh_token: result.refresh_token, expires: result.expires,
         expires_at: Date.now() + (result.expires ?? 900000),
+        profile,
       },
       loggedInAt: Date.now(),
     })

@@ -1,12 +1,58 @@
 <script setup lang="ts">
+import { INDUSTRIES } from '~/composables/useConstants'
+
 definePageMeta({ middleware: 'auth' })
 
 const { user } = useUserSession()
 const { logout } = useAuth()
 const { theme, isDark, setTheme, toggleDarkMode, THEMES } = useTheme()
+const { profile, loading: profileLoading, saved: profileSaved, loadProfile, saveProfile, fullName, company } = useProfile()
 
 const email = computed(() => (user.value?.email as string) ?? '')
-const initial = computed(() => email.value.charAt(0).toUpperCase() || '?')
+const initial = computed(() => {
+  const name = fullName.value
+  if (name) return name.charAt(0).toUpperCase()
+  return email.value.charAt(0).toUpperCase() || '?'
+})
+
+const profileForm = ref({ first_name: '', last_name: '', title: '', industry: '', networking_goal: '' })
+
+watch(profile, (p) => {
+  profileForm.value = {
+    first_name: p.first_name ?? '',
+    last_name: p.last_name ?? '',
+    title: p.title ?? '',
+    industry: p.industry ?? '',
+    networking_goal: p.networking_goal ?? '',
+  }
+}, { immediate: true })
+
+const { contacts } = useContacts()
+
+onMounted(() => loadProfile())
+
+function doSaveProfile() {
+  saveProfile(profileForm.value)
+}
+
+const goalLoading = ref(false)
+async function suggestGoal() {
+  goalLoading.value = true
+  try {
+    const data = await $fetch<{ goal: string }>('/api/ai-goal', {
+      method: 'POST',
+      body: {
+        contactCount: contacts.value.length,
+        clientCount: contacts.value.filter((c: any) => c.is_client).length,
+      },
+    })
+    if (data.goal) profileForm.value.networking_goal = data.goal
+  } catch (err: any) {
+    console.error('[account] AI goal suggestion failed:', err)
+  } finally {
+    goalLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -16,7 +62,58 @@ const initial = computed(() => email.value.charAt(0).toUpperCase() || '?')
 
       <div class="acct-hero">
         <div class="acct-avatar">{{ initial }}</div>
+        <div v-if="fullName" style="font-size: 16px; font-weight: 800; margin-bottom: 2px">{{ fullName }}</div>
         <div class="acct-email">{{ email }}</div>
+        <div v-if="company" style="font-size: 12px; color: var(--cd-dim); margin-top: 2px">{{ company }}</div>
+      </div>
+
+      <div class="acct-section">
+        <div class="acct-section-title">Your Profile</div>
+        <div class="acct-profile-form">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+            <div>
+              <label class="acct-field-label">First Name</label>
+              <input v-model="profileForm.first_name" class="acct-field-input" placeholder="Jane" />
+            </div>
+            <div>
+              <label class="acct-field-label">Last Name</label>
+              <input v-model="profileForm.last_name" class="acct-field-input" placeholder="Smith" />
+            </div>
+          </div>
+          <label class="acct-field-label">Title / Role</label>
+          <input v-model="profileForm.title" class="acct-field-input" placeholder="VP Sales" />
+          <div v-if="profile.organization?.name" style="margin-top: 4px">
+            <label class="acct-field-label">Organization</label>
+            <div style="padding: 10px 12px; border-radius: 10px; border: 1px solid var(--cd-bdr); background: var(--cd-bg2); color: var(--cd-muted); font-size: 14px">
+              {{ profile.organization.name }}
+              <span v-if="profile.organization.industry" style="color: var(--cd-dim); font-size: 12px"> · {{ profile.organization.industry }}</span>
+            </div>
+          </div>
+          <label class="acct-field-label">Industry</label>
+          <select v-model="profileForm.industry" class="acct-field-input" style="cursor: pointer">
+            <option value="">Select...</option>
+            <option v-for="ind in INDUSTRIES" :key="ind" :value="ind">{{ ind }}</option>
+          </select>
+          <div style="display: flex; justify-content: space-between; align-items: center">
+            <label class="acct-field-label">Networking Goal</label>
+            <button
+              class="acct-ai-btn"
+              :disabled="goalLoading"
+              @click="suggestGoal"
+            >
+              {{ goalLoading ? 'Thinking...' : 'AI Suggest' }}
+            </button>
+          </div>
+          <textarea
+            v-model="profileForm.networking_goal"
+            class="acct-field-input"
+            style="min-height: 80px; resize: vertical"
+            placeholder="What are you trying to achieve with your network?"
+          ></textarea>
+          <button class="acct-save-btn" @click="doSaveProfile">
+            {{ profileSaved ? 'Saved!' : 'Save Profile' }}
+          </button>
+        </div>
       </div>
 
       <div class="acct-section">
@@ -209,5 +306,71 @@ const initial = computed(() => email.value.charAt(0).toUpperCase() || '?')
 }
 .acct-logout:hover {
   background: rgba(248, 113, 113, 0.12);
+}
+.acct-profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.acct-field-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--cd-dim);
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+.acct-field-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--cd-bdr);
+  background: var(--cd-bg2);
+  color: var(--cd-text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+}
+.acct-field-input:focus {
+  border-color: var(--cd-accent);
+}
+.acct-save-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 11px;
+  border-radius: 10px;
+  border: none;
+  background: var(--cd-accent);
+  color: #000;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.acct-save-btn:hover {
+  opacity: 0.85;
+}
+.acct-ai-btn {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--cd-bdr);
+  background: transparent;
+  color: var(--cd-accent);
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+.acct-ai-btn:hover {
+  opacity: 0.8;
+}
+.acct-ai-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

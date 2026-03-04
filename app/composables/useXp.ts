@@ -17,12 +17,13 @@ const BADGE_CHECKS: Record<string, (s: any) => boolean> = {
   networker: (s) => s.total_contacts >= 10,
   dealmaker: (s) => s.hot_responses >= 1,
   connector: (s) => s.intros >= 3,
+  closer: (s) => s.total_clients >= 1,
   legend: (s) => s.level >= 9,
 }
 
 const DEFAULT = {
   total_xp: 0, level: 1, streak: 0, last_activity_date: '',
-  total_scans: 0, total_contacts: 0, fast_followups: 0, hot_responses: 0, intros: 0,
+  total_scans: 0, total_contacts: 0, total_clients: 0, fast_followups: 0, hot_responses: 0, intros: 0,
   unlocked_badges: [] as string[], completed_missions: [] as string[], missions_date: '',
 }
 

@@ -21,6 +21,8 @@ export interface CdContact {
   rating: 'hot' | 'warm' | 'nurture' | 'cold' | null
   hibernated: boolean
   hibernated_at?: string
+  is_client: boolean
+  client_at?: string
   notes?: string
   activities?: CdActivity[]
 }
@@ -30,7 +32,7 @@ export interface CdActivity {
   user_created: string
   date_created: string
   contact: string | CdContact
-  type: 'email' | 'text' | 'call' | 'meeting' | 'linkedin' | 'other' | 'contact_added'
+  type: 'email' | 'text' | 'call' | 'meeting' | 'linkedin' | 'other' | 'contact_added' | 'card_scanned' | 'converted_client'
   label: string
   date: string
   note?: string
@@ -47,10 +49,27 @@ export interface CdXpState {
   last_activity_date: string
   total_scans: number
   total_contacts: number
+  total_clients: number
   fast_followups: number
   hot_responses: number
   intros: number
   unlocked_badges: string[]
   completed_missions: string[]
   missions_date: string
+}
+
+export interface CdUserProfile {
+  first_name?: string
+  last_name?: string
+  title?: string
+  industry?: string
+  networking_goal?: string
+  location?: string
+  organization?: {
+    id?: number
+    name?: string
+    industry?: string
+    logo?: string
+    address?: string
+  } | null
 }

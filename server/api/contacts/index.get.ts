@@ -22,6 +22,8 @@ export default defineEventHandler(async (event) => {
           "rating",
           "hibernated",
           "hibernated_at",
+          "is_client",
+          "client_at",
           "notes",
           "date_created",
           {
