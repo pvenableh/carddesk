@@ -30,7 +30,7 @@ User Profile:
 - Role: ${profile?.title || "Unknown"}
 - Company: ${profile?.organization?.name || "Unknown"}
 - Industry: ${profile?.industry || profile?.organization?.industry || "Unknown"}
-- Location: ${profile?.organization?.address || "Unknown"}
+- Location: ${profile?.location || profile?.organization?.address || "Unknown"}
 - Networking Goal: ${profile?.networking_goal || "General networking"}
 
 Return ONLY a JSON array of 3 objects: [{"icon": "emoji", "title": "short title", "body": "1-2 sentence suggestion"}]

@@ -1,7 +1,7 @@
 import type { CdUserProfile } from '~/types/directus'
 
 const DEFAULT: CdUserProfile = {
-  first_name: '', last_name: '', title: '', industry: '', networking_goal: '', organization: null,
+  first_name: '', last_name: '', title: '', industry: '', networking_goal: '', location: '', organization: null,
 }
 
 export function useProfile() {
@@ -19,7 +19,7 @@ export function useProfile() {
   }
 
   async function saveProfile(updates: Partial<CdUserProfile>) {
-    const { organization, ...saveable } = updates
+    const { organization, location, ...saveable } = updates
     Object.assign(profile.value, updates)
     saved.value = false
     try {

@@ -64,7 +64,9 @@ export interface CdUserProfile {
   title?: string
   industry?: string
   networking_goal?: string
+  location?: string
   organization?: {
+    id?: number
     name?: string
     industry?: string
     logo?: string
