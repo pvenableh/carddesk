@@ -97,8 +97,29 @@ function goDetail(id: string) {
   gd(id)
 }
 
+function getContact(id?: string) {
+  if (!id) return null
+  return contacts.value.find((c) => c.id === id) ?? null
+}
+
+function doSugAction(s: { contactId?: string; action?: string }) {
+  const c = getContact(s.contactId)
+  if (!c) return
+  if (s.action === 'call' && c.phone) window.open(`tel:${c.phone}`)
+  else if (s.action === 'text' && c.phone) window.open(`sms:${c.phone}`)
+  else if (s.action === 'email' && c.email) window.open(`mailto:${c.email}`)
+  else goDetail(c.id)
+}
+
+const SUG_ACTIONS: Record<string, { label: string; icon: string; lucide: string; color: string }> = {
+  call: { label: 'Call', icon: '📞', lucide: 'lucide:phone', color: '#00ff87' },
+  text: { label: 'Text', icon: '📱', lucide: 'lucide:message-circle', color: '#4da6ff' },
+  email: { label: 'Email', icon: '📧', lucide: 'lucide:mail', color: '#b87dff' },
+  view: { label: 'View', icon: '👤', lucide: 'lucide:user', color: '#8898b0' },
+}
+
 // AI lead suggestions
-const leadSuggestions = ref<Array<{ icon: string; title: string; body: string }>>([])
+const leadSuggestions = ref<Array<{ icon: string; title: string; body: string; contactId?: string; action?: string }>>([])
 const leadSugLoading = ref(false)
 const leadSugError = ref<string | null>(null)
 
@@ -127,12 +148,15 @@ async function loadLeadSuggestions() {
         const la = ((c.activities as CdActivity[]) ?? [])
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
         return {
+          id: c.id,
           name: c.name,
           company: c.company,
           title: c.title,
           industry: c.industry,
           rating: c.rating,
           isClient: (c as any).is_client,
+          hasPhone: !!c.phone,
+          hasEmail: !!c.email,
           daysSince: daysSince(c),
           followUpStatus: followUpStatus(c),
           lastActivityType: la?.type,
@@ -331,6 +355,26 @@ async function loadLeadSuggestions() {
         >
           <div style="font-size: 13px; font-weight: 700; margin-bottom: 2px">{{ s.icon }} {{ s.title }}</div>
           <div style="font-size: 11px; color: #8898b0; line-height: 1.5">{{ s.body }}</div>
+          <div v-if="s.contactId" style="display: flex; gap: 6px; margin-top: 7px">
+            <button
+              v-if="s.action && SUG_ACTIONS[s.action]"
+              class="cd-abtn"
+              style="font-size: 10px; padding: 4px 10px; width: auto; flex-shrink: 0"
+              :style="'border-color:' + SUG_ACTIONS[s.action].color + '44; color:' + SUG_ACTIONS[s.action].color"
+              @click="doSugAction(s)"
+            >
+              <CdIcon :emoji="SUG_ACTIONS[s.action].icon" :icon="SUG_ACTIONS[s.action].lucide" :size="11" />
+              {{ SUG_ACTIONS[s.action].label }}{{ s.action !== 'view' && getContact(s.contactId)?.name ? ' ' + getContact(s.contactId)!.name.split(' ')[0] : '' }}
+            </button>
+            <button
+              v-if="s.action !== 'view'"
+              class="cd-abtn"
+              style="font-size: 10px; padding: 4px 10px; width: auto; flex-shrink: 0; background: transparent; border-color: #1c2330; color: #3e4f68"
+              @click="goDetail(s.contactId!)"
+            >
+              <CdIcon emoji="👤" icon="lucide:user" :size="11" /> View
+            </button>
+          </div>
         </div>
       </div>
 
