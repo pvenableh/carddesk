@@ -1,12 +1,11 @@
 import { createItem, updateItem, readItems } from "@directus/sdk";
 import { getUserDirectus } from "../../utils/directus";
+import { getValidToken } from "../../utils/auth";
 
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event);
-  if (!session?.user?.access_token)
-    throw createError({ statusCode: 401, message: "Not authenticated" });
+  const token = await getValidToken(event);
   const body = await readBody(event);
-  const directus = getUserDirectus(session.user.access_token);
+  const directus = getUserDirectus(token);
   const payload = {
     total_xp: body.total_xp ?? 0,
     level: body.level ?? 1,

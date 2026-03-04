@@ -1,9 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { getValidToken } from "../utils/auth";
 
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event);
-  if (!session?.user?.access_token)
-    throw createError({ statusCode: 401, message: "Not authenticated" });
+  await getValidToken(event);
   const body = await readBody(event);
 
   // Support both { image, mediaType } (legacy) and { images: [{ data, mediaType }] }
