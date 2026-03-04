@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { MISSIONS, BADGES } from '~/composables/useConstants'
+import { MISSIONS, BADGES, ACT_TYPES, getAct } from '~/composables/useConstants'
+import { todayStr } from '~/composables/useFormatters'
 
-const { contacts, followUpStatus } = useContacts()
+const { contacts, followUpStatus, logActivity } = useContacts()
 const { state: xp, curLevel, nextLevel, xpPct, earn } = useXp()
 const { logout } = useAuth()
 
@@ -25,6 +26,39 @@ function doMission(key: string) {
   if (xp.value.completed_missions.includes(key)) return
   xp.value.completed_missions.push(key)
   earn(50, '🎯', 'Mission complete.')
+}
+
+// Quick-log event
+const logOpen = ref(false)
+const logContact = ref('')
+const logType = ref('email')
+const logNote = ref('')
+const logDate = ref(todayStr())
+const logSaving = ref(false)
+
+const activeContacts = computed(() =>
+  contacts.value.filter((c) => !c.hibernated).sort((a, b) => a.name.localeCompare(b.name))
+)
+
+async function doQuickLog() {
+  if (!logContact.value || logSaving.value) return
+  logSaving.value = true
+  try {
+    await logActivity({
+      contact: logContact.value,
+      type: logType.value,
+      label: getAct(logType.value).label,
+      date: logDate.value || todayStr(),
+      note: logNote.value,
+      is_response: false,
+    })
+    earn(25, '✉️', "They'll remember you.")
+    logNote.value = ''
+    logDate.value = todayStr()
+    logContact.value = ''
+    logOpen.value = false
+  } catch { /* silent */ }
+  finally { logSaving.value = false }
 }
 </script>
 
@@ -82,6 +116,53 @@ function doMission(key: string) {
         <div style="display: flex; gap: 4px">
           <div v-for="(d, i) in sDots" :key="i" class="cd-sdot" :class="d"></div>
         </div>
+      </div>
+
+      <div class="cd-vc" style="border-color: rgba(0,255,135,0.15); margin-bottom: 11px">
+        <div
+          style="display: flex; align-items: center; justify-content: space-between; cursor: pointer"
+          @click="logOpen = !logOpen"
+        >
+          <div style="display: flex; align-items: center; gap: 7px">
+            <CdIcon emoji="📝" icon="lucide:pencil-line" :size="16" />
+            <span style="font-size: 13px; font-weight: 800">Quick Log Event</span>
+          </div>
+          <span style="font-size: 11px; color: #3e4f68">{{ logOpen ? '▲' : '▼' }}</span>
+        </div>
+        <template v-if="logOpen">
+          <div style="margin-top: 10px">
+            <label style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #3e4f68; letter-spacing: 0.5px; display: block; margin-bottom: 4px">Contact</label>
+            <select v-model="logContact" class="cd-inp" style="margin-bottom: 8px">
+              <option value="" disabled>Select a contact...</option>
+              <option v-for="c in activeContacts" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+            <label style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #3e4f68; letter-spacing: 0.5px; display: block; margin-bottom: 4px">Type</label>
+            <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px">
+              <button
+                v-for="t in ACT_TYPES.slice(0, 6)"
+                :key="t.key"
+                class="cd-act-type"
+                :class="{ sel: logType === t.key }"
+                @click="logType = t.key"
+              >
+                <span style="font-size: 13px; display: block; margin-bottom: 1px"><CdIcon :emoji="t.icon" :icon="t.lucide" :size="13" /></span>{{ t.label }}
+              </button>
+            </div>
+            <label style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #3e4f68; letter-spacing: 0.5px; display: block; margin-bottom: 4px">Details</label>
+            <textarea v-model="logNote" class="cd-inp" placeholder="What happened? Add details..." style="min-height: 50px; resize: vertical; margin-bottom: 8px"></textarea>
+            <div style="display: flex; gap: 6px">
+              <input v-model="logDate" type="date" class="cd-inp" style="flex: 0 0 130px; margin-bottom: 0" />
+              <button
+                class="cd-abtn g"
+                style="flex: 1; font-size: 12px; padding: 9px 6px"
+                :disabled="!logContact || logSaving"
+                @click="doQuickLog"
+              >
+                <CdIcon emoji="✅" icon="lucide:check-circle" :size="12" /> {{ logSaving ? 'Saving...' : 'Log +25 XP' }}
+              </button>
+            </div>
+          </div>
+        </template>
       </div>
 
       <div

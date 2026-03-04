@@ -4,8 +4,9 @@ import { fmtRelative } from '~/composables/useFormatters'
 import type { CdActivity, CdContact } from '~/types/directus'
 
 const { contacts, followUpStatus, daysSince } = useContacts()
-const { state: xp, earn } = useXp()
+const { state: xp, earn, curLevel } = useXp()
 const { nav } = useNavigation()
+const { profile } = useProfile()
 
 const coldCs = computed(() =>
   contacts.value.filter((c) => c.rating === 'cold' && !c.hibernated)
@@ -34,6 +35,41 @@ const sessionMode = ref<'tough' | 'hype' | null>(null)
 function goDetail(id: string) {
   const { goDetail: gd } = useNavigation()
   gd(id)
+}
+
+// AI lead suggestions
+const leadSuggestions = ref<Array<{ icon: string; title: string; body: string }>>([])
+const leadSugLoading = ref(false)
+const leadSugError = ref<string | null>(null)
+
+async function loadLeadSuggestions() {
+  leadSugLoading.value = true; leadSugError.value = null; leadSuggestions.value = []
+  try {
+    const hot = contacts.value.filter((c) => c.rating === 'hot' && !c.hibernated).length
+    const warm = contacts.value.filter((c) => c.rating === 'warm' && !c.hibernated).length
+    const cold = contacts.value.filter((c) => c.rating === 'cold' && !c.hibernated).length
+    const clients = contacts.value.filter((c) => (c as any).is_client).length
+    const overdue = contacts.value.filter((c) => !c.hibernated && followUpStatus(c) === 'overdue').length
+
+    const recent = recentActivity.value.map((item) => ({
+      date: item.act.date,
+      type: item.act.type,
+      contactName: item.contact.name,
+      note: item.act.note,
+      isResponse: item.act.is_response,
+    }))
+
+    const data = await $fetch<Array<{ icon: string; title: string; body: string }>>('/api/ai-lead-suggestions', {
+      method: 'POST',
+      body: {
+        contacts: { total: contacts.value.length, hot, warm, cold, clients, overdue },
+        recentActivity: recent,
+        xp: { level: xp.value.level, levelTitle: curLevel.value.title, totalXp: xp.value.total_xp, streak: xp.value.streak },
+      },
+    })
+    leadSuggestions.value = data
+  } catch { leadSugError.value = 'Could not load suggestions' }
+  finally { leadSugLoading.value = false }
 }
 </script>
 
@@ -93,6 +129,39 @@ function goDetail(id: string) {
           </div>
         </div>
         <button class="cd-abtn o" @click.stop="goDetail(alertCs[0].id)"><CdIcon emoji="⚡" icon="lucide:zap" :size="14" /> Follow up now</button>
+      </div>
+
+      <div class="cd-vc" style="border-color: rgba(77, 166, 255, 0.2)">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
+          <div style="display: flex; align-items: center; gap: 6px">
+            <CdIcon emoji="🤖" icon="lucide:sparkles" :size="15" />
+            <span style="font-size: 13px; font-weight: 800; color: #4da6ff">What should I do next?</span>
+          </div>
+          <button
+            class="cd-abtn"
+            style="font-size: 10px; padding: 4px 10px; background: transparent; border-color: #1c2330; color: #4da6ff"
+            :disabled="leadSugLoading"
+            @click="loadLeadSuggestions"
+          >
+            <CdIcon emoji="✨" icon="lucide:sparkles" :size="10" />
+            {{ leadSugLoading ? 'Thinking...' : leadSuggestions.length ? 'Refresh' : 'Get AI Ideas' }}
+          </button>
+        </div>
+        <div v-if="leadSugError" style="font-size: 12px; color: #f87171; margin-bottom: 6px">{{ leadSugError }}</div>
+        <div v-if="!leadSuggestions.length && !leadSugLoading && !leadSugError" style="font-size: 11px; color: #3e4f68; line-height: 1.5">
+          Tap <strong style="color: #4da6ff">Get AI Ideas</strong> for personalized suggestions on growing your leads.
+        </div>
+        <div v-if="leadSugLoading" style="text-align: center; padding: 10px 0">
+          <div style="font-size: 12px; color: #8898b0; animation: cd-pulse 1.5s ease-in-out infinite">Analyzing your network...</div>
+        </div>
+        <div
+          v-for="(s, i) in leadSuggestions"
+          :key="i"
+          style="background: #0d1018; border: 1px solid #1c2330; border-radius: 10px; padding: 9px 11px; margin-bottom: 6px"
+        >
+          <div style="font-size: 13px; font-weight: 700; margin-bottom: 2px">{{ s.icon }} {{ s.title }}</div>
+          <div style="font-size: 11px; color: #8898b0; line-height: 1.5">{{ s.body }}</div>
+        </div>
       </div>
 
       <div class="cd-feed">
