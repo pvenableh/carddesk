@@ -23,6 +23,7 @@ export default defineEventHandler(async (event) => {
       last_activity_date: r.last_activity_date ?? "",
       total_scans: r.total_scans ?? 0,
       total_contacts: r.total_contacts ?? 0,
+      total_clients: r.total_clients ?? 0,
       fast_followups: r.fast_followups ?? 0,
       hot_responses: r.hot_responses ?? 0,
       intros: r.intros ?? 0,

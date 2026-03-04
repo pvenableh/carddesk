@@ -92,6 +92,27 @@ async function doHibernate(id: string) {
   nav('contacts')
 }
 
+// Mark as client
+async function doMarkClient() {
+  if (!selContact.value) return
+  const c = selContact.value as any
+  if (c.is_client) return
+  await updateContact(c.id, { is_client: true, client_at: new Date().toISOString().slice(0, 10) } as any)
+  try {
+    await logActivity({
+      contact: c.id,
+      type: 'converted_client',
+      label: 'Converted to Client',
+      date: new Date().toISOString().slice(0, 10),
+      note: c.company ? `${c.name} at ${c.company} is now a client` : `${c.name} is now a client`,
+    } as any)
+  } catch (err: any) {
+    console.error('[Detail] Failed to log converted_client activity:', err?.data?.message ?? err)
+  }
+  earn(200, '💰', 'Client converted! You closed the deal.', { total_clients: (xp.value.total_clients ?? 0) + 1 })
+  fireConfetti()
+}
+
 // Share contact
 const shareCopied = ref(false)
 async function shareContact() {
@@ -182,6 +203,9 @@ async function loadSuggestions() {
             <div style="display: flex; gap: 6px; flex-wrap: wrap">
               <span v-if="selContact.rating" class="cd-rpill" :class="selContact.rating">
                 <CdIcon :emoji="getRating(selContact.rating)?.emoji ?? ''" :icon="getRating(selContact.rating)?.lucide" :size="10" /> {{ getRating(selContact.rating)?.label }}
+              </span>
+              <span v-if="(selContact as any).is_client" style="background: rgba(0,255,135,0.12); border: 1px solid rgba(0,255,135,0.3); border-radius: 6px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #00ff87">
+                <CdIcon emoji="💰" icon="lucide:badge-check" :size="10" /> Client
               </span>
               <span v-if="(selContact as any).industry" class="cd-tag-ind">{{ (selContact as any).industry }}</span>
               <span v-if="(selContact as any).met_at" class="cd-tag-ind">@ {{ (selContact as any).met_at }}</span>
@@ -281,6 +305,13 @@ async function loadSuggestions() {
               </div>
             </div>
           </div>
+
+          <button
+            v-if="!(selContact as any).is_client"
+            class="cd-abtn"
+            style="width: 100%; margin: 8px 0; background: rgba(0,255,135,0.08); border-color: rgba(0,255,135,0.3); color: #00ff87; font-size: 14px; padding: 12px; font-weight: 800"
+            @click="doMarkClient"
+          ><CdIcon emoji="💰" icon="lucide:badge-check" :size="14" /> Mark as Client +200 XP</button>
 
           <div style="display: flex; gap: 7px; margin: 8px 0 20px">
             <button
