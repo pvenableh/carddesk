@@ -244,13 +244,13 @@ async function doQuickLog() {
 
       <div class="cd-vc" style="border-color: rgba(184, 125, 255, 0.2); margin-bottom: 11px">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
-          <div style="display: flex; align-items: center; gap: 6px">
+          <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0">
             <CdIcon emoji="🧠" icon="lucide:brain" :size="15" />
             <span style="font-size: 13px; font-weight: 800; color: #b87dff">Network Insights</span>
           </div>
           <button
             class="cd-abtn"
-            style="font-size: 10px; padding: 4px 10px; background: transparent; border-color: #1c2330; color: #b87dff"
+            style="font-size: 10px; padding: 4px 10px; background: transparent; border-color: #1c2330; color: #b87dff; width: auto; flex-shrink: 0"
             :disabled="insightsLoading"
             @click="loadInsights"
           >
