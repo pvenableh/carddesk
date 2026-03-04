@@ -12,6 +12,7 @@ definePageMeta({ middleware: 'auth' })
 
 const { fetchContacts, followUpStatus, contacts } = useContacts()
 const { toast, loadXp } = useXp()
+const { loadProfile } = useProfile()
 const { screen, nav, transitionName } = useNavigation()
 const { theme } = useTheme()
 
@@ -34,7 +35,7 @@ const alertCs = computed(() =>
 )
 
 onMounted(async () => {
-  await Promise.all([fetchContacts(), loadXp()])
+  await Promise.all([fetchContacts(), loadXp(), loadProfile()])
 })
 </script>
 

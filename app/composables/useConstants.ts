@@ -16,6 +16,16 @@ export const ACT_TYPES = [
   { key: "card_scanned", label: "Card Scanned", icon: "📷", lucide: "lucide:camera" },
 ] as const
 
+export const NETWORKING_GOALS = [
+  "Find investors",
+  "Build sales pipeline",
+  "Grow professional network",
+  "Find co-founders/partners",
+  "Recruit talent",
+  "Learn & get mentorship",
+  "Other",
+] as const
+
 export const INDUSTRIES = [
   "Technology",
   "Finance",

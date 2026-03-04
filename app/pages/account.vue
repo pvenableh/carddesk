@@ -1,12 +1,33 @@
 <script setup lang="ts">
+import { INDUSTRIES, NETWORKING_GOALS } from '~/composables/useConstants'
+
 definePageMeta({ middleware: 'auth' })
 
 const { user } = useUserSession()
 const { logout } = useAuth()
 const { theme, isDark, setTheme, toggleDarkMode, THEMES } = useTheme()
+const { profile, loading: profileLoading, saved: profileSaved, loadProfile, saveProfile } = useProfile()
 
 const email = computed(() => (user.value?.email as string) ?? '')
 const initial = computed(() => email.value.charAt(0).toUpperCase() || '?')
+
+const profileForm = ref({ full_name: '', title: '', company: '', industry: '', networking_goal: '' })
+
+watch(profile, (p) => {
+  profileForm.value = {
+    full_name: p.full_name ?? '',
+    title: p.title ?? '',
+    company: p.company ?? '',
+    industry: p.industry ?? '',
+    networking_goal: p.networking_goal ?? '',
+  }
+}, { immediate: true })
+
+onMounted(() => loadProfile())
+
+function doSaveProfile() {
+  saveProfile(profileForm.value)
+}
 </script>
 
 <template>
@@ -17,6 +38,37 @@ const initial = computed(() => email.value.charAt(0).toUpperCase() || '?')
       <div class="acct-hero">
         <div class="acct-avatar">{{ initial }}</div>
         <div class="acct-email">{{ email }}</div>
+      </div>
+
+      <div class="acct-section">
+        <div class="acct-section-title">Your Profile</div>
+        <div class="acct-profile-form">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+            <div>
+              <label class="acct-field-label">Full Name</label>
+              <input v-model="profileForm.full_name" class="acct-field-input" placeholder="Jane Smith" />
+            </div>
+            <div>
+              <label class="acct-field-label">Title / Role</label>
+              <input v-model="profileForm.title" class="acct-field-input" placeholder="VP Sales" />
+            </div>
+          </div>
+          <label class="acct-field-label">Company</label>
+          <input v-model="profileForm.company" class="acct-field-input" placeholder="Acme Corp" />
+          <label class="acct-field-label">Industry</label>
+          <select v-model="profileForm.industry" class="acct-field-input" style="cursor: pointer">
+            <option value="">Select...</option>
+            <option v-for="ind in INDUSTRIES" :key="ind" :value="ind">{{ ind }}</option>
+          </select>
+          <label class="acct-field-label">Networking Goal</label>
+          <select v-model="profileForm.networking_goal" class="acct-field-input" style="cursor: pointer">
+            <option value="">Select...</option>
+            <option v-for="g in NETWORKING_GOALS" :key="g" :value="g">{{ g }}</option>
+          </select>
+          <button class="acct-save-btn" @click="doSaveProfile">
+            {{ profileSaved ? 'Saved!' : 'Save Profile' }}
+          </button>
+        </div>
       </div>
 
       <div class="acct-section">
@@ -209,5 +261,52 @@ const initial = computed(() => email.value.charAt(0).toUpperCase() || '?')
 }
 .acct-logout:hover {
   background: rgba(248, 113, 113, 0.12);
+}
+.acct-profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.acct-field-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--cd-dim);
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+.acct-field-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--cd-bdr);
+  background: var(--cd-bg2);
+  color: var(--cd-text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+}
+.acct-field-input:focus {
+  border-color: var(--cd-accent);
+}
+.acct-save-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 11px;
+  border-radius: 10px;
+  border: none;
+  background: var(--cd-accent);
+  color: #000;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.acct-save-btn:hover {
+  opacity: 0.85;
 }
 </style>
