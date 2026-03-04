@@ -2,7 +2,6 @@ export interface DirectusSchema {
   cd_contacts: CdContact[]
   cd_activities: CdActivity[]
   cd_xp_state: CdXpState[]
-  cd_user_profile: CdUserProfile[]
 }
 
 export interface CdContact {
@@ -60,11 +59,15 @@ export interface CdXpState {
 }
 
 export interface CdUserProfile {
-  id?: string
-  user_created?: string
-  full_name?: string
+  first_name?: string
+  last_name?: string
   title?: string
-  company?: string
   industry?: string
   networking_goal?: string
+  organization?: {
+    name?: string
+    industry?: string
+    logo?: string
+    address?: string
+  } | null
 }

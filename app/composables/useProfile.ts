@@ -1,7 +1,7 @@
 import type { CdUserProfile } from '~/types/directus'
 
 const DEFAULT: CdUserProfile = {
-  full_name: '', title: '', company: '', industry: '', networking_goal: '',
+  first_name: '', last_name: '', title: '', industry: '', networking_goal: '', organization: null,
 }
 
 export function useProfile() {
@@ -19,10 +19,11 @@ export function useProfile() {
   }
 
   async function saveProfile(updates: Partial<CdUserProfile>) {
+    const { organization, ...saveable } = updates
     Object.assign(profile.value, updates)
     saved.value = false
     try {
-      await $fetch('/api/profile', { method: 'POST', body: profile.value })
+      await $fetch('/api/profile', { method: 'POST', body: saveable })
       saved.value = true
       setTimeout(() => (saved.value = false), 2000)
     } catch (err: any) {
@@ -30,5 +31,11 @@ export function useProfile() {
     }
   }
 
-  return { profile, loading, saved, loadProfile, saveProfile }
+  const fullName = computed(() =>
+    [profile.value.first_name, profile.value.last_name].filter(Boolean).join(' ')
+  )
+
+  const company = computed(() => profile.value.organization?.name ?? '')
+
+  return { profile, loading, saved, loadProfile, saveProfile, fullName, company }
 }

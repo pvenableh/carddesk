@@ -6,18 +6,22 @@ definePageMeta({ middleware: 'auth' })
 const { user } = useUserSession()
 const { logout } = useAuth()
 const { theme, isDark, setTheme, toggleDarkMode, THEMES } = useTheme()
-const { profile, loading: profileLoading, saved: profileSaved, loadProfile, saveProfile } = useProfile()
+const { profile, loading: profileLoading, saved: profileSaved, loadProfile, saveProfile, fullName, company } = useProfile()
 
 const email = computed(() => (user.value?.email as string) ?? '')
-const initial = computed(() => email.value.charAt(0).toUpperCase() || '?')
+const initial = computed(() => {
+  const name = fullName.value
+  if (name) return name.charAt(0).toUpperCase()
+  return email.value.charAt(0).toUpperCase() || '?'
+})
 
-const profileForm = ref({ full_name: '', title: '', company: '', industry: '', networking_goal: '' })
+const profileForm = ref({ first_name: '', last_name: '', title: '', industry: '', networking_goal: '' })
 
 watch(profile, (p) => {
   profileForm.value = {
-    full_name: p.full_name ?? '',
+    first_name: p.first_name ?? '',
+    last_name: p.last_name ?? '',
     title: p.title ?? '',
-    company: p.company ?? '',
     industry: p.industry ?? '',
     networking_goal: p.networking_goal ?? '',
   }
@@ -37,7 +41,9 @@ function doSaveProfile() {
 
       <div class="acct-hero">
         <div class="acct-avatar">{{ initial }}</div>
+        <div v-if="fullName" style="font-size: 16px; font-weight: 800; margin-bottom: 2px">{{ fullName }}</div>
         <div class="acct-email">{{ email }}</div>
+        <div v-if="company" style="font-size: 12px; color: var(--cd-dim); margin-top: 2px">{{ company }}</div>
       </div>
 
       <div class="acct-section">
@@ -45,16 +51,23 @@ function doSaveProfile() {
         <div class="acct-profile-form">
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
             <div>
-              <label class="acct-field-label">Full Name</label>
-              <input v-model="profileForm.full_name" class="acct-field-input" placeholder="Jane Smith" />
+              <label class="acct-field-label">First Name</label>
+              <input v-model="profileForm.first_name" class="acct-field-input" placeholder="Jane" />
             </div>
             <div>
-              <label class="acct-field-label">Title / Role</label>
-              <input v-model="profileForm.title" class="acct-field-input" placeholder="VP Sales" />
+              <label class="acct-field-label">Last Name</label>
+              <input v-model="profileForm.last_name" class="acct-field-input" placeholder="Smith" />
             </div>
           </div>
-          <label class="acct-field-label">Company</label>
-          <input v-model="profileForm.company" class="acct-field-input" placeholder="Acme Corp" />
+          <label class="acct-field-label">Title / Role</label>
+          <input v-model="profileForm.title" class="acct-field-input" placeholder="VP Sales" />
+          <div v-if="profile.organization?.name" style="margin-top: 4px">
+            <label class="acct-field-label">Organization</label>
+            <div style="padding: 10px 12px; border-radius: 10px; border: 1px solid var(--cd-bdr); background: var(--cd-bg2); color: var(--cd-muted); font-size: 14px">
+              {{ profile.organization.name }}
+              <span v-if="profile.organization.industry" style="color: var(--cd-dim); font-size: 12px"> · {{ profile.organization.industry }}</span>
+            </div>
+          </div>
           <label class="acct-field-label">Industry</label>
           <select v-model="profileForm.industry" class="acct-field-input" style="cursor: pointer">
             <option value="">Select...</option>

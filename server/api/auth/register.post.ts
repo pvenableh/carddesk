@@ -1,4 +1,5 @@
 import { createDirectus, rest, registerUser, authentication } from '@directus/sdk'
+import { fetchUserProfile } from '../../utils/profile'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -32,6 +33,13 @@ export default defineEventHandler(async (event) => {
     if (!result?.access_token)
       throw createError({ statusCode: 500, message: 'Registration succeeded but login failed' })
 
+    let profile: Record<string, any> = {}
+    try {
+      profile = await fetchUserProfile(result.access_token)
+    } catch (err) {
+      console.error("[register] Failed to fetch user profile:", err)
+    }
+
     await setUserSession(event, {
       user: {
         email,
@@ -39,6 +47,7 @@ export default defineEventHandler(async (event) => {
         refresh_token: result.refresh_token,
         expires: result.expires,
         expires_at: Date.now() + (result.expires ?? 900000),
+        profile,
       },
       loggedInAt: Date.now(),
     })

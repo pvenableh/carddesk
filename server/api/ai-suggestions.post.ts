@@ -26,10 +26,11 @@ ${activities?.length ? activities.map((a: any) => `- ${a.date}: ${a.label}${a.no
 Days since last activity: ${body.daysSinceLastActivity ?? "N/A"}
 
 User Profile:
-- Name: ${profile?.full_name || "Unknown"}
+- Name: ${[profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Unknown"}
 - Role: ${profile?.title || "Unknown"}
-- Company: ${profile?.company || "Unknown"}
-- Industry: ${profile?.industry || "Unknown"}
+- Company: ${profile?.organization?.name || "Unknown"}
+- Industry: ${profile?.industry || profile?.organization?.industry || "Unknown"}
+- Location: ${profile?.organization?.address || "Unknown"}
 - Networking Goal: ${profile?.networking_goal || "General networking"}
 
 Return ONLY a JSON array of 3 objects: [{"icon": "emoji", "title": "short title", "body": "1-2 sentence suggestion"}]
