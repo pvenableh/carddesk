@@ -32,6 +32,15 @@ const curMood = computed(() => VIBE_MOODS[moodIdx.value % VIBE_MOODS.length])
 
 const sessionMode = ref<'tough' | 'hype' | null>(null)
 
+// Daily hype claim — only once per day
+const hypeClaimedDate = ref('')
+const hypeClaimed = computed(() => hypeClaimedDate.value === new Date().toISOString().slice(0, 10))
+function claimHype() {
+  if (hypeClaimed.value) return
+  hypeClaimedDate.value = new Date().toISOString().slice(0, 10)
+  earn(20, '🏆', 'Daily hype claimed!')
+}
+
 // XP chart — 7-day activity breakdown (reactive to contact/activity changes)
 const last7Days = computed(() => {
   const days: { label: string; date: string; count: number; xp: number; types: Record<string, number> }[] = []
@@ -110,11 +119,34 @@ async function loadLeadSuggestions() {
       isResponse: item.act.is_response,
     }))
 
+    // Build per-contact details so AI can give specific suggestions
+    const contactDetails = contacts.value
+      .filter((c) => !c.hibernated)
+      .slice(0, 20) // limit to 20 most relevant
+      .map((c) => {
+        const la = ((c.activities as CdActivity[]) ?? [])
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+        return {
+          name: c.name,
+          company: c.company,
+          title: c.title,
+          industry: c.industry,
+          rating: c.rating,
+          isClient: (c as any).is_client,
+          daysSince: daysSince(c),
+          followUpStatus: followUpStatus(c),
+          lastActivityType: la?.type,
+          lastActivityNote: la?.note,
+          lastActivityWasResponse: la?.is_response,
+        }
+      })
+
     const data = await $fetch<Array<{ icon: string; title: string; body: string }>>('/api/ai-lead-suggestions', {
       method: 'POST',
       body: {
         contacts: { total: contacts.value.length, hot, warm, cold, clients, overdue },
         recentActivity: recent,
+        contactDetails,
         xp: { level: xp.value.level, levelTitle: curLevel.value.title, totalXp: xp.value.total_xp, streak: xp.value.streak },
       },
     })
@@ -233,17 +265,17 @@ async function loadLeadSuggestions() {
         </template>
       </div>
 
-      <div class="cd-vc hype" @click="earn(20, '🏆', 'Network hype claimed.')">
+      <div class="cd-vc hype" :style="hypeClaimed ? 'opacity: 0.5; pointer-events: none' : ''" @click="claimHype">
         <div class="cd-vct">
-          <span class="cd-vci"><CdIcon emoji="🏆" icon="lucide:trophy" /></span>
+          <span class="cd-vci"><CdIcon :emoji="hypeClaimed ? '✅' : '🏆'" :icon="hypeClaimed ? 'lucide:check-circle' : 'lucide:trophy'" /></span>
           <div>
-            <div class="cd-vch" style="color: #00ff87">Nobody crushes it like you.</div>
+            <div class="cd-vch" style="color: #00ff87">{{ hypeClaimed ? 'Hype claimed today!' : 'Nobody crushes it like you.' }}</div>
             <div class="cd-vcb">
               {{ contacts.length }} contacts · {{ xp.streak }}-day streak.
-              <strong>You're building something real.</strong>
+              <strong>{{ hypeClaimed ? 'Come back tomorrow for more.' : 'You\'re building something real.' }}</strong>
             </div>
           </div>
-          <span class="cd-xpb">+20 XP</span>
+          <span class="cd-xpb">{{ hypeClaimed ? '✓ Done' : '+20 XP' }}</span>
         </div>
       </div>
 
@@ -277,7 +309,7 @@ async function loadLeadSuggestions() {
           </div>
           <button
             class="cd-abtn"
-            style="font-size: 10px; padding: 4px 10px; background: transparent; border-color: #1c2330; color: #4da6ff"
+            style="font-size: 10px; padding: 4px 10px; background: transparent; border-color: #1c2330; color: #4da6ff; width: auto; flex-shrink: 0"
             :disabled="leadSugLoading"
             @click="loadLeadSuggestions"
           >
