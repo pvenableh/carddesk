@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { INDUSTRIES, NETWORKING_GOALS } from '~/composables/useConstants'
+import { INDUSTRIES } from '~/composables/useConstants'
 
 definePageMeta({ middleware: 'auth' })
 
@@ -27,10 +27,31 @@ watch(profile, (p) => {
   }
 }, { immediate: true })
 
+const { contacts } = useContacts()
+
 onMounted(() => loadProfile())
 
 function doSaveProfile() {
   saveProfile(profileForm.value)
+}
+
+const goalLoading = ref(false)
+async function suggestGoal() {
+  goalLoading.value = true
+  try {
+    const data = await $fetch<{ goal: string }>('/api/ai-goal', {
+      method: 'POST',
+      body: {
+        contactCount: contacts.value.length,
+        clientCount: contacts.value.filter((c: any) => c.is_client).length,
+      },
+    })
+    if (data.goal) profileForm.value.networking_goal = data.goal
+  } catch (err: any) {
+    console.error('[account] AI goal suggestion failed:', err)
+  } finally {
+    goalLoading.value = false
+  }
 }
 </script>
 
@@ -73,11 +94,22 @@ function doSaveProfile() {
             <option value="">Select...</option>
             <option v-for="ind in INDUSTRIES" :key="ind" :value="ind">{{ ind }}</option>
           </select>
-          <label class="acct-field-label">Networking Goal</label>
-          <select v-model="profileForm.networking_goal" class="acct-field-input" style="cursor: pointer">
-            <option value="">Select...</option>
-            <option v-for="g in NETWORKING_GOALS" :key="g" :value="g">{{ g }}</option>
-          </select>
+          <div style="display: flex; justify-content: space-between; align-items: center">
+            <label class="acct-field-label">Networking Goal</label>
+            <button
+              class="acct-ai-btn"
+              :disabled="goalLoading"
+              @click="suggestGoal"
+            >
+              {{ goalLoading ? 'Thinking...' : 'AI Suggest' }}
+            </button>
+          </div>
+          <textarea
+            v-model="profileForm.networking_goal"
+            class="acct-field-input"
+            style="min-height: 80px; resize: vertical"
+            placeholder="What are you trying to achieve with your network?"
+          ></textarea>
           <button class="acct-save-btn" @click="doSaveProfile">
             {{ profileSaved ? 'Saved!' : 'Save Profile' }}
           </button>
@@ -321,5 +353,24 @@ function doSaveProfile() {
 }
 .acct-save-btn:hover {
   opacity: 0.85;
+}
+.acct-ai-btn {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--cd-bdr);
+  background: transparent;
+  color: var(--cd-accent);
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+.acct-ai-btn:hover {
+  opacity: 0.8;
+}
+.acct-ai-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>
