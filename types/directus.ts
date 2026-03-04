@@ -30,7 +30,7 @@ export interface CdActivity {
   user_created: string
   date_created: string
   contact: string | CdContact
-  type: 'email' | 'text' | 'call' | 'meeting' | 'linkedin' | 'other' | 'contact_added'
+  type: 'email' | 'text' | 'call' | 'meeting' | 'linkedin' | 'other' | 'contact_added' | 'card_scanned'
   label: string
   date: string
   note?: string
