@@ -1,15 +1,14 @@
 import { updateItem } from "@directus/sdk";
 import { getUserDirectus } from "../../utils/directus";
+import { getValidToken } from "../../utils/auth";
 
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event);
-  if (!session?.user?.access_token)
-    throw createError({ statusCode: 401, message: "Not authenticated" });
+  const token = await getValidToken(event);
   const id = getRouterParam(event, "id");
   if (!id)
     throw createError({ statusCode: 400, message: "Activity ID required" });
   const body = await readBody(event);
-  const directus = getUserDirectus(session.user.access_token);
+  const directus = getUserDirectus(token);
   try {
     return await directus.request(
       updateItem("cd_activities", id, {
