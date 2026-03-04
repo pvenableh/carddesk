@@ -32,6 +32,15 @@ const curMood = computed(() => VIBE_MOODS[moodIdx.value % VIBE_MOODS.length])
 
 const sessionMode = ref<'tough' | 'hype' | null>(null)
 
+// Daily hype claim — only once per day
+const hypeClaimedDate = ref('')
+const hypeClaimed = computed(() => hypeClaimedDate.value === new Date().toISOString().slice(0, 10))
+function claimHype() {
+  if (hypeClaimed.value) return
+  hypeClaimedDate.value = new Date().toISOString().slice(0, 10)
+  earn(20, '🏆', 'Daily hype claimed!')
+}
+
 // XP chart — 7-day activity breakdown (reactive to contact/activity changes)
 const last7Days = computed(() => {
   const days: { label: string; date: string; count: number; xp: number; types: Record<string, number> }[] = []
@@ -256,17 +265,17 @@ async function loadLeadSuggestions() {
         </template>
       </div>
 
-      <div class="cd-vc hype" @click="earn(20, '🏆', 'Network hype claimed.')">
+      <div class="cd-vc hype" :style="hypeClaimed ? 'opacity: 0.5; pointer-events: none' : ''" @click="claimHype">
         <div class="cd-vct">
-          <span class="cd-vci"><CdIcon emoji="🏆" icon="lucide:trophy" /></span>
+          <span class="cd-vci"><CdIcon :emoji="hypeClaimed ? '✅' : '🏆'" :icon="hypeClaimed ? 'lucide:check-circle' : 'lucide:trophy'" /></span>
           <div>
-            <div class="cd-vch" style="color: #00ff87">Nobody crushes it like you.</div>
+            <div class="cd-vch" style="color: #00ff87">{{ hypeClaimed ? 'Hype claimed today!' : 'Nobody crushes it like you.' }}</div>
             <div class="cd-vcb">
               {{ contacts.length }} contacts · {{ xp.streak }}-day streak.
-              <strong>You're building something real.</strong>
+              <strong>{{ hypeClaimed ? 'Come back tomorrow for more.' : 'You\'re building something real.' }}</strong>
             </div>
           </div>
-          <span class="cd-xpb">+20 XP</span>
+          <span class="cd-xpb">{{ hypeClaimed ? '✓ Done' : '+20 XP' }}</span>
         </div>
       </div>
 
