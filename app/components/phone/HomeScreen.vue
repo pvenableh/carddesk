@@ -6,6 +6,7 @@ import type { CdActivity } from '~/types/directus'
 const { contacts, followUpStatus, logActivity } = useContacts()
 const { state: xp, curLevel, nextLevel, xpPct, earn } = useXp()
 const { logout } = useAuth()
+const { getPipelineStats } = usePipeline()
 
 const hotCount = computed(() => contacts.value.filter((c) => c.rating === 'hot').length)
 const clientCount = computed(() => contacts.value.filter((c) => (c as any).is_client).length)
@@ -89,6 +90,9 @@ async function loadInsights() {
         responseRate: responseRate.value,
         contacts: { total: contacts.value.length, clients: clientCount.value },
         xp: { streak: xp.value.streak, level: xp.value.level },
+        pipeline: getPipelineStats().stageCounts,
+        pipelineValue: getPipelineStats().totalValue,
+        stalledCount: getPipelineStats().stalledCount,
       },
     })
     insights.value = data

@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getValidToken } from "../utils/auth";
 import { fetchUserProfile } from "../utils/profile";
+import { getEarnestContext } from "../utils/earnest-context";
 
 export default defineEventHandler(async (event) => {
   const token = await getValidToken(event);
@@ -12,6 +13,16 @@ export default defineEventHandler(async (event) => {
   try {
     profile = await fetchUserProfile(token);
   } catch { /* use empty defaults */ }
+
+  // Fetch Earnest org context if available
+  let earnestContext = "";
+  try {
+    const orgId = profile?.organization?.id;
+    if (orgId) {
+      const ctx = await getEarnestContext(String(orgId));
+      if (ctx) earnestContext = `\n\nEarnest Business Context (org-level):\n${ctx}`;
+    }
+  } catch { /* proceed without */ }
 
   const body = await readBody(event);
   const { contacts, recentActivity, xp, contactDetails } = body;
@@ -34,6 +45,8 @@ export default defineEventHandler(async (event) => {
     else if (c.followUpStatus === "due") line += ` ⏰ DUE`;
     if (c.lastActivityType) line += ` | Last: ${c.lastActivityType}${c.lastActivityNote ? ` (${c.lastActivityNote})` : ""}`;
     if (c.lastActivityWasResponse) line += " [THEY REPLIED]";
+    if (c.pipelineStage) line += ` | Pipeline: ${c.pipelineStage}`;
+    if (c.estimatedValue) line += ` | Value: $${c.estimatedValue}`;
     return line;
   }).join("\n");
 
@@ -58,6 +71,9 @@ Portfolio Summary:
 - Cold contacts: ${contacts?.cold ?? 0}
 - Clients: ${contacts?.clients ?? 0}
 - Overdue follow-ups: ${contacts?.overdue ?? 0}
+
+Pipeline Summary:
+${contacts?.pipeline ? Object.entries(contacts.pipeline).map(([stage, count]) => `- ${stage}: ${count}`).join("\n") : "No pipeline data available."}
 
 CONTACTS (read each one carefully):
 ${contactSummaries || "No contacts yet."}
@@ -84,6 +100,8 @@ RULES:
    - If they're a hot lead → suggest "call" to close
    - Only suggest "call" or "text" if they have a phone number, and "email" if they have an email
    - If no contact info is available, use "view" as the action
+8. Consider pipeline stage when suggesting actions — advance contacts through the pipeline
+${earnestContext}
 
 Return ONLY a JSON array of 3 objects: [{"icon": "emoji", "title": "short title (3-5 words)", "body": "1-2 sentence suggestion", "contactId": "the contact ID from [ID:xxx]", "action": "call|text|email|view"}]
 Use relevant emoji icons. Be specific — mention numbers, contact names, and concrete actions. No generic advice.`;

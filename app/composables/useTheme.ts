@@ -1,4 +1,4 @@
-export type ThemeId = 'sleeper' | 'modern'
+export type ThemeId = 'sleeper' | 'glass'
 
 export interface ThemeOption {
   id: ThemeId
@@ -8,7 +8,7 @@ export interface ThemeOption {
 
 export const THEMES: ThemeOption[] = [
   { id: 'sleeper', label: 'Sleeper', description: 'Dark & neon' },
-  { id: 'modern', label: 'Modern', description: 'Clean & minimal' },
+  { id: 'glass', label: 'Glass', description: 'White-on-white iOS glass' },
 ]
 
 const THEME_KEY = 'cd-theme'
@@ -39,9 +39,11 @@ export function useTheme() {
 
   function init() {
     if (import.meta.client) {
-      const savedTheme = localStorage.getItem(THEME_KEY) as ThemeId | null
+      let savedTheme = localStorage.getItem(THEME_KEY) as string | null
+      // Migrate legacy "modern" theme to "glass"
+      if (savedTheme === 'modern') savedTheme = 'glass'
       if (savedTheme && THEMES.some((t) => t.id === savedTheme)) {
-        theme.value = savedTheme
+        theme.value = savedTheme as ThemeId
       }
       const savedMode = localStorage.getItem(MODE_KEY)
       if (savedMode === 'light' || savedMode === 'dark') {

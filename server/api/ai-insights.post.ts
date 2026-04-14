@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getValidToken } from "../utils/auth";
 import { fetchUserProfile } from "../utils/profile";
+import { getEarnestContext } from "../utils/earnest-context";
 
 export default defineEventHandler(async (event) => {
   const token = await getValidToken(event);
@@ -13,8 +14,18 @@ export default defineEventHandler(async (event) => {
     profile = await fetchUserProfile(token);
   } catch { /* use empty defaults */ }
 
+  // Fetch Earnest org context if available
+  let earnestContext = "";
+  try {
+    const orgId = profile?.organization?.id;
+    if (orgId) {
+      const ctx = await getEarnestContext(String(orgId));
+      if (ctx) earnestContext = `\n\nEarnest Business Context (projects, invoices, clients):\n${ctx}`;
+    }
+  } catch { /* proceed without */ }
+
   const body = await readBody(event);
-  const { industries, channels, ratings, responseRate, contacts, xp } = body;
+  const { industries, channels, ratings, responseRate, contacts, xp, pipeline } = body;
 
   const prompt = `You are a sharp networking strategist inside a CRM app called CardDesk. Analyze this user's network data and give exactly 4 personalized insights — specific, actionable observations about their network with advice on how to connect better.
 
@@ -41,11 +52,17 @@ Total Contacts: ${contacts?.total ?? 0}
 Total Clients: ${contacts?.clients ?? 0}
 Streak: ${xp?.streak ?? 0} days
 
+Pipeline:
+${pipeline ? Object.entries(pipeline).map(([stage, count]) => `- ${stage}: ${count}`).join("\n") : "No pipeline data."}
+Total Pipeline Value: $${body.pipelineValue ?? 0}
+Stalled Deals: ${body.stalledCount ?? 0}
+${earnestContext}
+
 Focus on:
 1. Which industries they're strongest/weakest in and what to do about it
 2. Which communication channels get the best response rates for them
-3. Opportunities they're missing (cold contacts, unrated leads, industries to explore)
-4. A specific connection strategy based on their goal and network shape
+3. Opportunities they're missing (cold contacts, unrated leads, industries to explore, stalled pipeline deals)
+4. Pipeline health — stalled deals, conversion patterns, and revenue potential
 
 Return ONLY a JSON array of 4 objects: [{"icon": "emoji", "title": "short title (3-5 words)", "body": "1 sentence insight with specific advice"}]
 Be direct and specific. Reference actual numbers. No generic advice.`;

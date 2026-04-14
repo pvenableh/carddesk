@@ -9,6 +9,6 @@ defineProps<{
 </script>
 
 <template>
-  <Icon v-if="theme === 'modern' && icon" :name="icon" :size="size" />
+  <Icon v-if="theme === 'glass' && icon" :name="icon" :size="size" />
   <span v-else>{{ emoji }}</span>
 </template>

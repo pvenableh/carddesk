@@ -4,6 +4,8 @@ export interface DirectusSchema {
   cd_xp_state: CdXpState[]
 }
 
+export type PipelineStage = 'new' | 'contacted' | 'qualified' | 'proposal_sent' | 'negotiating' | 'won' | 'lost'
+
 export interface CdContact {
   id: string
   user_created: string
@@ -25,6 +27,10 @@ export interface CdContact {
   client_at?: string
   notes?: string
   activities?: CdActivity[]
+  pipeline_stage?: PipelineStage
+  earnest_lead_id?: string
+  estimated_value?: number
+  lost_reason?: string
 }
 
 export interface CdActivity {
@@ -32,7 +38,7 @@ export interface CdActivity {
   user_created: string
   date_created: string
   contact: string | CdContact
-  type: 'email' | 'text' | 'call' | 'meeting' | 'linkedin' | 'other' | 'contact_added' | 'card_scanned' | 'converted_client'
+  type: 'email' | 'text' | 'call' | 'meeting' | 'linkedin' | 'other' | 'contact_added' | 'card_scanned' | 'converted_client' | 'stage_change' | 'converted_lead'
   label: string
   date: string
   note?: string

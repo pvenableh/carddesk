@@ -16,7 +16,7 @@ const { loadProfile } = useProfile()
 const { screen, nav, transitionName } = useNavigation()
 const { theme } = useTheme()
 
-const rootClass = computed(() => ['cd-root', theme.value === 'modern' ? 'cd-modern' : ''])
+const rootClass = computed(() => ['cd-root', theme.value === 'glass' ? 'cd-glass' : ''])
 
 const screenComponents: Record<Screen, Component> = {
   vibe: PhoneVibeScreen,
@@ -75,7 +75,7 @@ onMounted(async () => {
   color: var(--cd-text);
   font-family: 'Barlow', sans-serif;
 }
-.cd-root.cd-modern {
+.cd-root.cd-glass {
   font-family: "Proxima Nova", sans-serif;
   letter-spacing: 0.01em;
 }

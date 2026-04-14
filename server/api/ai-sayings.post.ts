@@ -14,7 +14,11 @@ export default defineEventHandler(async (event) => {
   } catch { /* use empty defaults */ }
 
   const body = await readBody(event);
-  const { mode, contacts, xp } = body;
+  const { mode, contacts, xp, pipeline } = body;
+
+  const pipelineInfo = pipeline
+    ? `\nPipeline stats:\n- Deals in pipeline: ${pipeline.total ?? 0}\n- Negotiating: ${pipeline.negotiating ?? 0}\n- Stalled: ${pipeline.stalled ?? 0}\n- Recently won: ${pipeline.won ?? 0}\n- Recently lost: ${pipeline.lost ?? 0}\n- Pipeline value: $${pipeline.value ?? 0}`
+    : "";
 
   const toughPrompt = `You are a direct, no-nonsense networking coach. Generate exactly 3 "tough love" motivational cards for a professional who needs a push to follow up with their network. Each card should have a punchy quote and a follow-up body that's 1-2 sentences.
 
@@ -26,8 +30,9 @@ Personalize based on their real data:
 - Hot leads: ${contacts?.hot ?? 0}
 - Overdue: ${contacts?.overdue ?? 0}
 - Streak: ${xp?.streak ?? 0} days
+${pipelineInfo}
 
-Reference specific numbers and their goal. Be direct but caring. Use <em> and <strong> HTML tags for emphasis in the body.
+Reference specific numbers and their goal. Include pipeline-aware coaching like "You have X deals in negotiation — one follow-up could close this week" or "Y leads have been 'contacted' for 2 weeks. Move them forward or let them go." Be direct but caring. Use <em> and <strong> HTML tags for emphasis in the body.
 
 Return ONLY a JSON array: [{"q": "punchy quote", "b": "1-2 sentence body with <em>/<strong> tags"}]`;
 
@@ -42,8 +47,9 @@ Personalize based on their real data:
 - Clients: ${contacts?.clients ?? 0}
 - Streak: ${xp?.streak ?? 0} days
 - Level: ${xp?.level ?? 1}
+${pipelineInfo}
 
-Reference specific numbers and achievements. Make them feel unstoppable. Use <em> and <strong> HTML tags for emphasis in the body.
+Reference specific numbers and achievements. Include pipeline wins like "You closed X deals this month! Your pipeline is hot!" Make them feel unstoppable. Use <em> and <strong> HTML tags for emphasis in the body.
 
 Return ONLY a JSON array: [{"q": "uplifting quote", "b": "1-2 sentence body with <em>/<strong> tags"}]`;
 

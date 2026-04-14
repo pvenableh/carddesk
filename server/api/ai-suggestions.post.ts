@@ -1,8 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getValidToken } from "../utils/auth";
+import { fetchUserProfile } from "../utils/profile";
+import { getEarnestContext } from "../utils/earnest-context";
 
 export default defineEventHandler(async (event) => {
-  await getValidToken(event);
+  const token = await getValidToken(event);
   const body = await readBody(event);
 
   const config = useRuntimeConfig();
@@ -10,6 +12,17 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, message: "Anthropic API key not configured" });
 
   const { contact, activities, profile } = body;
+
+  // Fetch Earnest org context if available
+  let earnestContext = "";
+  try {
+    const userProfile = profile ?? await fetchUserProfile(token);
+    const orgId = userProfile?.organization?.id;
+    if (orgId) {
+      const ctx = await getEarnestContext(String(orgId));
+      if (ctx) earnestContext = `\n\nEarnest Business Context (org-level):\n${ctx}`;
+    }
+  } catch { /* proceed without */ }
 
   const prompt = `You are a networking coach for a professional CRM app. Given this contact and context, suggest exactly 3 specific, actionable next steps the user should take. Each suggestion should be 1-2 sentences, practical, and personalized.
 
@@ -19,6 +32,8 @@ Contact:
 - Company: ${contact.company || "Unknown"}
 - Industry: ${contact.industry || "Unknown"}
 - Rating: ${contact.rating || "Unrated"}
+- Pipeline Stage: ${contact.pipeline_stage || "Not in pipeline"}
+- Estimated Value: ${contact.estimated_value ? "$" + contact.estimated_value.toLocaleString() : "N/A"}
 - Notes: ${contact.notes || "None"}
 
 Activity History:
@@ -32,9 +47,10 @@ User Profile:
 - Industry: ${profile?.industry || profile?.organization?.industry || "Unknown"}
 - Location: ${profile?.location || profile?.organization?.address || "Unknown"}
 - Networking Goal: ${profile?.networking_goal || "General networking"}
+${earnestContext}
 
 Return ONLY a JSON array of 3 objects: [{"icon": "emoji", "title": "short title", "body": "1-2 sentence suggestion"}]
-Use relevant emoji icons. Be specific — mention names, companies, industries. No generic advice.`;
+Use relevant emoji icons. Be specific — mention names, companies, industries. Consider pipeline stage when suggesting next steps. No generic advice.`;
 
   const client = new Anthropic({ apiKey: config.anthropicApiKey });
   try {

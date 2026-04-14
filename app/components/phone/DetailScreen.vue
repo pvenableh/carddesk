@@ -1,14 +1,41 @@
 <script setup lang="ts">
 import { RATINGS, ACT_TYPES, getRating, getAct, cEmoji } from '~/composables/useConstants'
 import { todayStr, fmtFull } from '~/composables/useFormatters'
+import { PIPELINE_STAGES, LOST_REASONS } from '~/composables/usePipeline'
+import type { PipelineStage } from '~/types/directus'
 import confettiLib from 'canvas-confetti'
 
 const { contacts, updateContact, hibernate, logActivity, markResponded, updateActivity, deleteActivity, lastActivity, daysSince, followUpStatus } = useContacts()
 const { state: xp, earn, deduct } = useXp()
 const { selectedId, editing, nav } = useNavigation()
 const { profile } = useProfile()
+const { moveToStage, getStageInfo } = usePipeline()
 
 const selContact = computed(() => contacts.value.find((c) => c.id === selectedId.value) ?? null)
+
+// Pipeline stage management
+const showStageSheet = ref(false)
+const showLostReasonSheet = ref(false)
+const selectedLostReason = ref('')
+
+async function doMoveStage(stage: PipelineStage) {
+  if (!selContact.value) return
+  if (stage === 'lost') {
+    showStageSheet.value = false
+    showLostReasonSheet.value = true
+    return
+  }
+  await moveToStage(selContact.value.id, stage, {})
+  if (stage === 'won') fireConfetti()
+  showStageSheet.value = false
+}
+
+async function doLogLostReason() {
+  if (!selContact.value) return
+  await moveToStage(selContact.value.id, 'lost', { lost_reason: selectedLostReason.value || 'Other' })
+  showLostReasonSheet.value = false
+  selectedLostReason.value = ''
+}
 
 const editForm = ref<Record<string, any>>({})
 const actType = ref('email')
@@ -250,6 +277,20 @@ async function loadSuggestions() {
               <span v-if="(selContact as any).is_client" style="background: rgba(0,255,135,0.12); border: 1px solid rgba(0,255,135,0.3); border-radius: 6px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #00ff87">
                 <CdIcon emoji="💰" icon="lucide:badge-check" :size="10" /> Client
               </span>
+              <button
+                v-if="selContact.pipeline_stage"
+                class="cd-rpill"
+                style="cursor: pointer; background: rgba(77,166,255,0.1); border-color: rgba(77,166,255,0.3); color: #4da6ff"
+                @click="showStageSheet = true"
+              >
+                <CdIcon :emoji="getStageInfo(selContact.pipeline_stage)?.emoji ?? '📊'" :icon="getStageInfo(selContact.pipeline_stage)?.lucide" :size="10" />
+                {{ getStageInfo(selContact.pipeline_stage)?.label }}
+              </button>
+              <button
+                v-else
+                style="font-size: 9px; font-weight: 700; color: var(--cd-dim); background: none; border: 1px dashed var(--cd-bdr); border-radius: 6px; padding: 2px 8px; cursor: pointer"
+                @click="showStageSheet = true"
+              >+ Pipeline</button>
               <span v-if="(selContact as any).industry" class="cd-tag-ind">{{ (selContact as any).industry }}</span>
               <span v-if="(selContact as any).met_at" class="cd-tag-ind">@ {{ (selContact as any).met_at }}</span>
             </div>
@@ -426,5 +467,57 @@ async function loadSuggestions() {
         </div>
       </template>
     </template>
+
+    <!-- Pipeline Stage Sheet -->
+    <Transition name="cd-pop">
+      <div v-if="showStageSheet" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showStageSheet = false">
+        <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 16px; width: 100%; max-width: 768px">
+          <div style="font-size: 14px; font-weight: 800; margin-bottom: 12px">Move to Stage</div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <button
+              v-for="s in PIPELINE_STAGES"
+              :key="s.key"
+              style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-text); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; text-align: left"
+              :style="selContact?.pipeline_stage === s.key ? 'border-color: var(--cd-accent); background: rgba(0,255,135,0.06)' : ''"
+              @click="doMoveStage(s.key)"
+            >
+              <CdIcon :emoji="s.emoji" :icon="s.lucide" :size="16" />
+              {{ s.label }}
+              <span v-if="selContact?.pipeline_stage === s.key" style="margin-left: auto; font-size: 10px; color: var(--cd-accent)">current</span>
+            </button>
+          </div>
+          <button style="width: 100%; padding: 10px; margin-top: 10px; border-radius: 10px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showStageSheet = false">Cancel</button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Lost Reason Sheet -->
+    <Transition name="cd-pop">
+      <div v-if="showLostReasonSheet" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showLostReasonSheet = false">
+        <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 16px; width: 100%; max-width: 768px">
+          <div style="font-size: 14px; font-weight: 800; margin-bottom: 4px">Why was this deal lost?</div>
+          <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">Logging reasons helps you learn. +10 XP</div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <button
+              v-for="reason in LOST_REASONS"
+              :key="reason"
+              style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-text); font-size: 13px; font-weight: 600; cursor: pointer; text-align: left"
+              :style="selectedLostReason === reason ? 'border-color: var(--cd-orange); background: rgba(255,107,53,0.06)' : ''"
+              @click="selectedLostReason = reason"
+            >
+              {{ reason }}
+              <span v-if="selectedLostReason === reason" style="margin-left: auto; color: var(--cd-orange)">✓</span>
+            </button>
+          </div>
+          <button
+            class="cd-abtn o"
+            style="margin-top: 12px"
+            :disabled="!selectedLostReason"
+            @click="doLogLostReason"
+          ><CdIcon emoji="📝" icon="lucide:clipboard-check" :size="14" /> Log Lost Reason</button>
+          <button style="width: 100%; padding: 10px; margin-top: 6px; border-radius: 10px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showLostReasonSheet = false; showStageSheet = true">← Back</button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>

@@ -29,7 +29,16 @@ watch(profile, (p) => {
 
 const { contacts } = useContacts()
 
-onMounted(() => loadProfile())
+// Earnest Score
+const earnestScore = ref<{ total_score: number; label: string; dimensions: Record<string, number> } | null>(null)
+
+onMounted(async () => {
+  loadProfile()
+  try {
+    const score = await $fetch<any>('/api/earnest-score')
+    if (score) earnestScore.value = score
+  } catch { /* score not available */ }
+})
 
 function doSaveProfile() {
   saveProfile(profileForm.value)
@@ -113,6 +122,29 @@ async function suggestGoal() {
           <button class="acct-save-btn" @click="doSaveProfile">
             {{ profileSaved ? 'Saved!' : 'Save Profile' }}
           </button>
+        </div>
+      </div>
+
+      <!-- Earnest Score -->
+      <div v-if="earnestScore" class="acct-section">
+        <div class="acct-section-title">Earnest Score</div>
+        <div style="background: var(--cd-bg2); border: 1.5px solid var(--cd-bdr); border-radius: 12px; padding: 14px">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px">
+            <div style="font-size: 32px; font-weight: 800; color: var(--cd-accent)">{{ earnestScore.total_score }}</div>
+            <div>
+              <div style="font-size: 14px; font-weight: 700; color: var(--cd-text)">{{ earnestScore.label }}</div>
+              <div style="font-size: 11px; color: var(--cd-muted)">Your CRM activity in CardDesk contributes to this score</div>
+            </div>
+          </div>
+          <div v-if="earnestScore.dimensions" style="display: flex; flex-direction: column; gap: 4px">
+            <div v-for="(value, key) in earnestScore.dimensions" :key="key" style="display: flex; align-items: center; gap: 8px">
+              <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--cd-dim); width: 80px; flex-shrink: 0">{{ key }}</span>
+              <div style="flex: 1; height: 4px; background: var(--cd-bdr); border-radius: 2px; overflow: hidden">
+                <div style="height: 100%; background: var(--cd-accent); border-radius: 2px" :style="'width:' + Math.min(100, (value / 20) * 100) + '%'"></div>
+              </div>
+              <span style="font-size: 10px; font-weight: 700; color: var(--cd-muted); width: 24px; text-align: right">{{ value }}</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -249,9 +281,9 @@ async function suggestGoal() {
   background: linear-gradient(135deg, #060810, #0d1018);
   border: 1px solid #1c2330;
 }
-.acct-theme-preview.modern {
-  background: linear-gradient(135deg, #ffffff, #f5f5f7);
-  border: 1px solid #e0e0e0;
+.acct-theme-preview.glass {
+  background: linear-gradient(135deg, #ffffff, #fcfcfc);
+  border: 1px solid #ebebeb;
 }
 .acct-theme-info {
   flex: 1;

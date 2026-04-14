@@ -4,6 +4,7 @@ import { TOUGH_CARDS, HYPE_CARDS } from '~/composables/useConstants'
 const { state: xp, earn } = useXp()
 const { contacts, followUpStatus } = useContacts()
 const { profile } = useProfile()
+const { getPipelineStats } = usePipeline()
 
 const sessionMode = ref<'tough' | 'hype' | null>(null)
 const toughIdx = ref(0)
@@ -32,12 +33,21 @@ async function loadAiCards(mode: 'tough' | 'hype') {
   aiLoading.value = mode
   try {
     const stats = contactStats()
+    const pStats = getPipelineStats()
     const data = await $fetch<Array<{ q: string; b: string }>>('/api/ai-sayings', {
       method: 'POST',
       body: {
         mode,
         contacts: stats,
         xp: { level: xp.value.level, streak: xp.value.streak },
+        pipeline: {
+          total: Object.values(pStats.stageCounts).reduce((a: number, b: any) => a + b, 0),
+          negotiating: pStats.stageCounts.negotiating ?? 0,
+          stalled: pStats.stalledCount,
+          won: pStats.stageCounts.won ?? 0,
+          lost: pStats.stageCounts.lost ?? 0,
+          value: pStats.totalValue,
+        },
       },
     })
     if (mode === 'tough') aiToughCards.value = data

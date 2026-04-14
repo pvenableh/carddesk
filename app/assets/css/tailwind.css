@@ -34,14 +34,14 @@ html[data-theme="sleeper"][data-mode="light"] body {
   color: #1a1e2a;
 }
 
-/* ═══ Modern Light ═══ */
-html[data-theme="modern"][data-mode="light"] body {
-  background: #f5f5f7;
-  color: #1d1d1f;
+/* ═══ Glass Light ═══ */
+html[data-theme="glass"][data-mode="light"] body {
+  background: #fcfcfc;
+  color: #171717;
 }
 
-/* ═══ Modern Dark ═══ */
-html[data-theme="modern"][data-mode="dark"] body {
-  background: #1c1c1e;
-  color: #f5f5f7;
+/* ═══ Glass Dark ═══ */
+html[data-theme="glass"][data-mode="dark"] body {
+  background: #0d0d0d;
+  color: #ededed;
 }

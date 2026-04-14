@@ -19,11 +19,17 @@ const BADGE_CHECKS: Record<string, (s: any) => boolean> = {
   connector: (s) => s.intros >= 3,
   closer: (s) => s.total_clients >= 1,
   legend: (s) => s.level >= 9,
+  pipeline_builder: (s) => (s.pipeline_contacts ?? 0) >= 10,
+  qualifier: (s) => (s.qualified_count ?? 0) >= 5,
+  proposal_pro: (s) => (s.proposals_sent ?? 0) >= 3,
+  deal_closer: (s) => (s.deals_won ?? 0) >= 3,
+  pipeline_honest: (s) => (s.lost_reasons_logged ?? 0) >= 5,
 }
 
 const DEFAULT = {
   total_xp: 0, level: 1, streak: 0, last_activity_date: '',
   total_scans: 0, total_contacts: 0, total_clients: 0, fast_followups: 0, hot_responses: 0, intros: 0,
+  pipeline_contacts: 0, qualified_count: 0, proposals_sent: 0, deals_won: 0, lost_reasons_logged: 0,
   unlocked_badges: [] as string[], completed_missions: [] as string[], missions_date: '',
 }
 

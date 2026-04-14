@@ -7,6 +7,9 @@ const { contacts, followUpStatus, daysSince } = useContacts()
 const { state: xp, earn, curLevel, nextLevel, xpPct } = useXp()
 const { nav } = useNavigation()
 const { profile } = useProfile()
+const { getPipelineStats } = usePipeline()
+
+const pipelineStats = computed(() => getPipelineStats())
 
 const coldCs = computed(() =>
   contacts.value.filter((c) => c.rating === 'cold' && !c.hibernated)
@@ -168,9 +171,13 @@ async function loadLeadSuggestions() {
     const data = await $fetch<Array<{ icon: string; title: string; body: string }>>('/api/ai-lead-suggestions', {
       method: 'POST',
       body: {
-        contacts: { total: contacts.value.length, hot, warm, cold, clients, overdue },
+        contacts: { total: contacts.value.length, hot, warm, cold, clients, overdue, pipeline: pipelineStats.value.stageCounts },
         recentActivity: recent,
-        contactDetails,
+        contactDetails: contactDetails.map((c: any) => ({
+          ...c,
+          pipelineStage: contacts.value.find((ct) => ct.id === c.id)?.pipeline_stage,
+          estimatedValue: contacts.value.find((ct) => ct.id === c.id)?.estimated_value,
+        })),
         xp: { level: xp.value.level, levelTitle: curLevel.value.title, totalXp: xp.value.total_xp, streak: xp.value.streak },
       },
     })
@@ -303,6 +310,31 @@ async function loadLeadSuggestions() {
         </div>
       </div>
 
+      <!-- Pipeline Health Card -->
+      <div v-if="pipelineStats.stageCounts && Object.values(pipelineStats.stageCounts).some((v: any) => v > 0)" class="cd-vc" style="border: 1px solid rgba(77,166,255,0.2)">
+        <div class="cd-vct">
+          <span class="cd-vci"><CdIcon emoji="📊" icon="lucide:git-branch" /></span>
+          <div>
+            <div class="cd-vch" style="color: #4da6ff">Pipeline Snapshot</div>
+            <div class="cd-vcb">
+              <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px">
+                <span v-for="(count, stage) in pipelineStats.stageCounts" :key="stage" v-show="count > 0" style="font-size: 10px; font-weight: 700; background: rgba(77,166,255,0.08); border: 1px solid rgba(77,166,255,0.15); border-radius: 6px; padding: 2px 6px">
+                  {{ stage }}: <strong>{{ count }}</strong>
+                </span>
+              </div>
+              <div v-if="pipelineStats.totalValue" style="margin-top: 6px; font-size: 11px; color: var(--cd-accent); font-weight: 700">
+                ${{ pipelineStats.totalValue.toLocaleString() }} total pipeline value
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-if="pipelineStats.stalledCount > 0" style="margin-top: 6px">
+          <button class="cd-abtn b" @click="pipelineStats.stalledContacts[0] && goDetail(pipelineStats.stalledContacts[0].id)">
+            <CdIcon emoji="⚠️" icon="lucide:alert-circle" :size="14" /> {{ pipelineStats.stalledCount }} stalled deal{{ pipelineStats.stalledCount > 1 ? 's' : '' }} — follow up
+          </button>
+        </div>
+      </div>
+
       <div v-if="coldCs.length" class="cd-vc cold-vc" @click="nav('cold')">
         <div class="cd-vct">
           <span class="cd-vci"><CdIcon emoji="❄️" icon="lucide:snowflake" /></span>
@@ -353,7 +385,13 @@ async function loadLeadSuggestions() {
           :key="i"
           style="background: #0d1018; border: 1px solid #1c2330; border-radius: 10px; padding: 9px 11px; margin-bottom: 6px"
         >
-          <div style="font-size: 13px; font-weight: 700; margin-bottom: 2px">{{ s.icon }} {{ s.title }}</div>
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px">
+            <div style="font-size: 13px; font-weight: 700">{{ s.icon }} {{ s.title }}</div>
+            <span
+              v-if="s.contactId && getContact(s.contactId)?.pipeline_stage"
+              style="font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(77,166,255,0.1); border: 1px solid rgba(77,166,255,0.2); border-radius: 4px; padding: 1px 5px; color: #4da6ff; flex-shrink: 0"
+            >{{ getContact(s.contactId)?.pipeline_stage?.replace('_', ' ') }}</span>
+          </div>
           <div style="font-size: 11px; color: #8898b0; line-height: 1.5">{{ s.body }}</div>
           <div v-if="s.contactId" style="display: flex; gap: 6px; margin-top: 7px">
             <button

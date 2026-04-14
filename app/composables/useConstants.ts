@@ -15,6 +15,8 @@ export const ACT_TYPES = [
   { key: "contact_added", label: "Contact Added", icon: "➕", lucide: "lucide:user-plus" },
   { key: "card_scanned", label: "Card Scanned", icon: "📷", lucide: "lucide:camera" },
   { key: "converted_client", label: "Converted to Client", icon: "💰", lucide: "lucide:badge-check" },
+  { key: "stage_change", label: "Stage Change", icon: "📊", lucide: "lucide:git-branch" },
+  { key: "converted_lead", label: "Converted Lead", icon: "🎯", lucide: "lucide:target" },
 ] as const
 
 export const NETWORKING_GOALS = [
@@ -59,6 +61,11 @@ export const BADGES = [
   { key: "connector", emoji: "🌉", lucide: "lucide:git-merge", label: "Connector", desc: "Make 3 intros" },
   { key: "closer", emoji: "💰", lucide: "lucide:badge-check", label: "Closer", desc: "Convert a client" },
   { key: "legend", emoji: "👑", lucide: "lucide:crown", label: "Legend", desc: "Reach Level 9" },
+  { key: "pipeline_builder", emoji: "🏗️", lucide: "lucide:building", label: "Pipeline Builder", desc: "10+ contacts with a pipeline stage" },
+  { key: "qualifier", emoji: "🎯", lucide: "lucide:target", label: "Qualifier", desc: "Qualify 5 leads" },
+  { key: "proposal_pro", emoji: "📄", lucide: "lucide:file-text", label: "Proposal Pro", desc: "Send 3 proposals" },
+  { key: "deal_closer", emoji: "🏆", lucide: "lucide:trophy", label: "Deal Closer", desc: "Close 3 deals" },
+  { key: "pipeline_honest", emoji: "📝", lucide: "lucide:clipboard-check", label: "Pipeline Honest", desc: "Log 5 lost reasons" },
 ] as const
 
 export const VIBE_MOODS = [
