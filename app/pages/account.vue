@@ -29,8 +29,17 @@ watch(profile, (p) => {
 
 const { contacts } = useContacts()
 
-// Earnest Score
-const earnestScore = ref<{ total_score: number; label: string; dimensions: Record<string, number> } | null>(null)
+// Earnest Score — server returns { current_score, dimension_scores };
+// label is derived here from score bands to match Earnest's /account page.
+const earnestScore = ref<{ current_score: number; dimension_scores: Record<string, number> } | null>(null)
+
+function scoreLabel(score: number): string {
+  if (score >= 81) return 'Relentless'
+  if (score >= 61) return 'Resolute'
+  if (score >= 41) return 'Steady'
+  if (score >= 21) return 'Builder'
+  return 'Seeker'
+}
 
 onMounted(async () => {
   loadProfile()
@@ -130,14 +139,14 @@ async function suggestGoal() {
         <div class="acct-section-title">Earnest Score</div>
         <div style="background: var(--cd-bg2); border: 1.5px solid var(--cd-bdr); border-radius: 12px; padding: 14px">
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px">
-            <div style="font-size: 32px; font-weight: 800; color: var(--cd-accent)">{{ earnestScore.total_score }}</div>
+            <div style="font-size: 32px; font-weight: 800; color: var(--cd-accent)">{{ earnestScore.current_score }}</div>
             <div>
-              <div style="font-size: 14px; font-weight: 700; color: var(--cd-text)">{{ earnestScore.label }}</div>
+              <div style="font-size: 14px; font-weight: 700; color: var(--cd-text)">{{ scoreLabel(earnestScore.current_score) }}</div>
               <div style="font-size: 11px; color: var(--cd-muted)">Your CRM activity in CardDesk contributes to this score</div>
             </div>
           </div>
-          <div v-if="earnestScore.dimensions" style="display: flex; flex-direction: column; gap: 4px">
-            <div v-for="(value, key) in earnestScore.dimensions" :key="key" style="display: flex; align-items: center; gap: 8px">
+          <div v-if="earnestScore.dimension_scores" style="display: flex; flex-direction: column; gap: 4px">
+            <div v-for="(value, key) in earnestScore.dimension_scores" :key="key" style="display: flex; align-items: center; gap: 8px">
               <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--cd-dim); width: 80px; flex-shrink: 0">{{ key }}</span>
               <div style="flex: 1; height: 4px; background: var(--cd-bdr); border-radius: 2px; overflow: hidden">
                 <div style="height: 100%; background: var(--cd-accent); border-radius: 2px" :style="'width:' + Math.min(100, (value / 20) * 100) + '%'"></div>

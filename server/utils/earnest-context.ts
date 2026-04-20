@@ -3,8 +3,8 @@ import { readItems } from '@directus/sdk'
 
 /**
  * Fetches the latest AI context snapshot from Earnest's Context Broker.
- * Returns the snapshot text if available and fresh (< 30 min), otherwise null.
- * CardDesk falls back to local context when this returns null.
+ * The `ai_context_snapshots` collection stores context as a JSON blob in `data`
+ * with an explicit `expires_at` timestamp set by the Earnest broker.
  */
 export async function getEarnestContext(orgId: string): Promise<string | null> {
   try {
@@ -14,33 +14,32 @@ export async function getEarnestContext(orgId: string): Promise<string | null> {
         filter: { organization: { _eq: orgId } },
         sort: ['-date_created'],
         limit: 1,
-        fields: ['content', 'date_created'],
+        fields: ['data', 'context_type', 'date_created', 'expires_at'],
       }),
     ) as any[]
 
     if (!snapshots?.length) return null
 
     const snapshot = snapshots[0]
-    const age = Date.now() - new Date(snapshot.date_created).getTime()
-    const THIRTY_MINUTES = 30 * 60 * 1000
+    if (snapshot.expires_at && new Date(snapshot.expires_at).getTime() < Date.now())
+      return null
 
-    if (age > THIRTY_MINUTES) return null
-
-    return snapshot.content ?? null
+    if (snapshot.data == null) return null
+    return typeof snapshot.data === 'string' ? snapshot.data : JSON.stringify(snapshot.data)
   } catch {
-    // Collection may not exist yet — gracefully return null
     return null
   }
 }
 
 /**
- * Fetches the Earnest Score for an organization.
- * Returns score data or null if unavailable.
+ * Fetches the Earnest Score for an organization. Earnest stores the numeric
+ * score in `current_score` and per-dimension breakdowns in `dimension_scores`.
+ * The label (Seeker/Builder/Steady/Resolute/Relentless) is derived client-side
+ * from score bands so it stays consistent with Earnest's /account page.
  */
 export async function getEarnestScore(orgId: string): Promise<{
-  total_score: number
-  label: string
-  dimensions: Record<string, number>
+  current_score: number
+  dimension_scores: Record<string, number>
 } | null> {
   try {
     const directus = getDirectus()
@@ -49,12 +48,16 @@ export async function getEarnestScore(orgId: string): Promise<{
         filter: { organization: { _eq: orgId } },
         sort: ['-date_created'],
         limit: 1,
-        fields: ['total_score', 'label', 'dimensions'],
+        fields: ['current_score', 'dimension_scores'],
       }),
     ) as any[]
 
     if (!scores?.length) return null
-    return scores[0]
+    const row = scores[0]
+    return {
+      current_score: Number(row.current_score ?? 0),
+      dimension_scores: row.dimension_scores ?? {},
+    }
   } catch {
     return null
   }
