@@ -92,6 +92,18 @@ async function doSaveContact() {
     } catch (err: any) {
       console.error('[AddContact] Failed to log card_scanned activity:', err?.data?.message ?? err)
     }
+    // Notify the user's OTHER devices about the new scan. Fire-and-forget —
+    // a failure here shouldn't break the save flow.
+    $fetch('/api/cd/scan-notify', {
+      method: 'POST',
+      body: {
+        contact_id: contact.id,
+        contact_name: contact.name,
+        contact_company: contact.company || null,
+      },
+    }).catch((err: any) => {
+      console.warn('[AddContact] scan-notify failed:', err?.data?.message ?? err)
+    })
   }
   earn(25, '💾', "They're in your network.", { total_contacts: contacts.value.length })
   addForm.value = {
