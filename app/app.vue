@@ -4,9 +4,11 @@ const { loadXp } = useXp()
 const { fetchContacts } = useContacts()
 const { loadProfile } = useProfile()
 const { init: initTheme } = useTheme()
+const { init: initPalette } = useCdPalette()
 
 onMounted(() => {
   initTheme()
+  initPalette()
 })
 
 watch(loggedIn, async (val) => {

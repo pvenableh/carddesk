@@ -297,13 +297,13 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 /* ── Buttons ── */
 .cd-abtn {
   width: 100%;
-  padding: 10px;
-  border-radius: 11px;
+  padding: 10px 14px;
+  border-radius: 9999px;
   border: 1px solid;
   font-family: sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.06em;
   cursor: pointer;
   transition: all 0.15s;
   display: flex;
@@ -358,11 +358,11 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
   width: 100%;
   background: var(--cd-bg2);
   border: 1px solid var(--cd-bdr);
-  border-radius: 10px;
+  border-radius: 9999px;
   color: var(--cd-text);
   font-family: sans-serif;
   font-size: 13px;
-  padding: 9px 12px;
+  padding: 10px 14px;
   outline: none;
   transition: border-color 0.15s;
   margin-bottom: 8px;
@@ -374,13 +374,18 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 .cd-inp::placeholder {
   color: var(--cd-dim);
 }
+/* Multi-line inputs (textareas) shouldn't be full pills — flatten back to a rounded rect */
+textarea.cd-inp,
+select.cd-inp {
+  border-radius: 14px;
+}
 .cd-lbl {
-  font-size: 9px;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.18em;
   color: var(--cd-dim);
   display: block;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
   font-weight: 700;
 }
 .cd-back {
@@ -395,8 +400,8 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 }
 .cd-rpick {
   flex: 1;
-  padding: 7px 6px;
-  border-radius: 9px;
+  padding: 7px 10px;
+  border-radius: 9999px;
   border: 1px solid var(--cd-bdr);
   background: var(--cd-bg2);
   color: var(--cd-dim);
@@ -413,9 +418,9 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 
 /* ── Vibe cards ── */
 .cd-vc {
-  border-radius: 15px;
-  padding: 13px;
-  margin-bottom: 9px;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 10px;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -491,8 +496,8 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 }
 .cd-semp {
   flex: 1;
-  padding: 7px 6px;
-  border-radius: 9px;
+  padding: 8px 10px;
+  border-radius: 9999px;
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
@@ -514,9 +519,9 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 .cd-mood {
   background: linear-gradient(135deg, #06091a, #050710);
   border: 1px solid rgba(77, 166, 255, 0.18);
-  border-radius: 14px;
-  padding: 12px;
-  margin-bottom: 9px;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 10px;
   cursor: pointer;
 }
 .cd-mc-t {
@@ -543,19 +548,19 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 .cd-feed {
   background: var(--cd-bg2);
   border: 1px solid var(--cd-bdr);
-  border-radius: 14px;
-  margin-bottom: 9px;
+  border-radius: 16px;
+  margin-bottom: 10px;
   overflow: hidden;
 }
 .cd-feed-hdr {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 12px 7px;
+  padding: 10px 14px 7px;
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.18em;
   color: var(--cd-dim);
 }
 .cd-feed-row {
@@ -612,7 +617,7 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
   font-size: 11px;
   font-weight: 700;
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: 9999px;
   border: 1px solid var(--cd-bdr);
   background: var(--cd-bg2);
   color: var(--cd-text);
@@ -667,8 +672,8 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 
 /* ── Session mode cards ── */
 .cd-mcard {
-  border-radius: 14px;
-  padding: 13px 11px;
+  border-radius: 16px;
+  padding: 14px 12px;
   border: 1.5px solid var(--cd-bdr);
   background: var(--cd-bg2);
   cursor: pointer;
@@ -701,9 +706,9 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
   color: var(--cd-dim);
 }
 .cd-scard {
-  border-radius: 17px;
-  padding: 15px;
-  margin-bottom: 10px;
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 12px;
 }
 .cd-scard.tc {
   background: linear-gradient(135deg, #190800, #0e0500);
@@ -717,7 +722,7 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 0.18em;
   margin-bottom: 8px;
 }
 .cd-sc-eye.orange {
@@ -759,8 +764,8 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 .cd-lucky {
   background: rgba(0, 255, 135, 0.04);
   border: 1px solid rgba(0, 255, 135, 0.12);
-  border-radius: 12px;
-  padding: 12px 13px;
+  border-radius: 14px;
+  padding: 12px 14px;
   text-align: center;
 }
 
@@ -768,8 +773,8 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 .cd-cold-card {
   background: var(--cd-bg2);
   border: 1px solid var(--cd-bdr);
-  border-radius: 13px;
-  margin-bottom: 8px;
+  border-radius: 14px;
+  margin-bottom: 10px;
   overflow: hidden;
 }
 .cd-cc-top {
@@ -829,8 +834,8 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 }
 .cd-cwb {
   flex: 1;
-  padding: 7px 8px;
-  border-radius: 9px;
+  padding: 7px 12px;
+  border-radius: 9999px;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -856,7 +861,7 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.18em;
   color: var(--cd-dim);
   margin-bottom: 8px;
   display: flex;
@@ -874,9 +879,9 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 .cd-hero {
   background: linear-gradient(135deg, #0b1f12, #090f1e, #0e091e);
   border: 1px solid rgba(0, 255, 135, 0.14);
-  border-radius: 17px;
-  padding: 15px;
-  margin-bottom: 10px;
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 12px;
 }
 .cd-xp-track {
   height: 6px;
@@ -893,7 +898,7 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 .cd-stat {
   background: var(--cd-bg2);
   border: 1px solid var(--cd-bdr);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 10px 7px;
   text-align: center;
   cursor: pointer;
@@ -904,18 +909,18 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
   line-height: 1;
 }
 .cd-stat-l {
-  font-size: 9px;
+  font-size: 10px;
   color: var(--cd-dim);
   text-transform: uppercase;
-  letter-spacing: 0.7px;
+  letter-spacing: 0.18em;
   font-weight: 700;
 }
 .cd-streak {
   background: linear-gradient(135deg, #190800, #0e0500);
   border: 1px solid rgba(255, 69, 0, 0.25);
-  border-radius: 13px;
-  padding: 11px 13px;
-  margin-bottom: 10px;
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -947,9 +952,9 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 .cd-mission {
   background: var(--cd-bg2);
   border: 1px solid var(--cd-bdr);
-  border-radius: 12px;
-  padding: 10px 12px;
-  margin-bottom: 7px;
+  border-radius: 14px;
+  padding: 11px 14px;
+  margin-bottom: 8px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -981,7 +986,7 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
   width: 66px;
   background: var(--cd-bg2);
   border: 1px solid var(--cd-bdr);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 10px 5px;
   text-align: center;
 }
@@ -993,8 +998,11 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 /* ── Contact list ── */
 .cd-pill {
   flex-shrink: 0;
-  padding: 5px 11px;
-  border-radius: 99px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 9999px;
   border: 1px solid var(--cd-bdr);
   background: transparent;
   color: var(--cd-dim);
@@ -1011,9 +1019,9 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 .cd-crd {
   background: var(--cd-bg2);
   border: 1px solid var(--cd-bdr);
-  border-radius: 12px;
-  padding: 10px 12px;
-  margin-bottom: 7px;
+  border-radius: 14px;
+  padding: 11px 14px;
+  margin-bottom: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1062,11 +1070,11 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 .cd-rpill {
   font-size: 10px;
   font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 99px;
+  padding: 2px 9px;
+  border-radius: 9999px;
   border: 1px solid;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.18em;
 }
 .cd-rpill.hot {
   color: #ff6b35;
@@ -1093,9 +1101,9 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 .cd-det-hero {
   background: linear-gradient(180deg, var(--cd-bg2) 0%, var(--cd-bg) 100%);
   border: 1px solid var(--cd-bdr);
-  border-radius: 15px;
-  padding: 14px;
-  margin-bottom: 11px;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
 }
 .cd-det-av {
   width: 48px;
@@ -1110,20 +1118,22 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
   flex-shrink: 0;
 }
 .cd-tag-ind {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   padding: 3px 10px;
-  border-radius: 99px;
+  border-radius: 9999px;
   border: 1px solid var(--cd-bdr);
   color: var(--cd-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
 }
 .cd-fu-banner {
-  border-radius: 12px;
-  padding: 10px 12px;
+  border-radius: 14px;
+  padding: 11px 14px;
   display: flex;
   align-items: center;
   gap: 9px;
-  margin-bottom: 11px;
+  margin-bottom: 12px;
 }
 .cd-fu-banner.overdue {
   background: rgba(255, 107, 53, 0.08);
@@ -1158,9 +1168,9 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 .cd-info-grid {
   background: var(--cd-bg2);
   border: 1px solid var(--cd-bdr);
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 .cd-info-row {
   display: flex;
@@ -1186,20 +1196,21 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 .cd-log-sec {
   background: var(--cd-bg2);
   border: 1px solid var(--cd-bdr);
-  border-radius: 13px;
-  padding: 13px;
-  margin-bottom: 13px;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 14px;
 }
 .cd-act-type {
   flex: 1;
   min-width: 46px;
-  padding: 6px 3px;
-  border-radius: 9px;
+  padding: 7px 6px;
+  border-radius: 9999px;
   background: #131820;
   border: 1px solid var(--cd-bdr);
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.1em;
   color: var(--cd-dim);
   cursor: pointer;
   text-align: center;
@@ -1247,8 +1258,8 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
   gap: 5px;
   font-size: 11px;
   font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 99px;
+  padding: 3px 10px;
+  border-radius: 9999px;
   border: 1px solid;
   cursor: pointer;
 }
@@ -1267,8 +1278,8 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 .cd-scan-zone {
   background: linear-gradient(135deg, #04130d, #050e0a);
   border: 2px dashed rgba(0, 255, 135, 0.25);
-  border-radius: 17px;
-  padding: 24px 20px;
+  border-radius: 18px;
+  padding: 26px 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s;
@@ -1280,8 +1291,8 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 .cd-scan-captured {
   background: linear-gradient(135deg, #04130d, #050e0a);
   border: 2px solid rgba(0, 255, 135, 0.4);
-  border-radius: 17px;
-  padding: 24px 20px;
+  border-radius: 18px;
+  padding: 26px 20px;
   text-align: center;
   margin-bottom: 4px;
   animation: cd-cin 0.35s cubic-bezier(0.34, 1.3, 0.64, 1);
@@ -1361,4 +1372,238 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 .cd-slide-right-leave-to {
   opacity: 0;
   transform: translateX(20px);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Phase 1 — Earnest visual-language primitives
+ *
+ * - .cd-eyebrow:   uppercase + 0.18em tracking, 10px — reusable section label
+ * - .cd-tabs:      UTabs-style floating-pill segmented control wrapper
+ * - .cd-btn:       button hierarchy (primary / secondary / utility) — used by
+ *                  the <CdButton> Vue component. Full-radius pills.
+ * ───────────────────────────────────────────────────────────────────── */
+
+.cd-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--cd-dim);
+}
+
+/* Floating-pill segmented control. Wrap children in a single row;
+ * children get `.cd-tab` + `.on` for active state. */
+.cd-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--cd-bdr) 50%, transparent);
+  border: 1px solid var(--cd-bdr);
+}
+.cd-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  border: 0;
+  background: transparent;
+  color: var(--cd-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.2, 0.9, 0.3, 1);
+  white-space: nowrap;
+}
+.cd-tab:hover {
+  color: var(--cd-text);
+}
+.cd-tab.on {
+  background: var(--cd-bg);
+  color: var(--cd-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+html[data-theme="glass"][data-mode="light"] .cd-tabs {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+html[data-theme="glass"][data-mode="light"] .cd-tab.on {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.cd-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--cd-bdr) 70%, transparent);
+  color: var(--cd-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+.cd-tab.on .cd-tab-count {
+  background: color-mix(in srgb, var(--cd-text) 14%, transparent);
+  color: var(--cd-text);
+}
+
+/* Button hierarchy — full-radius pills, three tiers. */
+.cd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.2, 0.9, 0.3, 1);
+  white-space: nowrap;
+  user-select: none;
+}
+.cd-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.cd-btn--sm { padding: 6px 12px; font-size: 12px; }
+.cd-btn--block { width: 100%; }
+
+/* Tier 1 — primary CTA: solid accent fill */
+.cd-btn--primary {
+  background: var(--cd-accent);
+  color: #060810;
+  border-color: var(--cd-accent);
+}
+.cd-btn--primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.cd-btn--primary.cd-btn--accent-blue { background: var(--cd-blue); border-color: var(--cd-blue); color: #060810; }
+.cd-btn--primary.cd-btn--accent-orange { background: var(--cd-orange); border-color: var(--cd-orange); color: #fff; }
+.cd-btn--primary.cd-btn--accent-purple { background: var(--cd-purple); border-color: var(--cd-purple); color: #fff; }
+
+/* Tier 2 — secondary action: outline */
+.cd-btn--secondary {
+  background: transparent;
+  color: var(--cd-text);
+  border-color: var(--cd-bdr);
+}
+.cd-btn--secondary:hover:not(:disabled) {
+  border-color: var(--cd-muted);
+  color: var(--cd-text);
+}
+.cd-btn--secondary.cd-btn--accent-green { color: var(--cd-accent); border-color: color-mix(in srgb, var(--cd-accent) 35%, transparent); background: color-mix(in srgb, var(--cd-accent) 8%, transparent); }
+.cd-btn--secondary.cd-btn--accent-blue { color: var(--cd-blue); border-color: color-mix(in srgb, var(--cd-blue) 35%, transparent); background: color-mix(in srgb, var(--cd-blue) 8%, transparent); }
+.cd-btn--secondary.cd-btn--accent-orange { color: var(--cd-orange); border-color: color-mix(in srgb, var(--cd-orange) 35%, transparent); background: color-mix(in srgb, var(--cd-orange) 8%, transparent); }
+.cd-btn--secondary.cd-btn--accent-purple { color: var(--cd-purple); border-color: color-mix(in srgb, var(--cd-purple) 35%, transparent); background: color-mix(in srgb, var(--cd-purple) 8%, transparent); }
+
+/* Tier 3 — utility: ghost icon/text button, no border until hover */
+.cd-btn--utility {
+  background: transparent;
+  color: var(--cd-muted);
+  border-color: transparent;
+  padding: 7px 12px;
+}
+.cd-btn--utility:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--cd-bdr) 50%, transparent);
+  color: var(--cd-text);
+}
+.cd-btn--utility.cd-btn--icon {
+  padding: 7px;
+  width: 32px;
+  height: 32px;
+}
+
+/* Glass theme adapts the chrome */
+html[data-theme="glass"][data-mode="light"] .cd-btn--secondary {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+html[data-theme="glass"][data-mode="light"] .cd-btn--utility:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Phase 2 — Palette tint on glass surfaces
+ *
+ * When `data-cd-tint='on'` is set on <html> (default; toggled in the
+ * account page), the bottom nav (`.cd-bnav`) + status bar (`.cd-sbar`)
+ * wear a 4-stop linear gradient sampled from the active palette over a
+ * frosted plinth. Ported from Earnest's AppRail palette-tint (see
+ * project_apprail_palette_tint.md). Glass theme only — sleeper stays
+ * untouched on purpose (its dark gradient is the visual identity).
+ *
+ * The HSL var triples (`--cd-tint-1-h/s/l` … `--cd-tint-4-h/s/l`) are
+ * written by `applyCdPaletteToDocument` in useCdAccent.ts. Defaults in
+ * the var() fallbacks keep the gradient sensible if the vars haven't
+ * hydrated yet (SSR / pre-init flash).
+ *
+ * Specificity is `[data-theme][data-cd-tint][data-mode] .cd-bnav` →
+ * (0,3,2) which beats the existing `[data-theme][data-mode] .cd-bnav`
+ * → (0,2,2) baseline a few hundred lines above, so the tinted gradient
+ * wins when ON without `!important`.
+ * ───────────────────────────────────────────────────────────────────── */
+
+html[data-theme="glass"][data-cd-tint="on"][data-mode="light"] .cd-bnav {
+  background:
+    linear-gradient(
+      135deg,
+      hsl(var(--cd-tint-1-h, 220) var(--cd-tint-1-s, 50%) var(--cd-tint-1-l, 55%) / 0.22) 0%,
+      hsl(var(--cd-tint-2-h, 200) var(--cd-tint-2-s, 50%) var(--cd-tint-2-l, 55%) / 0.18) 35%,
+      hsl(var(--cd-tint-3-h, 320) var(--cd-tint-3-s, 50%) var(--cd-tint-3-l, 55%) / 0.20) 65%,
+      hsl(var(--cd-tint-4-h, 145) var(--cd-tint-4-s, 50%) var(--cd-tint-4-l, 55%) / 0.22) 100%
+    ),
+    hsl(220 14% 95% / 0.82);
+}
+
+html[data-theme="glass"][data-cd-tint="on"][data-mode="dark"] .cd-bnav {
+  background:
+    linear-gradient(
+      135deg,
+      hsl(var(--cd-tint-1-h, 220) var(--cd-tint-1-s, 50%) var(--cd-tint-1-l, 55%) / 0.34) 0%,
+      hsl(var(--cd-tint-2-h, 200) var(--cd-tint-2-s, 50%) var(--cd-tint-2-l, 55%) / 0.28) 35%,
+      hsl(var(--cd-tint-3-h, 320) var(--cd-tint-3-s, 50%) var(--cd-tint-3-l, 55%) / 0.30) 65%,
+      hsl(var(--cd-tint-4-h, 145) var(--cd-tint-4-s, 50%) var(--cd-tint-4-l, 55%) / 0.34) 100%
+    ),
+    rgba(28, 30, 32, 0.92);
+}
+
+/* Status bar — softer alphas so the logo + time stay readable over the
+ * tint. Same gradient stops, lighter weights. */
+html[data-theme="glass"][data-cd-tint="on"][data-mode="light"] .cd-sbar {
+  background:
+    linear-gradient(
+      135deg,
+      hsl(var(--cd-tint-1-h, 220) var(--cd-tint-1-s, 50%) var(--cd-tint-1-l, 55%) / 0.18) 0%,
+      hsl(var(--cd-tint-2-h, 200) var(--cd-tint-2-s, 50%) var(--cd-tint-2-l, 55%) / 0.14) 35%,
+      hsl(var(--cd-tint-3-h, 320) var(--cd-tint-3-s, 50%) var(--cd-tint-3-l, 55%) / 0.16) 65%,
+      hsl(var(--cd-tint-4-h, 145) var(--cd-tint-4-s, 50%) var(--cd-tint-4-l, 55%) / 0.18) 100%
+    ),
+    hsl(220 14% 96% / 0.85);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+html[data-theme="glass"][data-cd-tint="on"][data-mode="dark"] .cd-sbar {
+  background:
+    linear-gradient(
+      135deg,
+      hsl(var(--cd-tint-1-h, 220) var(--cd-tint-1-s, 50%) var(--cd-tint-1-l, 55%) / 0.30) 0%,
+      hsl(var(--cd-tint-2-h, 200) var(--cd-tint-2-s, 50%) var(--cd-tint-2-l, 55%) / 0.24) 35%,
+      hsl(var(--cd-tint-3-h, 320) var(--cd-tint-3-s, 50%) var(--cd-tint-3-l, 55%) / 0.26) 65%,
+      hsl(var(--cd-tint-4-h, 145) var(--cd-tint-4-s, 50%) var(--cd-tint-4-l, 55%) / 0.30) 100%
+    ),
+    rgba(28, 30, 32, 0.92);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }

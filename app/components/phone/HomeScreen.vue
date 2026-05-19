@@ -252,15 +252,16 @@ async function doQuickLog() {
             <CdIcon emoji="🧠" icon="lucide:brain" :size="15" />
             <span style="font-size: 13px; font-weight: 800; color: #b87dff">Network Insights</span>
           </div>
-          <button
-            class="cd-abtn"
-            style="font-size: 10px; padding: 4px 10px; background: transparent; border-color: #1c2330; color: #b87dff; width: auto; flex-shrink: 0"
+          <CdButton
+            tier="secondary"
+            accent="purple"
+            size="sm"
             :disabled="insightsLoading"
             @click="loadInsights"
           >
             <CdIcon emoji="✨" icon="lucide:sparkles" :size="10" />
             {{ insightsLoading ? 'Analyzing...' : insights.length ? 'Refresh' : 'Analyze My Network' }}
-          </button>
+          </CdButton>
         </div>
         <div v-if="insightsError" style="font-size: 12px; color: #f87171; margin-bottom: 6px">{{ insightsError }}</div>
         <div v-if="!insights.length && !insightsLoading && !insightsError" style="font-size: 11px; color: #3e4f68; line-height: 1.5">
@@ -322,16 +323,17 @@ async function doQuickLog() {
             </div>
             <label style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #3e4f68; letter-spacing: 0.5px; display: block; margin-bottom: 4px">Details</label>
             <textarea v-model="logNote" class="cd-inp" placeholder="What happened? Add details..." style="min-height: 50px; resize: vertical; margin-bottom: 8px"></textarea>
-            <div style="display: flex; gap: 6px">
+            <div style="display: flex; gap: 6px; align-items: stretch">
               <input v-model="logDate" type="date" class="cd-inp" style="flex: 0 0 130px; margin-bottom: 0" />
-              <button
-                class="cd-abtn g"
-                style="flex: 1; font-size: 12px; padding: 9px 6px"
+              <CdButton
+                tier="primary"
+                block
+                style="flex: 1"
                 :disabled="!logContact || logSaving"
                 @click="doQuickLog"
               >
                 <CdIcon emoji="✅" icon="lucide:check-circle" :size="12" /> {{ logSaving ? 'Saving...' : 'Log +25 XP' }}
-              </button>
+              </CdButton>
             </div>
           </div>
         </template>
@@ -372,13 +374,9 @@ async function doQuickLog() {
         </div>
       </div>
 
-      <button
-        class="cd-abtn"
-        style="background: transparent; color: #3e4f68; border-color: #1c2330; font-size: 12px; padding: 9px; margin-top: 8px"
-        @click="logout"
-      >
+      <CdButton tier="utility" block style="margin-top: 12px" @click="logout">
         Sign Out
-      </button>
+      </CdButton>
     </div>
   </div>
 </template>

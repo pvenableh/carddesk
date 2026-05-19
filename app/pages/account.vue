@@ -6,6 +6,7 @@ definePageMeta({ middleware: 'auth' })
 const { user } = useUserSession()
 const { logout } = useAuth()
 const { theme, isDark, setTheme, toggleDarkMode, THEMES } = useTheme()
+const { palette, setPalette, paletteIds, palettes, paletteTint, setPaletteTint } = useCdPalette()
 const { profile, loading: profileLoading, saved: profileSaved, loadProfile, saveProfile, fullName, company } = useProfile()
 
 const email = computed(() => (user.value?.email as string) ?? '')
@@ -184,6 +185,52 @@ async function suggestGoal() {
             <div class="acct-dm-desc">{{ isDark ? 'On' : 'Off' }}</div>
           </div>
           <UiDarkModeToggle />
+        </div>
+      </div>
+
+      <!-- Palette + tint — glass-only enhancement -->
+      <div v-if="theme === 'glass'" class="acct-section">
+        <div class="acct-section-title">Palette</div>
+        <div class="acct-pal-grid">
+          <button
+            v-for="id in paletteIds"
+            :key="id"
+            class="acct-pal-card"
+            :class="{ active: palette === id }"
+            @click="setPalette(id)"
+          >
+            <div class="acct-pal-swatches">
+              <span
+                v-for="(c, i) in palettes[id].sourceColors.slice(0, 5)"
+                :key="i"
+                class="acct-pal-dot"
+                :style="`background: hsl(${c.h} ${c.s}% ${c.l}%)`"
+              />
+            </div>
+            <div class="acct-pal-info">
+              <span class="acct-pal-name">{{ palettes[id].meta.label }}</span>
+              <span class="acct-pal-desc">{{ palettes[id].meta.hint }}</span>
+            </div>
+            <span class="acct-pal-check">{{ palette === id ? '✓' : '' }}</span>
+          </button>
+        </div>
+
+        <div class="acct-dm-row" style="margin-top: 10px">
+          <div>
+            <div class="acct-dm-label">Palette Tint</div>
+            <div class="acct-dm-desc">
+              {{ paletteTint ? 'Bottom nav + status bar wear the palette gradient' : 'Surfaces stay frosted grey' }}
+            </div>
+          </div>
+          <button
+            type="button"
+            class="acct-pal-toggle"
+            :class="{ on: paletteTint }"
+            :aria-pressed="paletteTint"
+            @click="setPaletteTint(!paletteTint)"
+          >
+            <span class="acct-pal-toggle-knob" />
+          </button>
         </div>
       </div>
 
@@ -413,5 +460,106 @@ async function suggestGoal() {
 .acct-ai-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Palette picker — mirrors .acct-theme-card layout so the two sections
+ * read as siblings. Swatches lift 5 evenly-spaced colours from the
+ * palette's source list for an at-a-glance ramp. */
+.acct-pal-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.acct-pal-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--cd-bg2);
+  border: 1.5px solid var(--cd-bdr);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  text-align: left;
+  color: var(--cd-text);
+  font-family: inherit;
+}
+.acct-pal-card:hover {
+  border-color: var(--cd-dim);
+}
+.acct-pal-card.active {
+  border-color: var(--cd-accent);
+}
+.acct-pal-swatches {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 56px;
+  height: 28px;
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+.acct-pal-dot {
+  flex: 1;
+  height: 100%;
+}
+.acct-pal-info {
+  flex: 1;
+  min-width: 0;
+}
+.acct-pal-name {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+}
+.acct-pal-desc {
+  display: block;
+  font-size: 11px;
+  color: var(--cd-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.acct-pal-check {
+  font-size: 14px;
+  color: var(--cd-accent);
+  font-weight: 700;
+  width: 20px;
+  text-align: center;
+}
+
+/* Toggle switch — full-pill track + sliding knob. Matches the universal
+ * pill aesthetic from Phase 1. */
+.acct-pal-toggle {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  border-radius: 9999px;
+  border: 1px solid var(--cd-bdr);
+  background: var(--cd-bg);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.18s, border-color 0.18s;
+  flex-shrink: 0;
+}
+.acct-pal-toggle.on {
+  background: var(--cd-accent);
+  border-color: var(--cd-accent);
+}
+.acct-pal-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.18s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.acct-pal-toggle.on .acct-pal-toggle-knob {
+  transform: translateX(18px);
 }
 </style>
