@@ -61,6 +61,9 @@ onMounted(async () => {
 
     <!-- XP Toast -->
     <PhoneXpToast :toast="toast" />
+
+    <!-- PWA install prompt -->
+    <CdInstallPrompt />
   </div>
 </template>
 
