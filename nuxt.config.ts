@@ -36,8 +36,13 @@ export default defineNuxtConfig({
     // notificationclick handlers (generateSW can't host custom listeners).
     // Workbox precaching + the previous runtime-caching rules live inside
     // public/sw.ts now.
+    //
+    // srcDir is '../public' rather than 'public' because Nuxt 4 sets vite's
+    // root to app/, so a plain 'public' would resolve to app/public/sw.ts
+    // (which doesn't exist). The leading ../ walks out to the project root
+    // where the SW source actually lives.
     strategies: 'injectManifest',
-    srcDir: 'public',
+    srcDir: '../public',
     filename: 'sw.ts',
     registerType: 'autoUpdate',
     injectRegister: 'auto',
