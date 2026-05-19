@@ -1,4 +1,9 @@
 <script setup lang="ts">
+// Force baseline title at the topmost component so it survives the
+// auth-middleware SSR redirect that otherwise drops nuxt.config's
+// app.head.title before Unhead serializes the response.
+useHead({ title: 'CardDesk' })
+
 const { loggedIn } = useUserSession()
 const { loadXp } = useXp()
 const { fetchContacts } = useContacts()
