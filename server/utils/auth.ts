@@ -1,4 +1,26 @@
 import type { H3Event } from 'h3'
+import { readMe } from '@directus/sdk'
+import { getUserDirectus } from './directus'
+
+/**
+ * Resolves the signed-in user's Directus UUID. Sessions don't store the
+ * id directly (only the access token + a denormalized profile blob), so
+ * we hit /users/me on demand. Cheap; Directus caches with the access token.
+ *
+ * Throws 401 if not authenticated.
+ */
+export async function getCurrentUserId(event: H3Event): Promise<string> {
+  const token = await getValidToken(event)
+  try {
+    const directus = getUserDirectus(token)
+    const me = (await directus.request(readMe({ fields: ['id'] as any }))) as any
+    if (!me?.id) throw createError({ statusCode: 401, message: 'Not authenticated' })
+    return me.id as string
+  } catch (err: any) {
+    const status = err?.statusCode || err?.status || 401
+    throw createError({ statusCode: status, message: 'Not authenticated' })
+  }
+}
 
 /**
  * Gets a valid Directus access token from the session, auto-refreshing if expired or expiring soon.

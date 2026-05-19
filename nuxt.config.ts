@@ -32,7 +32,15 @@ export default defineNuxtConfig({
     '@vite-pwa/nuxt',
   ],
   pwa: {
+    // injectManifest so we own the SW source — needed for Web Push push +
+    // notificationclick handlers (generateSW can't host custom listeners).
+    // Workbox precaching + the previous runtime-caching rules live inside
+    // public/sw.ts now.
+    strategies: 'injectManifest',
+    srcDir: 'public',
+    filename: 'sw.ts',
     registerType: 'autoUpdate',
+    injectRegister: 'auto',
     manifest: {
       name: 'CardDesk',
       short_name: 'CardDesk',
@@ -51,40 +59,8 @@ export default defineNuxtConfig({
         { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
       ],
     },
-    workbox: {
-      navigateFallback: '/',
-      navigateFallbackDenylist: [/^\/api\//, /^\/_/],
+    injectManifest: {
       globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
-      runtimeCaching: [
-        {
-          urlPattern: ({ url }: { url: URL }) => url.pathname.startsWith('/api/'),
-          handler: 'NetworkFirst',
-          options: {
-            cacheName: 'cd-api',
-            networkTimeoutSeconds: 3,
-            expiration: { maxEntries: 64, maxAgeSeconds: 60 * 60 },
-            cacheableResponse: { statuses: [0, 200] },
-          },
-        },
-        {
-          urlPattern: ({ request }: { request: Request }) => request.destination === 'font',
-          handler: 'CacheFirst',
-          options: {
-            cacheName: 'cd-fonts',
-            expiration: { maxEntries: 24, maxAgeSeconds: 60 * 60 * 24 * 365 },
-            cacheableResponse: { statuses: [0, 200] },
-          },
-        },
-        {
-          urlPattern: ({ request }: { request: Request }) => request.destination === 'image',
-          handler: 'CacheFirst',
-          options: {
-            cacheName: 'cd-images',
-            expiration: { maxEntries: 128, maxAgeSeconds: 60 * 60 * 24 * 30 },
-            cacheableResponse: { statuses: [0, 200] },
-          },
-        },
-      ],
     },
     devOptions: { enabled: true, type: 'module' },
     client: { installPrompt: true },
@@ -98,11 +74,15 @@ export default defineNuxtConfig({
   runtimeConfig: {
     directusStaticToken: process.env.DIRECTUS_STATIC_TOKEN,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+    vapidPrivateKey: process.env.VAPID_PRIVATE_KEY || '',
+    vapidSubject: process.env.VAPID_SUBJECT || 'mailto:peter@huestudios.com',
+    cronSecret: process.env.CRON_SECRET || '',
     public: {
       directusUrl: process.env.DIRECTUS_URL || 'http://localhost:8055',
       websocketUrl: process.env.DIRECTUS_WEBSOCKET_URL || 'ws://localhost:8055/websocket',
       directusRoleUser: process.env.NUXT_PUBLIC_DIRECTUS_ROLE_USER || '',
       appUrl: process.env.APP_URL || 'http://localhost:3000',
+      vapidPublicKey: process.env.VAPID_PUBLIC_KEY || '',
     },
   },
   shadcn: { prefix: '', componentDir: './app/components/ui' },

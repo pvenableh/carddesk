@@ -153,6 +153,7 @@ async function doQuickLog() {
 <template>
   <div class="cd-screen on">
     <div class="cd-scrl cd-pad">
+      <CdPushPrompt />
       <div class="cd-hero">
         <div style="font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 2px; color: #00ff87; margin-bottom: 2px">
           <CdIcon emoji="🏆" icon="lucide:trophy" :size="11" /> Rockstar Networker
