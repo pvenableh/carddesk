@@ -15,7 +15,7 @@ function ensureConfigured(): boolean {
   const config = useRuntimeConfig()
   const publicKey = config.public?.vapidPublicKey as string | undefined
   const privateKey = (config as any).vapidPrivateKey as string | undefined
-  const subject = (config as any).vapidSubject || 'mailto:peter@huestudios.com'
+  const subject = (config as any).vapidSubject || 'mailto:hello@earnest.guru'
   if (!publicKey || !privateKey) {
     console.warn('[cd web-push] VAPID keys not configured — skipping push delivery')
     return false

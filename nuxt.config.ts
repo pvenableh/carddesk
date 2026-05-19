@@ -75,7 +75,7 @@ export default defineNuxtConfig({
     directusStaticToken: process.env.DIRECTUS_STATIC_TOKEN,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     vapidPrivateKey: process.env.VAPID_PRIVATE_KEY || '',
-    vapidSubject: process.env.VAPID_SUBJECT || 'mailto:peter@huestudios.com',
+    vapidSubject: process.env.VAPID_SUBJECT || 'mailto:hello@earnest.guru',
     cronSecret: process.env.CRON_SECRET || '',
     public: {
       directusUrl: process.env.DIRECTUS_URL || 'http://localhost:8055',
