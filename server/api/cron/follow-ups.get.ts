@@ -1,4 +1,4 @@
-// POST /api/cron/follow-ups — daily nudge for users with overdue hot
+// GET /api/cron/follow-ups — daily nudge for users with overdue hot
 // follow-ups. Auth-gated with a shared CRON_SECRET; intended to be hit by
 // Vercel Cron or any external scheduler.
 //
@@ -9,6 +9,7 @@
 // Limited to rating='hot' AND hibernated=false, then grouped by user.
 // One push per user summarizing the count + the most-overdue name.
 
+import { timingSafeEqual } from 'node:crypto'
 import { createDirectus, readItems, rest, staticToken } from '@directus/sdk'
 import { cdPushToUser } from '../../utils/web-push'
 
@@ -29,7 +30,9 @@ function requireCronAuth(event: any) {
   }
   const hdrs = getRequestHeaders(event)
   const provided = (hdrs.authorization || '').replace(/^Bearer\s+/i, '')
-  if (provided !== expected) {
+  const a = Buffer.from(provided)
+  const b = Buffer.from(expected)
+  if (a.length !== b.length || !timingSafeEqual(a, b)) {
     throw createError({ statusCode: 401, message: 'Unauthorized' })
   }
 }

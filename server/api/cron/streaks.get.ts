@@ -1,4 +1,4 @@
-// POST /api/cron/streaks — end-of-day nudge for users whose CardDesk
+// GET /api/cron/streaks — end-of-day nudge for users whose CardDesk
 // streak is about to break.
 //
 // "About to break" = streak > 0 AND last_activity_date is exactly yesterday
@@ -9,6 +9,7 @@
 // We don't push closer to midnight because lock-screen pings at 11:45 PM
 // are user-hostile.
 
+import { timingSafeEqual } from 'node:crypto'
 import { createDirectus, readItems, rest, staticToken } from '@directus/sdk'
 import { cdPushToUser } from '../../utils/web-push'
 
@@ -27,7 +28,9 @@ function requireCronAuth(event: any) {
   }
   const hdrs = getRequestHeaders(event)
   const provided = (hdrs.authorization || '').replace(/^Bearer\s+/i, '')
-  if (provided !== expected) {
+  const a = Buffer.from(provided)
+  const b = Buffer.from(expected)
+  if (a.length !== b.length || !timingSafeEqual(a, b)) {
     throw createError({ statusCode: 401, message: 'Unauthorized' })
   }
 }
