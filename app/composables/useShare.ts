@@ -7,6 +7,8 @@
  * isn't available — e.g. desktop Chrome — it falls back to a clipboard copy or
  * a file download so nothing is a dead end.
  */
+import { SOCIALS, socialUrl } from '~/types/socials'
+
 export interface ShareableContact {
   name?: string | null
   first_name?: string | null
@@ -16,8 +18,9 @@ export interface ShareableContact {
   email?: string | null
   phone?: string | null
   website?: string | null
-  linkedin?: string | null
   notes?: string | null
+  /** Social handles (linkedin, instagram, twitter, …) read dynamically via SOCIALS. */
+  [key: string]: any
 }
 
 function vcardEscape(v: string): string {
@@ -40,7 +43,10 @@ export function buildVCard(c: ShareableContact): string {
   if (c.email) lines.push(`EMAIL;TYPE=INTERNET:${vcardEscape(c.email)}`)
   if (c.phone) lines.push(`TEL;TYPE=CELL:${vcardEscape(c.phone)}`)
   if (c.website) lines.push(`URL:${vcardEscape(c.website)}`)
-  if (c.linkedin) lines.push(`URL;TYPE=LinkedIn:${vcardEscape(c.linkedin)}`)
+  for (const def of SOCIALS) {
+    const v = c[def.key]
+    if (v) lines.push(`URL;TYPE=${def.label}:${vcardEscape(socialUrl(def.key, v))}`)
+  }
   if (c.notes) lines.push(`NOTE:${vcardEscape(c.notes)}`)
   lines.push('END:VCARD')
   return lines.join('\r\n')

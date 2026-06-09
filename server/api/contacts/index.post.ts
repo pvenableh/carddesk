@@ -1,6 +1,7 @@
 import { createItem } from "@directus/sdk";
 import { getUserDirectus } from "../../utils/directus";
 import { getValidToken } from "../../utils/auth";
+import { SOCIAL_KEYS } from "~/types/socials";
 
 export default defineEventHandler(async (event) => {
   const token = await getValidToken(event);
@@ -18,6 +19,7 @@ export default defineEventHandler(async (event) => {
         company: body.company ?? null,
         email: body.email ?? null,
         phone: body.phone ?? null,
+        ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, body[k] ?? null])),
         industry: body.industry ?? null,
         met_at: body.met_at ?? null,
         rating: body.rating ?? null,

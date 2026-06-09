@@ -2,8 +2,9 @@ import { updateItem } from '@directus/sdk'
 import { getDirectus } from '../../utils/directus'
 import { getCurrentUserId } from '../../utils/auth'
 import { getOrCreateCard, assetUrl } from '../../utils/cards'
+import { SOCIAL_KEYS } from '~/types/socials'
 
-const EDITABLE = ['display_name', 'title', 'company', 'email', 'phone', 'website', 'linkedin', 'headline', 'broadcast_activity'] as const
+const EDITABLE = ['display_name', 'title', 'company', 'email', 'phone', 'website', ...SOCIAL_KEYS, 'headline', 'broadcast_activity']
 
 /** Update the signed-in user's card (admin-token write; server owns the row). */
 export default defineEventHandler(async (event) => {

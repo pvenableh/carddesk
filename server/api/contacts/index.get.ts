@@ -1,6 +1,7 @@
 import { readItems } from "@directus/sdk";
 import { getUserDirectus } from "../../utils/directus";
 import { getValidToken } from "../../utils/auth";
+import { SOCIAL_KEYS } from "~/types/socials";
 
 export default defineEventHandler(async (event) => {
   const token = await getValidToken(event);
@@ -17,6 +18,7 @@ export default defineEventHandler(async (event) => {
           "company",
           "email",
           "phone",
+          ...SOCIAL_KEYS,
           "industry",
           "met_at",
           "rating",

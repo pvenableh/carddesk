@@ -37,7 +37,7 @@ function onTap() {
         style="transition: stroke-dashoffset 0.5s ease, stroke 0.3s ease"
       />
     </svg>
-    <span class="cd-gauge-val" :style="{ color: gaugeColor }">{{ centerText }}</span>
+    <span class="cd-gauge-val" :class="{ 'is-inf': centerText === '∞' }" :style="{ color: gaugeColor }">{{ centerText }}</span>
   </button>
 </template>
 
@@ -68,5 +68,12 @@ function onTap() {
   font-weight: 800;
   font-family: monospace;
   font-variant-numeric: tabular-nums;
+}
+/* The infinity glyph (org/unlimited plans) is hard to read at 9px — size it up. */
+.cd-gauge-val.is-inf {
+  font-size: 18px;
+  line-height: 1;
+  /* nudge the glyph to optical centre within the ring */
+  margin-top: -1px;
 }
 </style>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { buildVCard, useShare } from '~/composables/useShare'
+import { SOCIALS, socialUrl } from '~/types/socials'
 
 definePageMeta({ layout: false })
 
@@ -10,9 +11,12 @@ const { shareContact } = useShare()
 interface PublicCard {
   id: string; name: string; title: string | null; company: string | null
   email: string | null; phone: string | null; website: string | null
-  linkedin: string | null; headline: string | null; imageUrl: string | null
+  linkedin: string | null; instagram: string | null; twitter: string | null; youtube: string | null; behance: string | null
+  headline: string | null; imageUrl: string | null
 }
 const { data: card, error } = await useFetch<PublicCard>(() => `/api/cards/${id.value}`)
+
+const socialLinks = computed(() => (card.value ? SOCIALS.filter((s) => (card.value as any)[s.key]) : []))
 
 useHead(() => ({ title: card.value ? `${card.value.name} · CardDesk` : 'CardDesk Card' }))
 
@@ -49,9 +53,9 @@ function addToContacts() {
       <div style="font-size: 13px; color: var(--cd-dim)">{{ [card.title, card.company].filter(Boolean).join(' · ') || 'On CardDesk' }}</div>
       <div v-if="card.headline" style="font-size: 12px; color: var(--cd-muted); margin-top: 6px; font-style: italic">“{{ card.headline }}”</div>
 
-      <div v-if="card.website || card.linkedin || card.phone || card.email" class="cardpage-links">
+      <div v-if="card.website || socialLinks.length || card.phone || card.email" class="cardpage-links">
         <a v-if="card.website" :href="card.website" target="_blank" rel="noopener"><CdIcon emoji="🌐" icon="lucide:globe" :size="16" /></a>
-        <a v-if="card.linkedin" :href="card.linkedin" target="_blank" rel="noopener"><CdIcon emoji="in" icon="lucide:linkedin" :size="16" /></a>
+        <a v-for="s in socialLinks" :key="s.key" :href="socialUrl(s.key, (card as any)[s.key])" target="_blank" rel="noopener" :aria-label="s.label"><Icon :name="s.icon" :size="16" /></a>
         <a v-if="card.phone" :href="`tel:${card.phone}`"><CdIcon emoji="📞" icon="lucide:phone" :size="16" /></a>
         <a v-if="card.email" :href="`mailto:${card.email}`"><CdIcon emoji="✉️" icon="lucide:mail" :size="16" /></a>
       </div>
@@ -86,9 +90,9 @@ function addToContacts() {
   padding: 28px 24px;
 }
 .cardpage-brand {
-  font-family: monospace;
-  font-size: 13px;
-  letter-spacing: 2px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 19px;
+  letter-spacing: 0.06em;
   color: var(--cd-muted);
   margin-bottom: 18px;
 }

@@ -4,6 +4,9 @@ const year = new Date().getFullYear()
 
 <template>
   <div class="cd-brand-footer">
+    <p class="cd-bf-powered">
+      CARDDESK is Powered by <a href="https://earnest.guru" target="_blank" rel="noopener">Earnest</a>
+    </p>
     <h5 class="web-designer">
       <a href="https://huestudios.com" target="_blank" rel="noopener">
         designed by
@@ -40,13 +43,30 @@ const year = new Date().getFullYear()
   justify-content: center;
   margin-top: 32px;
 }
+.cd-bf-powered {
+  margin: 0 0 26px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+}
+.cd-bf-powered :deep(a) {
+  color: var(--cd-muted);
+  text-decoration: none;
+}
+.cd-bf-powered :deep(a:hover) {
+  color: var(--cd-text);
+  text-decoration: underline;
+}
 .web-designer {
   margin: 0;
   letter-spacing: 0.2em;
 }
 .web-designer a {
   font-size: 10px;
-  color: var(--cd-dim);
+  color: var(--cd-muted);
   text-decoration: none;
 }
 .web-designer svg {
@@ -56,7 +76,7 @@ const year = new Date().getFullYear()
   stroke: none;
   margin-top: -11px;
   margin-left: 3px;
-  fill: var(--cd-dim);
+  fill: var(--cd-muted);
 }
 .web-designer svg path {
   transition: all 0.3s linear;
@@ -70,6 +90,6 @@ const year = new Date().getFullYear()
   margin: 6px 0 28px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: var(--cd-dim);
+  color: var(--cd-muted);
 }
 </style>

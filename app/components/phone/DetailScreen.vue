@@ -2,6 +2,7 @@
 import { RATINGS, ACT_TYPES, getRating, getAct, cEmoji } from '~/composables/useConstants'
 import { todayStr, fmtFull } from '~/composables/useFormatters'
 import { PIPELINE_STAGES, LOST_REASONS } from '~/composables/usePipeline'
+import { SOCIALS, SOCIAL_KEYS, socialUrl } from '~/types/socials'
 import type { PipelineStage } from '~/types/directus'
 import confettiLib from 'canvas-confetti'
 
@@ -72,8 +73,14 @@ function startEdit() {
     name: c.name, title: c.title, company: c.company,
     email: c.email, phone: c.phone, industry: c.industry,
     met_at: c.met_at, rating: c.rating, notes: c.notes,
+    ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, c[k]])),
   }
   editing.value = true
+}
+
+/** The platforms this contact has a handle for (for the follow buttons). */
+function contactSocials(c: any) {
+  return SOCIALS.filter((s) => c?.[s.key])
 }
 
 async function doSaveEdit() {
@@ -309,6 +316,9 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
           </div>
           <label class="cd-lbl">Email</label><input v-model="editForm.email" class="cd-inp" type="email" />
           <label class="cd-lbl">Phone</label><input v-model="editForm.phone" class="cd-inp" />
+          <template v-for="s in SOCIALS" :key="s.key">
+            <label class="cd-lbl">{{ s.label }}</label><input v-model="editForm[s.key]" class="cd-inp" :placeholder="s.placeholder" />
+          </template>
           <label class="cd-lbl">Rating</label>
           <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px">
             <button
@@ -380,6 +390,13 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
               <span class="cd-info-k"><CdIcon emoji="📞" icon="lucide:phone" :size="11" /></span>
               <a :href="'tel:' + (selContact as any).phone" class="cd-info-v" style="color: #4da6ff">{{ (selContact as any).phone }}</a>
             </div>
+          </div>
+
+          <!-- Follow buttons — open the contact's socials in a new tab. -->
+          <div v-if="contactSocials(selContact).length" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px">
+            <a v-for="s in contactSocials(selContact)" :key="s.key" :href="socialUrl(s.key, (selContact as any)[s.key])" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 10px; background: var(--cd-bg2); border: 1px solid var(--cd-bdr); color: var(--cd-text); font-size: 12px; font-weight: 700; text-decoration: none">
+              <Icon :name="s.icon" :size="15" /> {{ s.label }}
+            </a>
           </div>
 
           <div class="cd-log-sec" style="margin-bottom: 16px">

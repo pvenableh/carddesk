@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getValidToken } from "../utils/auth";
 import { enforceCredits, chargeCredits } from "../utils/ai-credits";
+import { SOCIAL_KEYS } from "~/types/socials";
 
 export default defineEventHandler(async (event) => {
   await getValidToken(event);
@@ -43,24 +44,25 @@ export default defineEventHandler(async (event) => {
 
   const account = await enforceCredits(event, "scan-card");
 
+  const socialJson = SOCIAL_KEYS.map((k) => `"${k}": string|null`).join(", ");
   const isMultiSide = imageContents.length > 1;
   const prompt = isMultiSide
     ? `These are photos of the front and back of a business card. Extract and merge all contact info from both sides into a single result. Return ONLY JSON (no markdown):
 {
   "first_name": string|null, "last_name": string|null, "name": string|null,
   "title": string|null, "company": string|null, "email": string|null,
-  "phone": string|null, "website": string|null, "linkedin": string|null,
+  "phone": string|null, "website": string|null, ${socialJson},
   "address": string|null, "industry": string|null
 }
-Rules: name=full name combined. Industry: infer from context (Technology/Finance/Healthcare/Real Estate/Legal/Marketing/Venture Capital/Other). Merge info from both sides — the front typically has name/title/company, the back may have additional contact details. Return ONLY the JSON.`
+Rules: name=full name combined. social handles = the URL or @handle if printed on the card, else null. Industry: infer from context (Technology/Finance/Healthcare/Real Estate/Legal/Marketing/Venture Capital/Other). Merge info from both sides — the front typically has name/title/company, the back may have additional contact details. Return ONLY the JSON.`
     : `Extract contact info from this business card. Return ONLY JSON (no markdown):
 {
   "first_name": string|null, "last_name": string|null, "name": string|null,
   "title": string|null, "company": string|null, "email": string|null,
-  "phone": string|null, "website": string|null, "linkedin": string|null,
+  "phone": string|null, "website": string|null, ${socialJson},
   "address": string|null, "industry": string|null
 }
-Rules: name=full name combined. Industry: infer from context (Technology/Finance/Healthcare/Real Estate/Legal/Marketing/Venture Capital/Other). Return ONLY the JSON.`;
+Rules: name=full name combined. social handles = the URL or @handle if printed on the card, else null. Industry: infer from context (Technology/Finance/Healthcare/Real Estate/Legal/Marketing/Venture Capital/Other). Return ONLY the JSON.`;
 
   const client = new Anthropic({ apiKey: config.anthropicApiKey });
   try {
@@ -110,7 +112,7 @@ Rules: name=full name combined. Industry: infer from context (Technology/Finance
       email: parsed.email ?? null,
       phone: parsed.phone ?? null,
       website: parsed.website ?? null,
-      linkedin: parsed.linkedin ?? null,
+      ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, parsed[k] ?? null])),
       address: parsed.address ?? null,
       industry: parsed.industry ?? null,
     };

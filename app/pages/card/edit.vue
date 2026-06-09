@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { SOCIALS, SOCIAL_KEYS } from '~/types/socials'
+
 definePageMeta({ middleware: 'auth', layout: false })
 
 const router = useRouter()
@@ -6,9 +8,10 @@ const { success, error: showError } = useToast()
 
 const { data: card } = await useFetch<any>('/api/cards/me')
 
-const form = reactive({
+const form = reactive<Record<string, any>>({
   display_name: '', title: '', company: '', headline: '',
-  email: '', phone: '', website: '', linkedin: '', broadcast_activity: true,
+  email: '', phone: '', website: '', broadcast_activity: true,
+  ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, ''])),
 })
 const imageUrl = ref<string | null>(null)
 
@@ -21,7 +24,7 @@ watchEffect(() => {
   form.email = card.value.email ?? ''
   form.phone = card.value.phone ?? ''
   form.website = card.value.website ?? ''
-  form.linkedin = card.value.linkedin ?? ''
+  for (const k of SOCIAL_KEYS) form[k] = card.value[k] ?? ''
   form.broadcast_activity = card.value.broadcast_activity ?? true
   imageUrl.value = card.value.imageUrl ?? null
 })
@@ -99,8 +102,10 @@ const initials = computed(() =>
       <input v-model="form.phone" class="cd-inp" type="tel" placeholder="+1 555 000 0000" />
       <label class="cd-lbl">Website</label>
       <input v-model="form.website" class="cd-inp" placeholder="https://acme.com" />
-      <label class="cd-lbl">LinkedIn</label>
-      <input v-model="form.linkedin" class="cd-inp" placeholder="https://linkedin.com/in/jane" />
+      <template v-for="s in SOCIALS" :key="s.key">
+        <label class="cd-lbl">{{ s.label }}</label>
+        <input v-model="form[s.key]" class="cd-inp" :placeholder="s.placeholder" />
+      </template>
 
       <div class="ce-toggle">
         <div>

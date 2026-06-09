@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import { SOCIALS, socialUrl } from '~/types/socials'
+
 const { open, tab, hide } = useShareSheet()
 const { shareUrl } = useShare()
 const { success } = useToast()
 
-interface MyCard { id: string; url: string; name: string; title: string | null; company: string | null }
+interface MyCard { id: string; url: string; name: string; title: string | null; company: string | null; [key: string]: any }
 
 const card = ref<MyCard | null>(null)
+const cardSocials = computed(() => (card.value ? SOCIALS.filter((s) => (card.value as any)[s.key]) : []))
 const invite = ref<{ code: string; url: string } | null>(null)
 const qr = reactive<{ card: string; invite: string }>({ card: '', invite: '' })
 const busy = ref(false)
@@ -74,6 +77,9 @@ async function shareInvite() {
           <div v-if="card" style="margin: 4px 0 12px">
             <div style="font-size: 16px; font-weight: 800">{{ card.name }}</div>
             <div style="font-size: 12px; color: var(--cd-dim)">{{ [card.title, card.company].filter(Boolean).join(' · ') || 'CardDesk' }}</div>
+            <div v-if="cardSocials.length" class="cd-sheet-socials">
+              <a v-for="s in cardSocials" :key="s.key" :href="socialUrl(s.key, (card as any)[s.key])" target="_blank" rel="noopener" :aria-label="s.label"><Icon :name="s.icon" :size="20" /></a>
+            </div>
           </div>
           <button class="cd-abtn g" style="margin-bottom: 8px" @click="shareMyCard"><CdIcon emoji="📤" icon="lucide:share" :size="14" /> Share my card</button>
           <button class="cd-abtn" style="background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr)" @click="editCard"><CdIcon emoji="✏️" icon="lucide:pencil" :size="13" /> Edit my card</button>
@@ -160,6 +166,19 @@ async function shareInvite() {
   margin-bottom: 12px;
 }
 .cd-sheet-qrbox img { display: block; }
+.cd-sheet-socials {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 9px;
+}
+.cd-sheet-socials a {
+  display: inline-flex;
+  line-height: 0;
+  opacity: 0.95;
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+.cd-sheet-socials a:hover { transform: translateY(-1px); opacity: 1; }
 .cd-sheet-loading {
   width: 244px;
   height: 244px;

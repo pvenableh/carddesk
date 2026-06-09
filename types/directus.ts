@@ -24,6 +24,10 @@ export interface CdCard {
   phone?: string | null
   website?: string | null
   linkedin?: string | null
+  instagram?: string | null
+  twitter?: string | null
+  youtube?: string | null
+  behance?: string | null
   headline?: string | null
   image?: string | null
   broadcast_activity?: boolean
@@ -117,6 +121,11 @@ export interface CdContact {
   company?: string
   email?: string
   phone?: string
+  linkedin?: string
+  instagram?: string
+  twitter?: string
+  youtube?: string
+  behance?: string
   industry?: string
   met_at?: string
   rating: 'hot' | 'warm' | 'nurture' | 'cold' | null

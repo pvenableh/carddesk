@@ -115,6 +115,9 @@ dependencies:
     version: 3.25.76
 
 devDependencies:
+  '@iconify-json/logos':
+    specifier: ^1.2.11
+    version: 1.2.11
   '@nuxt/devtools':
     specifier: latest
     version: 3.2.2(vite@7.3.1)(vue@3.5.29)
@@ -136,6 +139,9 @@ devDependencies:
   dotenv-cli:
     specifier: ^11.0.0
     version: 11.0.0
+  nuxt-gtag:
+    specifier: ^4.1.0
+    version: 4.1.0
   postcss:
     specifier: ^8.5.3
     version: 8.5.8
@@ -2050,6 +2056,12 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
+  /@iconify-json/logos@1.2.11:
+    resolution: {integrity: sha512-fOo4pGEatuyuCFNL+cwquYMa2Im0oJHRHV7lt/Qqs5Ode/lPImHCQcfTtPzZj7qYMPb/h8YHN3TG54uEowrjNQ==}
+    dependencies:
+      '@iconify/types': 2.0.0
+    dev: true
+
   /@iconify-json/lucide@1.2.95:
     resolution: {integrity: sha512-SxDM/NEJtcGGAiLAnaZ7rcmVxkJI8esswTZLCm5BfNcoPf/yawIImb4nNfsu4dtFzP/Cl6KRg+vZq521zOUOnQ==}
     dependencies:
@@ -2064,7 +2076,6 @@ packages:
 
   /@iconify/types@2.0.0:
     resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==}
-    dev: false
 
   /@iconify/utils@2.3.0:
     resolution: {integrity: sha512-GmQ78prtwYW6EtzXRU1rY+KwOKfz32PD7iJh6Iyqw68GiKuoZ2A6pRtzWONz5VQJbp50mEjXh/7NkumtrAgRKA==}
@@ -8594,6 +8605,17 @@ packages:
       - bcrypt
       - magicast
     dev: false
+
+  /nuxt-gtag@4.1.0:
+    resolution: {integrity: sha512-2TL7RUA8N8NYGbY4UZ9IqKyMZMgO9cCGu6yqadUU8RF+Y81PXI+k+1giIA11XXStaJoGXaXeNsBUIJXn1tUy3A==}
+    dependencies:
+      '@nuxt/kit': 4.3.1(magicast@0.5.2)
+      defu: 6.1.4
+      pathe: 2.0.3
+      ufo: 1.6.3
+    transitivePeerDependencies:
+      - magicast
+    dev: true
 
   /nuxt@4.3.1(@types/node@22.19.13)(@vue/compiler-sfc@3.5.29)(eslint@9.39.3)(typescript@5.9.3)(vite@7.3.1):
     resolution: {integrity: sha512-bl+0rFcT5Ax16aiWFBFPyWcsTob19NTZaDL5P6t0MQdK63AtgS6fN6fwvwdbXtnTk6/YdCzlmuLzXhSM22h0OA==}

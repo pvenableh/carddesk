@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RATINGS, INDUSTRIES } from '~/composables/useConstants'
+import { SOCIALS, SOCIAL_KEYS } from '~/types/socials'
 import confettiLib from 'canvas-confetti'
 
 const { contacts, createContact, logActivity } = useContacts()
@@ -8,9 +9,10 @@ const { scanning, scanStep, error: scanError, captureFront, captureBackAndScan, 
 const { nav, goDetail } = useNavigation()
 const { error: showError } = useToast()
 
-const addForm = ref({
+const addForm = ref<Record<string, any>>({
   firstName: '', lastName: '', title: '', company: '',
   email: '', phone: '', industry: '', metAt: '', rating: '', notes: '',
+  ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, ''])),
 })
 const wasScanned = ref(false)
 
@@ -33,7 +35,8 @@ function applyResult(result: any) {
     industry: result.industry ?? '',
     metAt: addForm.value.metAt,
     rating: '',
-    notes: [result.website, result.linkedin, result.address].filter(Boolean).join('\n'),
+    notes: [result.website, result.address].filter(Boolean).join('\n'),
+    ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, result[k] ?? ''])),
   }
   wasScanned.value = true
   earn(50, '📷', 'Card scanned!', { total_scans: (xp.value.total_scans ?? 0) + 1 })
@@ -82,6 +85,7 @@ async function doSaveContact() {
     email: addForm.value.email || undefined,
     phone: addForm.value.phone || undefined,
     industry: addForm.value.industry || undefined,
+    ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, addForm.value[k] || undefined])),
     met_at: addForm.value.metAt || undefined,
     rating: (addForm.value.rating as any) || undefined,
     notes: addForm.value.notes || undefined,
@@ -194,6 +198,9 @@ async function doSaveContact() {
       <label class="cd-lbl">Company</label><input v-model="addForm.company" class="cd-inp" placeholder="Acme Corp" />
       <label class="cd-lbl">Email</label><input v-model="addForm.email" class="cd-inp" type="email" placeholder="jane@acme.com" />
       <label class="cd-lbl">Phone</label><input v-model="addForm.phone" class="cd-inp" type="tel" placeholder="+1 555 000 0000" />
+      <template v-for="s in SOCIALS" :key="s.key">
+        <label class="cd-lbl">{{ s.label }}</label><input v-model="addForm[s.key]" class="cd-inp" :placeholder="s.placeholder" />
+      </template>
       <label class="cd-lbl">Where We Met</label><input v-model="addForm.metAt" class="cd-inp" placeholder="SaaS Summit NYC" />
       <label class="cd-lbl">Industry</label>
       <select v-model="addForm.industry" class="cd-inp" style="cursor: pointer">

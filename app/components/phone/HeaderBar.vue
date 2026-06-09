@@ -75,10 +75,14 @@ function onClickOutside(e: MouseEvent) {
 
 <template>
   <div class="cd-sbar">
-    <span class="cd-sbar-time">{{ time }}</span>
+    <div class="cd-sbar-left">
+      <span class="cd-sbar-time">{{ time }}</span>
+      <!-- Share moves here on small screens (time is hidden — phones show the OS clock). -->
+      <button class="cd-sbar-share cd-sbar-share--m" type="button" aria-label="Share card or invite" @click="openShareSheet('card')"><CdIcon emoji="📤" icon="lucide:share" :size="15" /></button>
+    </div>
     <button class="cd-sbar-logo" type="button" aria-label="Home" @click="goHome"><span class="cd-sbar-logo-brand">CARD</span><span class="cd-sbar-logo-accent">DESK</span></button>
     <div class="cd-sbar-right">
-      <button class="cd-sbar-share" type="button" aria-label="Share card or invite" @click="openShareSheet('card')"><CdIcon emoji="📤" icon="lucide:share" :size="15" /></button>
+      <button class="cd-sbar-share cd-sbar-share--d" type="button" aria-label="Share card or invite" @click="openShareSheet('card')"><CdIcon emoji="📤" icon="lucide:share" :size="15" /></button>
       <PhoneCreditGauge />
     <div ref="dropdownRef" class="cd-avatar-wrap">
       <button class="cd-avatar" @click="toggleDropdown">{{ initials }}</button>
@@ -126,6 +130,12 @@ function onClickOutside(e: MouseEvent) {
   z-index: 10;
   position: relative;
 }
+.cd-sbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 50px;
+}
 .cd-sbar-time {
   min-width: 50px;
 }
@@ -133,9 +143,9 @@ function onClickOutside(e: MouseEvent) {
  * button :active rule applies its own transform: scale(), which would wipe out
  * a centering transform and make the logo jump. Margins keep it put. */
 .cd-sbar-logo {
-  font-family: monospace;
-  font-size: 15px;
-  letter-spacing: 2px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 0.06em;
   position: absolute;
   left: 0;
   right: 0;
@@ -176,6 +186,12 @@ function onClickOutside(e: MouseEvent) {
 .cd-sbar-share:hover {
   border-color: var(--cd-accent);
   color: var(--cd-accent);
+}
+/* The mobile share button lives in the left slot, hidden on wide screens.
+ * Declared AFTER .cd-sbar-share so it overrides its display:flex (equal
+ * specificity → source order wins). */
+.cd-sbar-share--m {
+  display: none;
 }
 .cd-avatar-wrap {
   position: relative;
@@ -273,5 +289,19 @@ function onClickOutside(e: MouseEvent) {
 .cd-dropdown-leave-to {
   opacity: 0;
   transform: translateY(-4px) scale(0.97);
+}
+
+/* ── Small screens: drop the redundant clock (phones show the OS time) and
+ * move Share to the freed-up left slot so the right cluster isn't cramped. ── */
+@media (max-width: 480px) {
+  .cd-sbar-time {
+    display: none;
+  }
+  .cd-sbar-share--d {
+    display: none;
+  }
+  .cd-sbar-share--m {
+    display: flex;
+  }
 }
 </style>

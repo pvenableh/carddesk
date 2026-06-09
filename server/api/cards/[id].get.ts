@@ -1,6 +1,7 @@
 import { readItems, readUsers } from '@directus/sdk'
 import { getDirectus } from '../../utils/directus'
 import { assetUrl } from '../../utils/cards'
+import { SOCIAL_KEYS } from '~/types/socials'
 
 /**
  * PUBLIC digital business card for a user id. Reads the user's cd_cards row
@@ -16,7 +17,7 @@ export default defineEventHandler(async (event) => {
   const cards = (await admin.request(
     readItems('cd_cards' as any, {
       filter: { user: { _eq: id } } as any,
-      fields: ['display_name', 'title', 'company', 'email', 'phone', 'website', 'linkedin', 'headline', 'image'],
+      fields: ['display_name', 'title', 'company', 'email', 'phone', 'website', ...SOCIAL_KEYS, 'headline', 'image'],
       limit: 1,
     }),
   )) as any[]
@@ -48,7 +49,7 @@ export default defineEventHandler(async (event) => {
     email: c.email ?? null,
     phone: c.phone ?? null,
     website: c.website ?? null,
-    linkedin: c.linkedin ?? null,
+    ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, c[k] ?? null])),
     headline: c.headline ?? null,
     imageUrl: assetUrl(c.image),
   }

@@ -5,7 +5,6 @@ import type { CdActivity } from '~/types/directus'
 
 const { contacts, followUpStatus, logActivity } = useContacts()
 const { state: xp, curLevel, nextLevel, xpPct, earn } = useXp()
-const { logout } = useAuth()
 const { getPipelineStats } = usePipeline()
 
 const hotCount = computed(() => contacts.value.filter((c) => c.rating === 'hot').length)
@@ -374,10 +373,6 @@ async function doQuickLog() {
           >{{ b.label }}</div>
         </div>
       </div>
-
-      <CdButton tier="utility" block style="margin-top: 12px" @click="logout">
-        Sign Out
-      </CdButton>
     </div>
   </div>
 </template>

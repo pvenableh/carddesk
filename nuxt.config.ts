@@ -30,7 +30,15 @@ export default defineNuxtConfig({
     '@vueuse/nuxt',
     'shadcn-nuxt',
     '@vite-pwa/nuxt',
+    'nuxt-gtag',
   ],
+  // Google Analytics (GA4). Only loads in production, so dev/preview traffic
+  // never pollutes the property. Defaults to the CardDesk measurement id;
+  // override per-environment with NUXT_PUBLIC_GTAG_ID if needed.
+  gtag: {
+    id: process.env.NUXT_PUBLIC_GTAG_ID || 'G-RE0F0ZCCV9',
+    enabled: process.env.NODE_ENV === 'production',
+  },
   pwa: {
     // injectManifest so we own the SW source — needed for Web Push push +
     // notificationclick handlers (generateSW can't host custom listeners).

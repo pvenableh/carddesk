@@ -8,7 +8,10 @@ import PhoneContactsScreen from '~/components/phone/ContactsScreen.vue'
 import PhoneDetailScreen from '~/components/phone/DetailScreen.vue'
 import PhoneAddContactScreen from '~/components/phone/AddContactScreen.vue'
 
-definePageMeta({ middleware: 'auth' })
+// No auth middleware here: logged-out visitors get the marketing landing at the
+// bare domain instead of a redirect to /login. The app shell only renders when a
+// session exists.
+const { loggedIn } = useUserSession()
 
 const { fetchContacts, followUpStatus, contacts } = useContacts()
 const { toast, loadXp, earn } = useXp()
@@ -39,6 +42,7 @@ const alertCs = computed(() =>
 )
 
 onMounted(async () => {
+  if (!loggedIn.value) return
   await Promise.all([fetchContacts(), loadXp(), loadProfile()])
 
   // Redeem a pending invite (set by /i/[code] before signup).
@@ -58,7 +62,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div :class="rootClass">
+  <CdLanding v-if="!loggedIn" />
+  <div v-else :class="rootClass">
     <PhoneHeaderBar />
 
     <!-- Screens with iOS-like transitions -->

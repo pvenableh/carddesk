@@ -357,14 +357,14 @@ async function loadLeadSuggestions() {
       </div>
 
       <div class="cd-vc" style="border-color: rgba(77, 166, 255, 0.2)">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px">
           <div style="display: flex; align-items: center; gap: 6px">
             <CdIcon emoji="🤖" icon="lucide:sparkles" :size="15" />
             <span style="font-size: 13px; font-weight: 800; color: #4da6ff">What should I do next?</span>
           </div>
           <button
             class="cd-abtn"
-            style="font-size: 10px; padding: 4px 10px; background: transparent; border-color: var(--cd-bdr); color: #4da6ff; width: auto; flex-shrink: 0"
+            style="font-size: 10px; padding: 4px 10px; background: transparent; border-color: var(--cd-bdr); color: #4da6ff; width: auto; flex-shrink: 0; white-space: nowrap"
             :disabled="leadSugLoading"
             @click="loadLeadSuggestions"
           >
