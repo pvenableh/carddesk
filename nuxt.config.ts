@@ -85,12 +85,21 @@ export default defineNuxtConfig({
     stripeSecretKeyTest: process.env.STRIPE_SECRET_KEY_TEST || '',
     stripeSecretKeyLive: process.env.STRIPE_SECRET_KEY_LIVE || '',
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+    sendgridApiKey: process.env.SENDGRID_API_KEY || '',
+    sendgridFromEmail: process.env.SENDGRID_FROM_EMAIL || 'hello@earnest.guru',
+    sendgridFromName: process.env.SENDGRID_FROM_NAME || 'CardDesk',
+    sendgridReplyToEmail: process.env.SENDGRID_REPLY_TO_EMAIL || '',
+    sendgridBccEmail: process.env.SENDGRID_BCC_EMAIL || '',
     public: {
       directusUrl: process.env.DIRECTUS_URL || 'http://localhost:8055',
       websocketUrl: process.env.DIRECTUS_WEBSOCKET_URL || 'ws://localhost:8055/websocket',
       directusRoleUser: process.env.NUXT_PUBLIC_DIRECTUS_ROLE_USER || '',
       appUrl: process.env.APP_URL || 'http://localhost:3000',
       vapidPublicKey: process.env.VAPID_PUBLIC_KEY || '',
+      // Resolved test/live to mirror the secret key selection (NODE_ENV).
+      stripePublishableKey: process.env.NODE_ENV === 'production'
+        ? (process.env.STRIPE_PUBLIC_KEY_LIVE || '')
+        : (process.env.STRIPE_PUBLIC_KEY_TEST || ''),
     },
   },
   shadcn: { prefix: '', componentDir: './app/components/ui' },

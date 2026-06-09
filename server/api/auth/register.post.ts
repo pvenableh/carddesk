@@ -1,5 +1,9 @@
-import { createDirectus, rest, registerUser, authentication } from '@directus/sdk'
+import { createDirectus, rest, createUser, authentication } from '@directus/sdk'
+import { getDirectus } from '../../utils/directus'
 import { fetchUserProfile } from '../../utils/profile'
+import { sendEmail } from '../../utils/email-send'
+import { welcomeEmail } from '../../utils/emails/welcome'
+import { ensureUserCredits } from '../../utils/ai-credits'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -11,17 +15,30 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
 
   try {
-    const directus = createDirectus(config.public.directusUrl)
-      .with(rest())
+    // Mirror the Earnest app: create the user with the static (elevated) token so
+    // we can assign the CardDesk role and activate the account immediately. The
+    // public /users/register endpoint can't set role/status and 400s when the
+    // shared Directus instance requires them. The cd_* rows (xp, credits) are
+    // created lazily on first use, so nothing else needs seeding here.
+    const admin = getDirectus()
 
-    await directus.request(
-      registerUser({
+    const newUser = (await admin.request(
+      createUser({
         email,
         password,
         first_name: first_name || undefined,
         last_name: last_name || undefined,
+        status: 'active',
+        role: config.public.directusRoleUser || undefined,
       })
-    )
+    )) as any
+
+    // Grant the one-time onboarding AI credits up front so new users start with
+    // a real (non-zero) balance — instead of the grant firing lazily on first
+    // AI use. Best-effort; never block signup on it.
+    if (newUser?.id) {
+      try { await ensureUserCredits(newUser.id) } catch (err) { console.warn('[register] credit grant failed:', err) }
+    }
 
     // Auto-login after registration
     const authDirectus = createDirectus(config.public.directusUrl)
@@ -51,6 +68,18 @@ export default defineEventHandler(async (event) => {
       },
       loggedInAt: Date.now(),
     })
+
+    // Welcome / confirm-email message. Fire-and-forget — a mail outage must not
+    // break signup (the account is already created + the user is logged in).
+    try {
+      const { subject, html, text } = welcomeEmail({
+        firstName: first_name || profile.first_name || null,
+        appUrl: config.public.appUrl,
+      })
+      await sendEmail({ to: email, subject, html, text, emailName: 'welcome' })
+    } catch (err) {
+      console.warn('[register] welcome email failed:', err)
+    }
 
     return { ok: true }
   } catch (err: any) {

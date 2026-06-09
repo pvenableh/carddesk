@@ -59,6 +59,7 @@ async function handleSubmit() {
         </p>
       </div>
     </div>
+    <CdBrandFooter />
   </div>
 </template>
 
@@ -67,6 +68,7 @@ async function handleSubmit() {
   min-height: 100vh;
   background: var(--cd-bg);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 16px;

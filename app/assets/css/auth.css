@@ -143,6 +143,12 @@ html[data-theme="glass"][data-mode="dark"] .auth-input {
 .auth-input:focus {
   border-color: var(--cd-muted);
 }
+/* Prevent iOS auto-zoom on focus: inputs need >=16px font on touch screens. */
+@media (max-width: 767px) {
+  .auth-input {
+    font-size: 16px;
+  }
+}
 .auth-input::placeholder {
   color: var(--cd-dim);
 }

@@ -17,9 +17,12 @@ export default defineEventHandler(async (event) => {
     fast_followups: body.fast_followups ?? 0,
     hot_responses: body.hot_responses ?? 0,
     intros: body.intros ?? 0,
+    week_xp: body.week_xp ?? 0,
+    week_start: body.week_start ?? null,
     unlocked_badges: body.unlocked_badges ?? [],
     completed_missions: body.completed_missions ?? [],
     missions_date: body.missions_date ?? null,
+    hype_date: body.hype_date ?? null,
   };
   try {
     const existing = await directus.request(

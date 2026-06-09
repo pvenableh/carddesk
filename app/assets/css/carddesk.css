@@ -403,6 +403,24 @@ select.cd-inp {
   margin-bottom: 4px;
   font-weight: 700;
 }
+/* Pinned action bar — keeps the primary CTA (e.g. Save Contact) reachable on
+   small screens instead of scrolling off below the fold / behind the home bar. */
+.cd-save-bar {
+  flex-shrink: 0;
+  padding: 10px 14px max(10px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--cd-bdr);
+  background: color-mix(in srgb, var(--cd-bg) 86%, transparent);
+  backdrop-filter: blur(10px);
+}
+/* iOS zooms the page when a focused input's font-size is < 16px. Bump inputs to
+   16px on touch screens only, so the compact desktop/mockup look is preserved. */
+@media (max-width: 767px) {
+  .cd-inp,
+  select.cd-inp,
+  textarea.cd-inp {
+    font-size: 16px;
+  }
+}
 /* Universal back button — uppercase, small, chevron (not arrow). */
 .cd-back {
   display: inline-flex;
@@ -957,6 +975,16 @@ select.cd-inp {
 @keyframes cd-wig {
   0%, 100% { transform: rotate(-4deg) scale(1); }
   50% { transform: rotate(4deg) scale(1.1); }
+}
+/* Smooth continuous loading spinner — linear rotation, no scale, GPU-friendly */
+@keyframes cd-spin {
+  to { transform: rotate(360deg); }
+}
+.cd-spin {
+  display: inline-flex;
+  animation: cd-spin 0.9s linear infinite;
+  transform-origin: 50% 50%;
+  will-change: transform;
 }
 .cd-sdot {
   width: 9px;

@@ -140,21 +140,24 @@ async function doMarkClient() {
   fireConfetti()
 }
 
-// Share contact
+// Share contact — sends a real vCard (.vcf) through the system share sheet so
+// iPhone offers "Add to Contacts"; falls back to a .vcf download elsewhere.
+const { shareContact: shareContactVCard } = useShare()
 const shareCopied = ref(false)
 async function shareContact() {
   const c = selContact.value as any
   if (!c) return
-  const lines = [c.name]
-  if (c.title || c.company) lines.push([c.title, c.company].filter(Boolean).join(' at '))
-  if (c.email) lines.push(`Email: ${c.email}`)
-  if (c.phone) lines.push(`Phone: ${c.phone}`)
-  const text = lines.join('\n')
-  if (navigator.share) {
-    try { await navigator.share({ title: c.name, text }) }
-    catch (err: any) { if (err.name !== 'AbortError') console.error('Share failed:', err) }
-  } else {
-    await navigator.clipboard.writeText(text)
+  const result = await shareContactVCard({
+    name: c.name,
+    first_name: c.first_name,
+    last_name: c.last_name,
+    title: c.title,
+    company: c.company,
+    email: c.email,
+    phone: c.phone,
+    notes: c.notes,
+  })
+  if (result === 'downloaded') {
     shareCopied.value = true
     setTimeout(() => (shareCopied.value = false), 2000)
   }

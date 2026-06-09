@@ -58,6 +58,10 @@ export default defineEventHandler(async (event) => {
   const checkout = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: 'payment',
+    // Embedded checkout: the payment form renders inside CardDesk (no redirect
+    // to Stripe's hosted page). On completion Stripe returns to our own
+    // return_url, which /account confirms.
+    ui_mode: 'embedded',
     payment_method_types: ['card'],
     line_items: [
       {
@@ -78,10 +82,9 @@ export default defineEventHandler(async (event) => {
       credits: String(pkg.credits),
       user_id: userId,
     },
-    success_url:
-      body?.successUrl || `${appUrl}/account?credits_purchased=true&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: body?.cancelUrl || `${appUrl}/account?credits_canceled=true`,
+    return_url:
+      body?.returnUrl || `${appUrl}/account?credits_purchased=true&session_id={CHECKOUT_SESSION_ID}`,
   })
 
-  return { sessionId: checkout.id, url: checkout.url }
+  return { sessionId: checkout.id, clientSecret: checkout.client_secret }
 })

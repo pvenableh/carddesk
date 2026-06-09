@@ -47,16 +47,20 @@ export function useCredits() {
   }
 
   function openBuyModal() { showBuyModal.value = true }
-  function closeBuyModal() { showBuyModal.value = false }
+  function closeBuyModal() { showBuyModal.value = false; purchasing.value = null }
 
-  /** Redirect to Stripe Checkout for a credit package. */
-  async function purchase(packageId: string) {
+  /**
+   * Start a credit purchase. Returns the Stripe Checkout client secret for the
+   * embedded checkout (the modal mounts it in-app — no redirect). Leaves
+   * `purchasing` set so the modal can show the mounted form; reset on close.
+   */
+  async function purchase(packageId: string): Promise<string | null> {
     purchasing.value = packageId
     try {
-      const { url } = await $fetch<{ url: string }>('/api/stripe/credits/checkout', {
+      const { clientSecret } = await $fetch<{ clientSecret: string | null }>('/api/stripe/credits/checkout', {
         method: 'POST', body: { packageId },
       })
-      if (url) window.location.href = url
+      return clientSecret
     } catch (err) {
       purchasing.value = null
       throw err
@@ -100,9 +104,37 @@ export function useCredits() {
   const isOrg = computed(() => state.value.source === 'org')
   const lowBalance = computed(() => state.value.source === 'user' && state.value.credits <= 5)
 
+  // Avatar credit gauge: fill fraction + urgency level/colour. Org users with
+  // no hard limit (or unlimited) read as a full green ring.
+  const gaugePct = computed(() => {
+    const s = state.value
+    if (s.source === 'org') {
+      if (s.unlimited || s.tokenLimit == null || s.tokenLimit <= 0) return 1
+      return Math.max(0, Math.min(1, (s.tokenBalance ?? 0) / s.tokenLimit))
+    }
+    return Math.max(0, Math.min(1, s.credits / 100)) // 100 ≈ a healthy top-up
+  })
+  const gaugeLevel = computed<'ok' | 'low' | 'critical'>(() => {
+    const s = state.value
+    if (s.source === 'org') {
+      if (s.unlimited || s.tokenLimit == null || s.tokenLimit <= 0) return 'ok'
+      if (gaugePct.value <= 0.05) return 'critical'
+      if (gaugePct.value <= 0.2) return 'low'
+      return 'ok'
+    }
+    if (s.credits <= 5) return 'critical'
+    if (s.credits <= 20) return 'low'
+    return 'ok'
+  })
+  // Explicit traffic-light colours — not var(--cd-accent), which is near-white
+  // in the dark theme and wouldn't read as "healthy".
+  const gaugeColor = computed(() =>
+    gaugeLevel.value === 'critical' ? '#ef4444' : gaugeLevel.value === 'low' ? '#f59e0b' : '#16c784',
+  )
+
   return {
     state, showBuyModal, purchasing, rewardToast,
     loadCredits, openBuyModal, closeBuyModal, purchase, confirmPurchase, claimRewards,
-    isOrg, lowBalance,
+    isOrg, lowBalance, gaugePct, gaugeLevel, gaugeColor,
   }
 }

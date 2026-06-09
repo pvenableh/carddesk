@@ -5,7 +5,7 @@
  * org token balance (billed through Earnest, not purchasable here).
  */
 import { readItems } from '@directus/sdk'
-import { resolveBillingContext, getOrgBilling, ONBOARDING_CREDIT_GRANT } from '../../utils/ai-credits'
+import { resolveBillingContext, getOrgBilling, ensureUserCredits, ONBOARDING_CREDIT_GRANT } from '../../utils/ai-credits'
 import { getDirectus } from '../../utils/directus'
 import { CREDIT_PACKAGES } from '../../utils/stripe'
 
@@ -39,6 +39,11 @@ export default defineEventHandler(async (event) => {
       }
     }
   }
+
+  // Materialize the one-time onboarding grant if it hasn't been applied yet
+  // (idempotent). Heals accounts whose row was created — e.g. by a reward
+  // claim — before the grant ran, so a user never sees a stuck 0 balance.
+  await ensureUserCredits(userId)
 
   const rows = (await admin.request(
     readItems('cd_credit_accounts', {

@@ -1,4 +1,4 @@
-const LEVELS = [
+export const LEVELS = [
   { level: 1, title: 'Rookie', xp: 0 },
   { level: 2, title: 'Hustler', xp: 200 },
   { level: 3, title: 'Connector', xp: 500 },
@@ -30,7 +30,16 @@ const DEFAULT = {
   total_xp: 0, level: 1, streak: 0, last_activity_date: '',
   total_scans: 0, total_contacts: 0, total_clients: 0, fast_followups: 0, hot_responses: 0, intros: 0,
   pipeline_contacts: 0, qualified_count: 0, proposals_sent: 0, deals_won: 0, lost_reasons_logged: 0,
-  unlocked_badges: [] as string[], completed_missions: [] as string[], missions_date: '',
+  week_xp: 0, week_start: '',
+  unlocked_badges: [] as string[], completed_missions: [] as string[], missions_date: '', hype_date: '',
+}
+
+/** Monday (YYYY-MM-DD) of the given date's week — the bucket for week_xp. */
+function weekStartStr(d = new Date()): string {
+  const x = new Date(d)
+  const day = (x.getDay() + 6) % 7 // 0 = Monday
+  x.setDate(x.getDate() - day)
+  return x.toISOString().slice(0, 10)
 }
 
 export function useXp() {
@@ -56,19 +65,26 @@ export function useXp() {
     const s = state.value
     const today = new Date().toISOString().slice(0, 10)
     const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10)
+    const { emit: emitFeed } = useFeed()
+    const prevLevel = s.level
+    const wk = weekStartStr()
+    if (s.week_start !== wk) { s.week_start = wk; s.week_xp = 0 }
     s.total_xp += amount
+    s.week_xp = (s.week_xp ?? 0) + amount
     Object.assign(s, extras)
     for (let i = LEVELS.length - 1; i >= 0; i--)
       if (s.total_xp >= LEVELS[i].xp) { s.level = LEVELS[i].level; break }
+    if (s.level > prevLevel) emitFeed('level_up', { level: s.level })
     if (s.last_activity_date !== today) {
       s.streak = s.last_activity_date === yesterday ? s.streak + 1 : 1
       s.last_activity_date = today
-      if (s.streak === 7) { s.total_xp += 200; showToast('🔥', '+200 XP', '7-day streak bonus!') }
+      if (s.streak === 7) { s.total_xp += 200; s.week_xp += 200; showToast('🔥', '+200 XP', '7-day streak bonus!'); emitFeed('streak', { days: 7 }) }
     }
     for (const [key, check] of Object.entries(BADGE_CHECKS)) {
       if (!s.unlocked_badges.includes(key) && check(s)) {
-        s.unlocked_badges.push(key); s.total_xp += 75
+        s.unlocked_badges.push(key); s.total_xp += 75; s.week_xp += 75
         showToast('🏅', '+75 XP', `${key.replace('_', ' ')} unlocked!`)
+        emitFeed('badge', { badge: key })
       }
     }
     if (s.missions_date !== today) { s.completed_missions = []; s.missions_date = today }

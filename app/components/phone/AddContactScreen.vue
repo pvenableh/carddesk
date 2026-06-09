@@ -37,6 +37,7 @@ function applyResult(result: any) {
   }
   wasScanned.value = true
   earn(50, '📷', 'Card scanned!', { total_scans: (xp.value.total_scans ?? 0) + 1 })
+  useFeed().emit('card_scanned', { company: result.company || null })
   fireConfetti()
 }
 
@@ -161,7 +162,7 @@ async function doSaveContact() {
 
       <!-- Scan Zone: Processing -->
       <div v-else class="cd-scan-zone" style="pointer-events: none">
-        <div style="font-size: 44px; animation: cd-wig 0.6s infinite"><CdIcon emoji="⏳" icon="lucide:loader" :size="44" /></div>
+        <div class="cd-spin" style="font-size: 44px; line-height: 1"><CdIcon emoji="⏳" icon="lucide:loader-circle" :size="44" /></div>
         <div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: var(--cd-green); margin-bottom: 4px">
           Reading card...
         </div>
@@ -211,9 +212,11 @@ async function doSaveContact() {
       </div>
       <label class="cd-lbl">Notes</label>
       <textarea v-model="addForm.notes" class="cd-inp" style="min-height: 60px; resize: vertical" placeholder="Anything useful..."></textarea>
+    </div>
+    <div class="cd-save-bar">
       <button
         class="cd-abtn g"
-        style="font-size: 16px; padding: 13px; margin-top: 4px"
+        style="font-size: 16px; padding: 13px"
         :disabled="!addName"
         @click="doSaveContact"
       >SAVE + EARN 25 XP →</button>

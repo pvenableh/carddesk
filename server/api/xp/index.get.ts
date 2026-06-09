@@ -27,9 +27,12 @@ export default defineEventHandler(async (event) => {
       fast_followups: r.fast_followups ?? 0,
       hot_responses: r.hot_responses ?? 0,
       intros: r.intros ?? 0,
+      week_xp: r.week_xp ?? 0,
+      week_start: r.week_start ?? "",
       unlocked_badges: r.unlocked_badges ?? [],
       completed_missions: r.completed_missions ?? [],
       missions_date: r.missions_date ?? "",
+      hype_date: r.hype_date ?? "",
     };
   } catch (err: any) {
     console.error("[GET /api/xp] Directus error:", err?.errors ?? err?.message ?? err);

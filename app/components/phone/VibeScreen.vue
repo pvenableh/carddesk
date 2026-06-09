@@ -6,6 +6,8 @@ import type { CdActivity, CdContact } from '~/types/directus'
 const { contacts, followUpStatus, daysSince } = useContacts()
 const { state: xp, earn, curLevel, nextLevel, xpPct } = useXp()
 const { nav } = useNavigation()
+const { show: openShareSheet } = useShareSheet()
+const { show: openScoreGuide } = useScoreGuide()
 const { profile } = useProfile()
 const { getPipelineStats } = usePipeline()
 
@@ -35,13 +37,15 @@ const curMood = computed(() => VIBE_MOODS[moodIdx.value % VIBE_MOODS.length])
 
 const sessionMode = ref<'tough' | 'hype' | null>(null)
 
-// Daily hype claim — only once per day
-const hypeClaimedDate = ref('')
-const hypeClaimed = computed(() => hypeClaimedDate.value === new Date().toISOString().slice(0, 10))
+// Daily hype claim — once per day, and only AFTER the user has done one real
+// networking action that day (so the +20 XP is earned, not handed out). State
+// is persisted on cd_xp_state (hype_date) so it can't be farmed by reloading.
+const today = new Date().toISOString().slice(0, 10)
+const hypeClaimed = computed(() => xp.value.hype_date === today)
+const didActionToday = computed(() => xp.value.last_activity_date === today)
 function claimHype() {
-  if (hypeClaimed.value) return
-  hypeClaimedDate.value = new Date().toISOString().slice(0, 10)
-  earn(20, '🏆', 'Daily hype claimed!')
+  if (hypeClaimed.value || !didActionToday.value) return
+  earn(20, '🏆', 'Daily hype claimed!', { hype_date: today })
 }
 
 // XP chart — 7-day activity breakdown (reactive to contact/activity changes)
@@ -191,25 +195,17 @@ async function loadLeadSuggestions() {
   <div class="cd-screen on">
     <div class="cd-shdr"><div class="cd-stitle">Your Vibe <CdIcon emoji="⚡" icon="lucide:zap" /></div></div>
     <div class="cd-scrl cd-pad">
-      <div class="cd-sess-entry" @click="nav('session')">
-        <div class="cd-se-top">
-          <span style="font-size: 26px"><CdIcon emoji="🎙" icon="lucide:mic" :size="26" /></span>
-          <div>
-            <div class="cd-se-ttl">Need a session?</div>
-            <div class="cd-se-sub">30 seconds. Promise.</div>
-          </div>
-        </div>
-        <div class="cd-se-modes">
-          <button class="cd-semp tg" @click.stop="sessionMode = 'tough'; nav('session')">
-            <CdIcon emoji="💪" icon="lucide:dumbbell" :size="14" /> Talking to
-          </button>
-          <button class="cd-semp pk" @click.stop="sessionMode = 'hype'; nav('session')">
-            <CdIcon emoji="🏆" icon="lucide:trophy" :size="14" /> Picker upper
-          </button>
-        </div>
+      <!-- Grow your network: share your card or invite -->
+      <div style="display: flex; gap: 8px; margin-bottom: 12px">
+        <button class="cd-abtn ice" style="font-size: 12px; padding: 10px" @click="openShareSheet('card')"><CdIcon emoji="🪪" icon="lucide:contact" :size="14" /> My Card</button>
+        <button class="cd-abtn b" style="font-size: 12px; padding: 10px" @click="openShareSheet('invite')"><CdIcon emoji="🔗" icon="lucide:user-plus" :size="14" /> Invite</button>
       </div>
-
-      <div class="cd-vc" style="border-color: rgba(0,255,135,0.15); padding-bottom: 6px">
+      <div class="cd-vc" style="border-color: rgba(0,255,135,0.15); padding-bottom: 6px; position: relative">
+        <button
+          aria-label="Scoring guide"
+          style="position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-radius: 50%; background: var(--cd-bg2); border: 1px solid var(--cd-bdr); color: var(--cd-dim); font-size: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2"
+          @click.stop="openScoreGuide"
+        ><CdIcon emoji="?" icon="lucide:help-circle" :size="13" /></button>
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px">
           <div style="position: relative; width: 56px; height: 56px; flex-shrink: 0">
             <svg viewBox="0 0 36 36" style="width: 56px; height: 56px; transform: rotate(-90deg)">
@@ -276,6 +272,23 @@ async function loadLeadSuggestions() {
           <span v-if="weekTotal">avg {{ (weekTotal / 7).toFixed(1) }}/day</span>
         </div>
 
+        <!-- Daily hype claim — unlocked by doing one real action that day -->
+        <div v-if="hypeClaimed" style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; color: var(--cd-dim); margin-bottom: 8px; font-weight: 700">
+          <CdIcon emoji="✅" icon="lucide:check-circle" :size="12" /> Daily hype claimed — back tomorrow
+        </div>
+        <button
+          v-else-if="didActionToday"
+          class="cd-abtn g"
+          style="font-size: 12px; padding: 9px; margin-bottom: 8px"
+          @click="claimHype"
+        ><CdIcon emoji="🏆" icon="lucide:trophy" :size="13" /> Claim daily hype · +20 XP</button>
+        <div
+          v-else
+          style="display: flex; align-items: center; justify-content: center; gap: 7px; padding: 9px; margin-bottom: 8px; border: 1px dashed var(--cd-bdr); border-radius: 9999px; font-size: 11px; color: var(--cd-dim); font-weight: 700"
+        >
+          <CdIcon emoji="🔒" icon="lucide:lock" :size="12" /> Do one action today to unlock <span style="color: var(--cd-green)">+20 XP</span>
+        </div>
+
         <template v-if="xpSources.length">
           <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim); margin-bottom: 5px">
             <CdIcon emoji="⚡" icon="lucide:zap" :size="10" /> Points Breakdown
@@ -294,20 +307,6 @@ async function loadLeadSuggestions() {
             </span>
           </div>
         </template>
-      </div>
-
-      <div class="cd-vc hype" :style="hypeClaimed ? 'opacity: 0.5; pointer-events: none' : ''" @click="claimHype">
-        <div class="cd-vct">
-          <span class="cd-vci"><CdIcon :emoji="hypeClaimed ? '✅' : '🏆'" :icon="hypeClaimed ? 'lucide:check-circle' : 'lucide:trophy'" /></span>
-          <div>
-            <div class="cd-vch cd-hand" style="color: var(--cd-green)">{{ hypeClaimed ? 'Hype claimed today!' : 'Nobody crushes it like you.' }}</div>
-            <div class="cd-vcb">
-              {{ contacts.length }} contacts · {{ xp.streak }}-day streak.
-              <strong>{{ hypeClaimed ? 'Come back tomorrow for more.' : 'You\'re building something real.' }}</strong>
-            </div>
-          </div>
-          <span class="cd-xpb">{{ hypeClaimed ? '✓ Done' : '+20 XP' }}</span>
-        </div>
       </div>
 
       <!-- Pipeline Health Card -->
@@ -416,6 +415,24 @@ async function loadLeadSuggestions() {
         </div>
       </div>
 
+      <div class="cd-sess-entry" @click="nav('session')">
+        <div class="cd-se-top">
+          <span style="font-size: 26px"><CdIcon emoji="🎙" icon="lucide:mic" :size="26" /></span>
+          <div>
+            <div class="cd-se-ttl">Need a session?</div>
+            <div class="cd-se-sub">30 seconds. Promise.</div>
+          </div>
+        </div>
+        <div class="cd-se-modes">
+          <button class="cd-semp tg" @click.stop="sessionMode = 'tough'; nav('session')">
+            <CdIcon emoji="💪" icon="lucide:dumbbell" :size="14" /> Talking to
+          </button>
+          <button class="cd-semp pk" @click.stop="sessionMode = 'hype'; nav('session')">
+            <CdIcon emoji="🏆" icon="lucide:trophy" :size="14" /> Picker upper
+          </button>
+        </div>
+      </div>
+
       <div class="cd-feed">
         <div class="cd-feed-hdr">
           <CdIcon emoji="📡" icon="lucide:activity" :size="13" />
@@ -466,6 +483,24 @@ async function loadLeadSuggestions() {
         <div class="cd-mc-t" :class="curMood.color">{{ curMood.title }}</div>
         <div class="cd-mc-b">{{ curMood.body }}</div>
         <div style="font-size: 10px; color: var(--cd-dim); margin-top: 6px">tap to rotate</div>
+      </div>
+
+      <!-- Who is Earnest? — context for the Earnest-powered backend/billing -->
+      <div class="cd-vc" style="border-color: rgba(77, 166, 255, 0.2)">
+        <div class="cd-vct">
+          <span class="cd-vci"><CdIcon emoji="✨" icon="lucide:sparkles" /></span>
+          <div>
+            <div class="cd-vch" style="color: #4da6ff">Who is Earnest?</div>
+            <div class="cd-vcb">
+              CardDesk is part of <strong>Earnest</strong> — the platform that helps independent professionals
+              build genuine relationships. Your account, AI credits, and billing run on Earnest's engine, so
+              you'll occasionally see the Earnest name (like at checkout).
+            </div>
+          </div>
+        </div>
+        <a href="https://earnest.guru" target="_blank" rel="noopener" class="cd-abtn b" style="text-decoration: none; margin-top: 4px">
+          <CdIcon emoji="🌐" icon="lucide:external-link" :size="14" /> Learn about Earnest →
+        </a>
       </div>
     </div>
   </div>

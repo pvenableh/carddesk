@@ -7,6 +7,69 @@ export interface DirectusSchema {
   cd_credit_purchases: CdCreditPurchase[]
   cd_sessions: CdSession[]
   cd_feedback: CdFeedback[]
+  cd_connections: CdConnection[]
+  cd_invites: CdInvite[]
+  cd_cards: CdCard[]
+  cd_feed_events: CdFeedEvent[]
+  cd_reactions: CdReaction[]
+}
+
+export interface CdCard {
+  id: string
+  user: string
+  display_name?: string | null
+  title?: string | null
+  company?: string | null
+  email?: string | null
+  phone?: string | null
+  website?: string | null
+  linkedin?: string | null
+  headline?: string | null
+  image?: string | null
+  broadcast_activity?: boolean
+  date_created?: string
+  date_updated?: string
+}
+
+export type FeedVisibility = 'private' | 'connections' | 'public'
+export type FeedEventType = 'card_scanned' | 'level_up' | 'streak' | 'badge' | 'connected' | 'joined' | 'intro'
+
+export interface CdFeedEvent {
+  id: string
+  actor: string
+  type: FeedEventType
+  visibility: FeedVisibility
+  payload?: Record<string, any> | null
+  date_created: string
+}
+
+export interface CdReaction {
+  id: string
+  user: string
+  event: string
+  emoji: string
+  date_created: string
+}
+
+export type ConnectionStatus = 'pending' | 'accepted' | 'declined' | 'blocked'
+
+export interface CdConnection {
+  id: string
+  date_created: string
+  date_updated: string
+  requester: string
+  addressee: string
+  status: ConnectionStatus
+}
+
+export interface CdInvite {
+  id: string
+  date_created: string
+  inviter: string
+  code: string
+  accepted_by?: string | null
+  accepted_at?: string | null
+  expires_at?: string | null
 }
 
 export interface CdSessionMessage {
@@ -153,6 +216,7 @@ export interface CdUserProfile {
   industry?: string
   networking_goal?: string
   location?: string
+  discoverable?: boolean
   organization?: {
     id?: number
     name?: string

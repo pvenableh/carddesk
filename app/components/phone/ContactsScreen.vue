@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { RATINGS, RATING_ORDER, getRating, cEmoji } from '~/composables/useConstants'
 import { PIPELINE_STAGES } from '~/composables/usePipeline'
+import ConnectionsView from './ConnectionsView.vue'
+import FeedView from './FeedView.vue'
 
 const { contacts, followUpStatus } = useContacts()
 const { nav, goDetail } = useNavigation()
@@ -12,6 +14,11 @@ const cSearch = ref('')
 const cFilter = ref<RatingFilter>('')
 const cSort = ref('recent')
 const viewMode = ref<'rating' | 'pipeline'>('rating')
+
+// Top-level sub-tab for the "Network" screen: your saved contacts vs. your
+// user↔user connections (the orbit lives under Connections).
+const netTab = ref<'contacts' | 'connections' | 'feed'>('contacts')
+const { incoming } = useConnections()
 
 const ratingCounts = computed(() => {
   const active = contacts.value.filter((c) => !c.hibernated)
@@ -79,28 +86,48 @@ const wonLost = computed(() => {
     <div class="cd-shdr" style="padding-bottom: 8px">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
         <div class="cd-stitle">My Network</div>
-        <CdButton tier="primary" size="sm" @click="nav('add')">+ Add</CdButton>
+        <CdButton v-if="netTab === 'contacts'" tier="primary" size="sm" @click="nav('add')">+ Add</CdButton>
       </div>
-      <input v-model="cSearch" class="cd-inp" placeholder="Search..." style="margin-bottom: 10px" />
 
-      <!-- View mode toggle: Rating | Pipeline -->
+      <!-- Sub-tabs: Contacts (rolodex) | Connections (user↔user orbit) -->
       <CdTabs
-        v-model="viewMode"
+        v-model="netTab"
         :items="[
-          { key: 'rating', label: 'Rating', emoji: '⭐', icon: 'lucide:star' },
-          { key: 'pipeline', label: 'Pipeline', emoji: '📊', icon: 'lucide:git-branch' },
+          { key: 'contacts', label: 'Contacts', emoji: '🃏', icon: 'lucide:credit-card' },
+          { key: 'connections', label: 'Orbit', emoji: '🪐', icon: 'lucide:orbit', count: incoming.length || null },
+          { key: 'feed', label: 'Feed', emoji: '📰', icon: 'lucide:newspaper' },
         ]"
         style="margin-bottom: 10px"
       />
 
-      <!-- Rating filter (only in rating mode) -->
-      <div v-if="viewMode === 'rating'" class="cd-hscroll" style="padding-bottom: 2px">
-        <CdTabs v-model="cFilter" :items="ratingTabItems" size="sm" />
-      </div>
+      <template v-if="netTab === 'contacts'">
+        <input v-model="cSearch" class="cd-inp" placeholder="Search..." style="margin-bottom: 10px" />
+
+        <!-- View mode toggle: Rating | Pipeline -->
+        <CdTabs
+          v-model="viewMode"
+          :items="[
+            { key: 'rating', label: 'Rating', emoji: '⭐', icon: 'lucide:star' },
+            { key: 'pipeline', label: 'Pipeline', emoji: '📊', icon: 'lucide:git-branch' },
+          ]"
+          style="margin-bottom: 10px"
+        />
+
+        <!-- Rating filter (only in rating mode) -->
+        <div v-if="viewMode === 'rating'" class="cd-hscroll" style="padding-bottom: 2px">
+          <CdTabs v-model="cFilter" :items="ratingTabItems" size="sm" />
+        </div>
+      </template>
     </div>
 
+    <!-- Connections sub-tab -->
+    <ConnectionsView v-if="netTab === 'connections'" />
+
+    <!-- Feed sub-tab -->
+    <FeedView v-else-if="netTab === 'feed'" />
+
     <!-- Rating view -->
-    <div v-if="viewMode === 'rating'" class="cd-scrl" style="padding: 4px 14px 8px">
+    <div v-else-if="viewMode === 'rating'" class="cd-scrl" style="padding: 4px 14px 8px">
       <div v-if="!contacts.length" class="cd-empty">
         <div style="font-size: 40px; margin-bottom: 10px"><CdIcon emoji="🃏" icon="lucide:credit-card" :size="40" /></div>
         <div style="font-size: 18px; font-weight: 800; margin-bottom: 12px">No contacts yet</div>

@@ -274,7 +274,7 @@ async function adjustOrgTokens(orgId: string, tokens: number, attempts = 6): Pro
 }
 
 /** Ensure the account exists and the one-time onboarding grant has been applied. */
-async function ensureUserCredits(userId: string): Promise<{ accountId: string; balance: number }> {
+export async function ensureUserCredits(userId: string): Promise<{ accountId: string; balance: number }> {
   const account = await getOrCreateCreditAccount(userId)
   if (account.free_credits_granted) {
     return { accountId: account.id, balance: account.ai_credit_balance }

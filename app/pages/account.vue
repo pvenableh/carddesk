@@ -155,6 +155,19 @@ async function suggestGoal() {
         </div>
       </div>
 
+      <!-- Your CardDesk Card -->
+      <div class="acct-section">
+        <div class="acct-section-title">Your CardDesk Card</div>
+        <div style="background: var(--cd-bg2); border: 1.5px solid var(--cd-bdr); border-radius: 12px; padding: 14px">
+          <div style="font-size: 12px; color: var(--cd-muted); margin-bottom: 12px; line-height: 1.5">
+            Your shareable digital business card — photo, title, company &amp; links — with a QR for in-person sharing. Separate from your account profile above.
+          </div>
+          <NuxtLink to="/card/edit" class="acct-card-btn">
+            <CdIcon emoji="🪪" icon="lucide:contact" :size="14" /> Edit My Card
+          </NuxtLink>
+        </div>
+      </div>
+
       <!-- Earnest Score -->
       <div v-if="earnestScore" class="acct-section">
         <div class="acct-section-title">Earnest Score</div>
@@ -183,6 +196,8 @@ async function suggestGoal() {
           Log Out
         </button>
       </div>
+
+      <CdBrandFooter />
     </div>
   </div>
 </template>
@@ -310,6 +325,23 @@ async function suggestGoal() {
 }
 .acct-save-btn:hover {
   opacity: 0.85;
+}
+.acct-card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--cd-bdr);
+  background: var(--cd-bg);
+  color: var(--cd-text);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+.acct-card-btn:hover {
+  border-color: var(--cd-accent);
 }
 .acct-ai-btn {
   font-size: 10px;

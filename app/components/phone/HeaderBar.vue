@@ -3,6 +3,7 @@ const { user } = useUserSession()
 const { logout } = useAuth()
 const router = useRouter()
 const { nav } = useNavigation()
+const { show: openShareSheet } = useShareSheet()
 
 // Logo → home (the Vibe screen). If we somehow aren't on the app route,
 // route there first.
@@ -29,6 +30,11 @@ onMounted(() => {
     time.value = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
   }, 10000)
 })
+
+function goEditCard() {
+  closeDropdown()
+  router.push('/card/edit')
+}
 
 onUnmounted(() => {
   if (timer) clearInterval(timer)
@@ -71,15 +77,20 @@ function onClickOutside(e: MouseEvent) {
   <div class="cd-sbar">
     <span class="cd-sbar-time">{{ time }}</span>
     <button class="cd-sbar-logo" type="button" aria-label="Home" @click="goHome"><span class="cd-sbar-logo-brand">CARD</span><span class="cd-sbar-logo-accent">DESK</span></button>
+    <div class="cd-sbar-right">
+      <button class="cd-sbar-share" type="button" aria-label="Share card or invite" @click="openShareSheet('card')"><CdIcon emoji="📤" icon="lucide:share" :size="15" /></button>
+      <PhoneCreditGauge />
     <div ref="dropdownRef" class="cd-avatar-wrap">
-      <button class="cd-avatar" @click="toggleDropdown">
-        {{ initials }}
-      </button>
+      <button class="cd-avatar" @click="toggleDropdown">{{ initials }}</button>
       <Transition name="cd-dropdown">
         <div v-if="dropdownOpen" class="cd-dropdown">
           <button class="cd-dd-item" @click="goAccount">
             <span class="cd-dd-icon"><CdIcon emoji="👤" icon="lucide:user" /></span>
             Account
+          </button>
+          <button class="cd-dd-item" @click="goEditCard">
+            <span class="cd-dd-icon"><CdIcon emoji="🪪" icon="lucide:contact" /></span>
+            Edit My Card
           </button>
           <div class="cd-dd-divider" />
           <div class="cd-dd-credits">
@@ -96,6 +107,7 @@ function onClickOutside(e: MouseEvent) {
           </button>
         </div>
       </Transition>
+      </div>
     </div>
   </div>
 </template>
@@ -142,23 +154,47 @@ function onClickOutside(e: MouseEvent) {
 .cd-sbar-logo-accent {
   color: var(--cd-accent);
 }
-.cd-avatar-wrap {
-  position: relative;
+.cd-sbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
-.cd-avatar {
-  width: 28px;
-  height: 28px;
+.cd-sbar-share {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: var(--cd-bg2);
   border: 1.5px solid var(--cd-bdr);
   color: var(--cd-text);
-  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s;
+}
+.cd-sbar-share:hover {
+  border-color: var(--cd-accent);
+  color: var(--cd-accent);
+}
+.cd-avatar-wrap {
+  position: relative;
+}
+.cd-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--cd-bg2);
+  border: 1.5px solid var(--cd-bdr);
+  color: var(--cd-text);
+  font-size: 13px;
   font-weight: 800;
   font-family: sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  flex-shrink: 0;
   transition: border-color 0.15s;
 }
 .cd-avatar:hover {

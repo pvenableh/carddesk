@@ -11,10 +11,14 @@ import PhoneAddContactScreen from '~/components/phone/AddContactScreen.vue'
 definePageMeta({ middleware: 'auth' })
 
 const { fetchContacts, followUpStatus, contacts } = useContacts()
-const { toast, loadXp } = useXp()
+const { toast, loadXp, earn } = useXp()
 const { loadProfile } = useProfile()
 const { screen, nav, transitionName } = useNavigation()
 const { theme } = useTheme()
+const { load: loadConnections } = useConnections()
+// Pending invite stashed by /i/[code] before the user signed up. Redeemed on
+// first authenticated load so the new user lands already connected.
+const inviteCookie = useCookie<string | null>('cd_invite', { path: '/' })
 
 const rootClass = computed(() => ['cd-root', theme.value === 'glass' ? 'cd-glass' : ''])
 
@@ -36,6 +40,20 @@ const alertCs = computed(() =>
 
 onMounted(async () => {
   await Promise.all([fetchContacts(), loadXp(), loadProfile()])
+
+  // Redeem a pending invite (set by /i/[code] before signup).
+  if (inviteCookie.value) {
+    const code = inviteCookie.value
+    inviteCookie.value = null
+    try {
+      const { inviter } = await $fetch<{ inviter?: { name?: string } }>('/api/invite/redeem', {
+        method: 'POST',
+        body: { code },
+      })
+      earn(25, '🎉', `Joined — connected with ${inviter?.name ?? 'your inviter'}!`)
+      loadConnections(true)
+    } catch { /* invalid/expired/already connected — ignore */ }
+  }
 })
 </script>
 
@@ -61,6 +79,12 @@ onMounted(async () => {
 
     <!-- XP Toast -->
     <PhoneXpToast :toast="toast" />
+
+    <!-- Global share sheet (My Card / Invite) -->
+    <PhoneShareSheet />
+
+    <!-- Scoring cheat-sheet flyout -->
+    <PhoneScoreGuide />
 
     <!-- PWA install prompt -->
     <CdInstallPrompt />

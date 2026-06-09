@@ -1,12 +1,24 @@
 <script setup lang="ts">
-const { state, showBuyModal, purchasing, loadCredits, closeBuyModal, purchase } = useCredits()
+import { loadStripe, type StripeEmbeddedCheckout } from '@stripe/stripe-js'
 
-// Ensure packages are available when the modal is opened via the 402 interceptor.
-watch(showBuyModal, (open) => {
-  if (open && !state.value.loaded) loadCredits()
-})
+const { state, showBuyModal, purchasing, loadCredits, closeBuyModal, purchase } = useCredits()
+const config = useRuntimeConfig()
 
 const error = ref<string | null>(null)
+const mode = ref<'select' | 'pay'>('select')
+let embedded: StripeEmbeddedCheckout | null = null
+
+// Reset (and tear down the Stripe iframe) whenever the modal closes.
+watch(showBuyModal, (open) => {
+  if (open) { if (!state.value.loaded) loadCredits() }
+  else resetCheckout()
+})
+
+function resetCheckout() {
+  mode.value = 'select'
+  error.value = null
+  if (embedded) { try { embedded.destroy() } catch { /* already gone */ } embedded = null }
+}
 
 function priceLabel(cents: number) {
   return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`
@@ -14,13 +26,26 @@ function priceLabel(cents: number) {
 
 async function choose(packageId: string) {
   error.value = null
+  const pk = config.public.stripePublishableKey as string
+  if (!pk) { error.value = 'Checkout isn’t configured yet (missing Stripe publishable key).'; return }
   try {
-    await purchase(packageId)
-    // purchase() redirects to Stripe on success; if we get here it didn't.
+    const clientSecret = await purchase(packageId)
+    if (!clientSecret) { error.value = 'Could not start checkout — try again.'; return }
+    mode.value = 'pay'
+    await nextTick()
+    const stripe = await loadStripe(pk)
+    if (!stripe) { error.value = 'Could not load checkout.'; resetCheckout(); return }
+    embedded = await stripe.createEmbeddedCheckoutPage({ clientSecret })
+    embedded.mount('#cd-embedded-checkout')
   } catch (err: any) {
-    error.value = err?.data?.message ?? 'Could not start checkout — try again.'
+    // Tear down without clearing the message so the user sees what failed.
+    if (embedded) { try { embedded.destroy() } catch { /* */ } embedded = null }
+    mode.value = 'select'
+    error.value = err?.message ?? err?.data?.message ?? 'Could not start checkout — try again.'
   }
 }
+
+onBeforeUnmount(resetCheckout)
 </script>
 
 <template>
@@ -37,7 +62,7 @@ async function choose(packageId: string) {
           <span v-if="state.source === 'user'">You have <strong>{{ state.credits }}</strong> left.</span>
         </p>
 
-        <div class="cd-buy-grid">
+        <div v-if="mode === 'select'" class="cd-buy-grid">
           <button
             v-for="pkg in state.packages"
             :key="pkg.id"
@@ -58,8 +83,14 @@ async function choose(packageId: string) {
           </button>
         </div>
 
+        <!-- Embedded Stripe checkout (in-app, no redirect) -->
+        <div v-show="mode === 'pay'">
+          <div id="cd-embedded-checkout" class="cd-embedded"></div>
+          <button class="cd-buy-back" type="button" @click="resetCheckout">← Choose a different pack</button>
+        </div>
+
         <p v-if="error" class="cd-buy-error">{{ error }}</p>
-        <p class="cd-buy-foot">One-time purchase · credits never expire</p>
+        <p v-if="mode === 'select'" class="cd-buy-foot">One-time purchase · credits never expire</p>
       </div>
     </div>
   </Transition>
@@ -183,6 +214,22 @@ async function choose(packageId: string) {
   font-weight: 800;
   color: var(--cd-accent);
 }
+.cd-embedded {
+  max-height: 62vh;
+  overflow-y: auto;
+  border-radius: 12px;
+}
+.cd-buy-back {
+  display: block;
+  margin: 12px auto 0;
+  background: none;
+  border: none;
+  color: var(--cd-muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cd-buy-back:hover { color: var(--cd-accent); }
 .cd-buy-error {
   margin: 14px 0 0;
   font-size: 12px;
