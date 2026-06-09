@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import type { ThemeId } from '~/composables/useTheme'
-
 const { user } = useUserSession()
 const { logout } = useAuth()
-const { theme, isDark, setTheme, toggleDarkMode, THEMES } = useTheme()
 const router = useRouter()
 const { nav } = useNavigation()
 
@@ -13,9 +10,6 @@ function goHome() {
   if (router.currentRoute.value.path !== '/') router.push('/')
   nav('vibe')
 }
-
-// Sleeper is hidden from the picker for the beta (kept in code).
-const visibleThemes = computed(() => THEMES.filter((t) => t.id !== 'sleeper'))
 
 const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
@@ -58,10 +52,6 @@ async function handleLogout() {
   await logout()
 }
 
-function selectTheme(id: ThemeId) {
-  setTheme(id)
-}
-
 onMounted(() => {
   document.addEventListener('click', onClickOutside)
 })
@@ -80,7 +70,7 @@ function onClickOutside(e: MouseEvent) {
 <template>
   <div class="cd-sbar">
     <span class="cd-sbar-time">{{ time }}</span>
-    <button class="cd-sbar-logo" type="button" aria-label="Home" @click="goHome">CARD<span class="cd-sbar-logo-accent">DESK</span></button>
+    <button class="cd-sbar-logo" type="button" aria-label="Home" @click="goHome"><span class="cd-sbar-logo-brand">CARD</span><span class="cd-sbar-logo-accent">DESK</span></button>
     <div ref="dropdownRef" class="cd-avatar-wrap">
       <button class="cd-avatar" @click="toggleDropdown">
         {{ initials }}
@@ -92,9 +82,8 @@ function onClickOutside(e: MouseEvent) {
             Account
           </button>
           <div class="cd-dd-divider" />
-          <div class="cd-dd-row">
-            <span class="cd-dd-row-label">Dark Mode</span>
-            <PhoneDarkModeToggle />
+          <div class="cd-dd-appearance">
+            <PhoneAppearancePanel />
           </div>
           <div class="cd-dd-divider" />
           <button class="cd-dd-item cd-dd-logout" @click="handleLogout">
@@ -119,24 +108,32 @@ function onClickOutside(e: MouseEvent) {
   color: var(--cd-muted);
   background: var(--cd-bg);
   z-index: 10;
+  position: relative;
 }
 .cd-sbar-time {
   min-width: 50px;
 }
+/* Centered via auto-margins rather than translateX(-50%): the global glass
+ * button :active rule applies its own transform: scale(), which would wipe out
+ * a centering transform and make the logo jump. Margins keep it put. */
 .cd-sbar-logo {
   font-family: monospace;
   font-size: 15px;
   letter-spacing: 2px;
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: fit-content;
   background: none;
   border: none;
   padding: 0;
-  margin: 0;
   color: inherit;
   font-weight: inherit;
   cursor: pointer;
+}
+.cd-sbar-logo-brand {
+  color: var(--cd-chrome-accent, var(--cd-palette-primary, hsl(213 64% 52%)));
 }
 .cd-sbar-logo-accent {
   color: var(--cd-accent);
@@ -167,13 +164,19 @@ function onClickOutside(e: MouseEvent) {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  width: 200px;
+  width: 288px;
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--cd-bg2);
   border: 1px solid var(--cd-bdr);
   border-radius: 14px;
   padding: 6px;
   z-index: 100;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+.cd-dd-appearance {
+  padding: 6px 4px;
 }
 .cd-dd-item {
   display: flex;
@@ -205,50 +208,6 @@ function onClickOutside(e: MouseEvent) {
   height: 1px;
   background: var(--cd-bdr);
   margin: 4px 8px;
-}
-.cd-dd-label {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--cd-dim);
-  padding: 6px 10px 2px;
-}
-.cd-dd-theme {
-  gap: 6px;
-}
-.cd-dd-check {
-  font-size: 8px;
-  width: 16px;
-  text-align: center;
-  color: var(--cd-dim);
-  flex-shrink: 0;
-}
-.cd-dd-theme.active .cd-dd-check {
-  color: var(--cd-accent);
-}
-.cd-dd-theme-name {
-  display: block;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.2;
-}
-.cd-dd-theme-desc {
-  display: block;
-  font-size: 10px;
-  color: var(--cd-dim);
-  font-weight: 500;
-}
-.cd-dd-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 10px;
-}
-.cd-dd-row-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--cd-text);
 }
 .cd-dd-logout {
   color: #f87171;

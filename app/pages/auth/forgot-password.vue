@@ -7,7 +7,7 @@ const router = useRouter()
   <div class="auth-page">
     <div class="auth-container">
       <div class="auth-logo">
-        CARD<span style="color: var(--cd-accent)">DESK</span>
+        <span style="color: var(--cd-chrome-accent, var(--cd-palette-primary, hsl(213 64% 52%)))">CARD</span><span style="color: var(--cd-accent)">DESK</span>
       </div>
       <p class="auth-tagline">Your network. Gamified.</p>
       <AuthPasswordResetRequestForm @login="router.push('/login')" />

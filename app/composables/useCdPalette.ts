@@ -37,8 +37,8 @@ export function useCdPalette() {
   const glassIntensity = useState<GlassIntensity>('cd-glass-intensity', () => 'full')
   // Glass chrome (Earnest parity): when on, primary buttons + chips become
   // frosted translucent with palette-tinted accents instead of solid fills.
-  // data-surface = 'glass' | 'solid'. Default off (bold solid CTAs).
-  const glassChrome = useState<boolean>('cd-glass-chrome', () => false)
+  // data-surface = 'glass' | 'solid'. Default on (full liquid-glass look).
+  const glassChrome = useState<boolean>('cd-glass-chrome', () => true)
 
   function apply() {
     if (!import.meta.client) return
@@ -95,7 +95,9 @@ export function useCdPalette() {
     const savedGlass = localStorage.getItem(GLASS_KEY)
     glassIntensity.value = savedGlass === 'restrained' ? 'restrained' : 'full'
     const savedChrome = localStorage.getItem(CHROME_KEY)
-    glassChrome.value = savedChrome === 'on'
+    // Default to ON when no preference has been saved — matches the useState
+    // default so first-load users get the full liquid-glass chrome.
+    glassChrome.value = savedChrome === null ? true : savedChrome === 'on'
     apply()
   }
 

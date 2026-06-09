@@ -5,12 +5,6 @@ definePageMeta({ middleware: 'auth' })
 
 const { user } = useUserSession()
 const { logout } = useAuth()
-const { theme, isDark, setTheme, toggleDarkMode, THEMES } = useTheme()
-const { palette, setPalette, paletteIds, palettes, paletteTint, setPaletteTint, glassIntensity, setGlassIntensity, glassChrome, setGlassChrome } = useCdPalette()
-
-// Sleeper is kept in code but hidden from the picker for the beta — only the
-// glass theme is user-facing for now.
-const visibleThemes = computed(() => THEMES.filter((t) => t.id !== 'sleeper'))
 const { profile, loading: profileLoading, saved: profileSaved, loadProfile, saveProfile, fullName, company } = useProfile()
 
 const email = computed(() => (user.value?.email as string) ?? '')
@@ -163,127 +157,6 @@ async function suggestGoal() {
       </div>
 
       <div class="acct-section">
-        <div class="acct-section-title">Theme</div>
-        <div class="acct-theme-list">
-          <button
-            v-for="t in visibleThemes"
-            :key="t.id"
-            class="acct-theme-card"
-            :class="{ active: theme === t.id }"
-            @click="setTheme(t.id)"
-          >
-            <div class="acct-theme-preview" :class="t.id" />
-            <div class="acct-theme-info">
-              <span class="acct-theme-name">{{ t.label }}</span>
-              <span class="acct-theme-desc">{{ t.description }}</span>
-            </div>
-            <span class="acct-theme-check">{{ theme === t.id ? '✓' : '' }}</span>
-          </button>
-        </div>
-      </div>
-
-      <div class="acct-section">
-        <div class="acct-dm-row">
-          <div>
-            <div class="acct-dm-label">Dark Mode</div>
-            <div class="acct-dm-desc">{{ isDark ? 'On' : 'Off' }}</div>
-          </div>
-          <PhoneDarkModeToggle />
-        </div>
-      </div>
-
-      <!-- Palette + tint — glass-only enhancement -->
-      <div v-if="theme === 'glass'" class="acct-section">
-        <div class="acct-section-title">Palette</div>
-        <div class="acct-pal-grid">
-          <button
-            v-for="id in paletteIds"
-            :key="id"
-            class="acct-pal-card"
-            :class="{ active: palette === id }"
-            @click="setPalette(id)"
-          >
-            <div class="acct-pal-swatches">
-              <span
-                v-for="(c, i) in palettes[id].sourceColors.slice(0, 5)"
-                :key="i"
-                class="acct-pal-dot"
-                :style="`background: hsl(${c.h} ${c.s}% ${c.l}%)`"
-              />
-            </div>
-            <div class="acct-pal-info">
-              <span class="acct-pal-name">{{ palettes[id].meta.label }}</span>
-              <span class="acct-pal-desc">{{ palettes[id].meta.hint }}</span>
-            </div>
-            <span class="acct-pal-check">{{ palette === id ? '✓' : '' }}</span>
-          </button>
-        </div>
-
-        <div class="acct-dm-row" style="margin-top: 10px">
-          <div>
-            <div class="acct-dm-label">Palette Tint</div>
-            <div class="acct-dm-desc">
-              {{ paletteTint ? 'Bottom nav + status bar wear the palette gradient' : 'Surfaces stay frosted grey' }}
-            </div>
-          </div>
-          <button
-            type="button"
-            class="acct-pal-toggle"
-            :class="{ on: paletteTint }"
-            :aria-pressed="paletteTint"
-            @click="setPaletteTint(!paletteTint)"
-          >
-            <span class="acct-pal-toggle-knob" />
-          </button>
-        </div>
-
-        <div style="margin-top: 14px">
-          <div class="acct-dm-label" style="margin-bottom: 8px">Glass Intensity</div>
-          <div class="cd-tabs acct-glass-seg" role="tablist">
-            <button
-              type="button"
-              class="cd-tab ios-press"
-              :class="{ on: glassIntensity === 'full' }"
-              :aria-selected="glassIntensity === 'full'"
-              @click="setGlassIntensity('full')"
-            >Full</button>
-            <button
-              type="button"
-              class="cd-tab ios-press"
-              :class="{ on: glassIntensity === 'restrained' }"
-              :aria-selected="glassIntensity === 'restrained'"
-              @click="setGlassIntensity('restrained')"
-            >Restrained</button>
-          </div>
-          <div class="acct-dm-desc" style="margin-top: 8px">
-            {{ glassIntensity === 'full'
-              ? 'Ambient tint + translucent liquid-glass cards'
-              : 'Clean flat cards, glass only on nav & bars' }}
-          </div>
-        </div>
-
-        <div class="acct-dm-row" style="margin-top: 14px">
-          <div>
-            <div class="acct-dm-label">Glass Chrome</div>
-            <div class="acct-dm-desc">
-              {{ glassChrome
-                ? 'Frosted buttons + chips with palette-tinted accents'
-                : 'Solid accent buttons & chips' }}
-            </div>
-          </div>
-          <button
-            type="button"
-            class="acct-pal-toggle"
-            :class="{ on: glassChrome }"
-            :aria-pressed="glassChrome"
-            @click="setGlassChrome(!glassChrome)"
-          >
-            <span class="acct-pal-toggle-knob" />
-          </button>
-        </div>
-      </div>
-
-      <div class="acct-section">
         <button class="acct-logout" @click="logout">
           Log Out
         </button>
@@ -351,83 +224,6 @@ async function suggestGoal() {
   color: var(--cd-dim);
   margin-bottom: 10px;
 }
-.acct-theme-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.acct-theme-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: var(--cd-bg2);
-  border: 1.5px solid var(--cd-bdr);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: border-color 0.15s;
-  text-align: left;
-  color: var(--cd-text);
-  font-family: inherit;
-}
-.acct-theme-card:hover {
-  border-color: var(--cd-dim);
-}
-.acct-theme-card.active {
-  border-color: var(--cd-accent);
-}
-.acct-theme-preview {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  flex-shrink: 0;
-}
-.acct-theme-preview.sleeper {
-  background: linear-gradient(135deg, #060810, #0d1018);
-  border: 1px solid #1c2330;
-}
-.acct-theme-preview.glass {
-  background: linear-gradient(135deg, #ffffff, #fcfcfc);
-  border: 1px solid #ebebeb;
-}
-.acct-theme-info {
-  flex: 1;
-}
-.acct-theme-name {
-  display: block;
-  font-size: 14px;
-  font-weight: 700;
-}
-.acct-theme-desc {
-  display: block;
-  font-size: 11px;
-  color: var(--cd-dim);
-}
-.acct-theme-check {
-  font-size: 14px;
-  color: var(--cd-accent);
-  font-weight: 700;
-  width: 20px;
-  text-align: center;
-}
-.acct-dm-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px;
-  background: var(--cd-bg2);
-  border: 1.5px solid var(--cd-bdr);
-  border-radius: 12px;
-}
-.acct-dm-label {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--cd-text);
-}
-.acct-dm-desc {
-  font-size: 11px;
-  color: var(--cd-dim);
-}
 .acct-logout {
   width: 100%;
   padding: 13px;
@@ -481,7 +277,9 @@ async function suggestGoal() {
   border-radius: 10px;
   border: none;
   background: var(--cd-accent);
-  color: #000;
+  /* Accent is near-black in light / near-white in dark, so mirror the page
+   * background for the label to stay legible in both modes. */
+  color: var(--cd-bg);
   font-size: 14px;
   font-weight: 700;
   font-family: inherit;
@@ -509,114 +307,5 @@ async function suggestGoal() {
 .acct-ai-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-/* Palette picker — mirrors .acct-theme-card layout so the two sections
- * read as siblings. Swatches lift 5 evenly-spaced colours from the
- * palette's source list for an at-a-glance ramp. */
-.acct-pal-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.acct-pal-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: var(--cd-bg2);
-  border: 1.5px solid var(--cd-bdr);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: border-color 0.15s;
-  text-align: left;
-  color: var(--cd-text);
-  font-family: inherit;
-}
-.acct-pal-card:hover {
-  border-color: var(--cd-dim);
-}
-.acct-pal-card.active {
-  border-color: var(--cd-accent);
-}
-.acct-pal-swatches {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  width: 56px;
-  height: 28px;
-  border-radius: 14px;
-  overflow: hidden;
-  flex-shrink: 0;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
-}
-.acct-pal-dot {
-  flex: 1;
-  height: 100%;
-}
-.acct-pal-info {
-  flex: 1;
-  min-width: 0;
-}
-.acct-pal-name {
-  display: block;
-  font-size: 14px;
-  font-weight: 700;
-}
-.acct-pal-desc {
-  display: block;
-  font-size: 11px;
-  color: var(--cd-dim);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.acct-pal-check {
-  font-size: 14px;
-  color: var(--cd-accent);
-  font-weight: 700;
-  width: 20px;
-  text-align: center;
-}
-
-/* Toggle switch — full-pill track + sliding knob. Matches the universal
- * pill aesthetic from Phase 1. */
-.acct-pal-toggle {
-  position: relative;
-  width: 44px;
-  height: 26px;
-  border-radius: 9999px;
-  border: 1px solid var(--cd-bdr);
-  background: var(--cd-bg);
-  cursor: pointer;
-  padding: 0;
-  transition: background 0.18s, border-color 0.18s;
-  flex-shrink: 0;
-}
-.acct-pal-toggle.on {
-  background: var(--cd-accent);
-  border-color: var(--cd-accent);
-}
-.acct-pal-toggle-knob {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition: transform 0.18s cubic-bezier(0.2, 0.9, 0.3, 1);
-}
-.acct-pal-toggle.on .acct-pal-toggle-knob {
-  transform: translateX(18px);
-}
-.acct-glass-seg {
-  display: flex;
-  width: 100%;
-}
-.acct-glass-seg .cd-tab {
-  flex: 1;
-  justify-content: center;
 }
 </style>

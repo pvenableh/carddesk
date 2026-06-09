@@ -2011,6 +2011,13 @@ html[data-theme="glass"] .cd-bn.on {
 html[data-theme="glass"] .cd-bn.on .cd-bni {
   transform: translateY(-1px) scale(1.06);
 }
+/* Light mode runs a brighter neon green for the active tab — the muted
+ * forest --cd-green reads as dull against the white nav. Scoped to the nav so
+ * the legible --cd-green stays in use for body text elsewhere. (Glass-chrome
+ * mode overrides this below with the palette accent.) */
+html[data-theme="glass"][data-mode="light"] .cd-bn.on {
+  color: #00cc5e;
+}
 /* Glass-chrome on: active nav follows the palette accent instead. */
 html[data-theme="glass"][data-surface="glass"] .cd-bn.on {
   color: var(--cd-chrome-accent);
