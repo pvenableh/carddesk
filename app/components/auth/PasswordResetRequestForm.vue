@@ -23,7 +23,7 @@ async function handleSubmit() {
   <div class="auth-card">
     <template v-if="sent">
       <div style="text-align: center; padding: 20px 0">
-        <div style="font-size: 48px; margin-bottom: 16px">📧</div>
+        <div style="margin-bottom: 16px; color: var(--cd-accent)"><CdIcon emoji="📧" icon="lucide:mail" :size="48" /></div>
         <h1 class="auth-title">Check your email</h1>
         <p class="auth-subtitle" style="margin-bottom: 24px">
           If an account exists for <strong style="color: var(--cd-text)">{{ email }}</strong>,
