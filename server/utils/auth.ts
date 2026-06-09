@@ -23,6 +23,29 @@ export async function getCurrentUserId(event: H3Event): Promise<string> {
 }
 
 /**
+ * Like getCurrentUserId, but also returns a Directus client bound to the user's
+ * own access token. Use this client for the writes the user themselves performs
+ * (their card, reactions, connections, invites) so Directus attributes the
+ * activity to the actual user instead of the shared static token. System-level
+ * reads/writes (user lookups, XP grants, feed fan-out) should keep using
+ * getDirectus() — the user role can't see those rows.
+ */
+export async function getUserClient(
+  event: H3Event,
+): Promise<{ me: string; directus: ReturnType<typeof getUserDirectus> }> {
+  const token = await getValidToken(event)
+  try {
+    const directus = getUserDirectus(token)
+    const me = (await directus.request(readMe({ fields: ['id'] as any }))) as any
+    if (!me?.id) throw createError({ statusCode: 401, message: 'Not authenticated' })
+    return { me: me.id as string, directus }
+  } catch (err: any) {
+    const status = err?.statusCode || err?.status || 401
+    throw createError({ statusCode: status, message: 'Not authenticated' })
+  }
+}
+
+/**
  * Gets a valid Directus access token from the session, auto-refreshing if expired or expiring soon.
  * Returns the token and throws a 401 error if not authenticated or refresh fails.
  */

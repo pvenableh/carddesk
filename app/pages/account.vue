@@ -32,6 +32,7 @@ const { contacts } = useContacts()
 const route = useRoute()
 const router = useRouter()
 const { confirmPurchase } = useCredits()
+const analytics = useAnalytics()
 const purchaseBanner = ref<string | null>(null)
 
 // Earnest Score — server returns { current_score, dimension_scores };
@@ -70,6 +71,7 @@ function doSaveProfile() {
 const goalLoading = ref(false)
 async function suggestGoal() {
   goalLoading.value = true
+  analytics.aiFeatureUse('goal')
   try {
     const data = await $fetch<{ goal: string }>('/api/ai-goal', {
       method: 'POST',

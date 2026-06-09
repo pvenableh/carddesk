@@ -130,8 +130,10 @@ const leadSuggestions = ref<Array<{ icon: string; title: string; body: string; c
 const leadSugLoading = ref(false)
 const leadSugError = ref<string | null>(null)
 
+const analytics = useAnalytics()
 async function loadLeadSuggestions() {
   leadSugLoading.value = true; leadSugError.value = null; leadSuggestions.value = []
+  analytics.aiFeatureUse('lead_suggestions')
   try {
     const hot = contacts.value.filter((c) => c.rating === 'hot' && !c.hibernated).length
     const warm = contacts.value.filter((c) => c.rating === 'warm' && !c.hibernated).length

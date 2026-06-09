@@ -218,10 +218,12 @@ const suggestions = ref<Array<{ icon: string; title: string; body: string }>>([]
 const sugLoading = ref(false)
 const sugError = ref<string | null>(null)
 
+const analytics = useAnalytics()
 async function loadSuggestions() {
   if (!selContact.value) return
   const c = selContact.value as any
   sugLoading.value = true; sugError.value = null; suggestions.value = []
+  analytics.aiFeatureUse('suggestions')
   try {
     const data = await $fetch<Array<{ icon: string; title: string; body: string }>>('/api/ai-suggestions', {
       method: 'POST',

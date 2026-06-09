@@ -29,8 +29,10 @@ function contactStats() {
   return { hot, overdue, total, clients }
 }
 
+const analytics = useAnalytics()
 async function loadAiCards(mode: 'tough' | 'hype') {
   aiLoading.value = mode
+  analytics.aiFeatureUse('session_cards')
   try {
     const stats = contactStats()
     const pStats = getPipelineStats()

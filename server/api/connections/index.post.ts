@@ -1,6 +1,6 @@
 import { readItems, readUsers, createItem, updateItem } from '@directus/sdk'
 import { getDirectus } from '../../utils/directus'
-import { getCurrentUserId } from '../../utils/auth'
+import { getUserClient } from '../../utils/auth'
 
 /**
  * Send a connection request. Body: { userId } (the addressee).
@@ -12,7 +12,7 @@ import { getCurrentUserId } from '../../utils/auth'
  *    intent → instant connection). Otherwise we return the existing row as-is.
  */
 export default defineEventHandler(async (event) => {
-  const me = await getCurrentUserId(event)
+  const { me, directus } = await getUserClient(event)
   const { userId } = await readBody(event)
 
   if (!userId || typeof userId !== 'string')
@@ -20,6 +20,8 @@ export default defineEventHandler(async (event) => {
   if (userId === me)
     throw createError({ statusCode: 400, message: "You can't connect with yourself" })
 
+  // System lookups (user existence, the edge between us) use the static token —
+  // the user role can't read directus_users or the other party's connection row.
   const admin = getDirectus()
 
   // Target must be a real user.
@@ -47,7 +49,8 @@ export default defineEventHandler(async (event) => {
   if (edge) {
     const theyRequestedMe = edge.requester === userId && edge.addressee === me
     if (edge.status === 'pending' && theyRequestedMe) {
-      const updated = await admin.request(
+      // Accepting by requesting back — I'm the addressee, so I may update it.
+      const updated = await directus.request(
         updateItem('cd_connections' as any, edge.id, { status: 'accepted' } as any),
       )
       return { connection: updated, mutual: true }
@@ -56,7 +59,7 @@ export default defineEventHandler(async (event) => {
     return { connection: edge, existing: true }
   }
 
-  const created = await admin.request(
+  const created = await directus.request(
     createItem('cd_connections' as any, {
       requester: me,
       addressee: userId,

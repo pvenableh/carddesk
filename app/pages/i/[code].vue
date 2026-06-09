@@ -9,6 +9,7 @@ const route = useRoute()
 const code = computed(() => String(route.params.code || ''))
 const { loggedIn } = useAuth()
 const { success } = useToast()
+const analytics = useAnalytics()
 const inviteCookie = useCookie<string | null>('cd_invite', { maxAge: 60 * 60 * 24 * 7, path: '/' })
 
 onMounted(async () => {
@@ -19,6 +20,7 @@ onMounted(async () => {
         method: 'POST',
         body: { code: code.value },
       })
+      analytics.inviteRedeem()
       success(`You're connected with ${inviter?.name ?? 'your inviter'} 🤝`)
     } catch { /* already connected / invalid — just continue */ }
     return navigateTo('/')

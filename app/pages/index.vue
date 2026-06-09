@@ -19,6 +19,7 @@ const { loadProfile } = useProfile()
 const { screen, nav, transitionName } = useNavigation()
 const { theme } = useTheme()
 const { load: loadConnections } = useConnections()
+const analytics = useAnalytics()
 // Pending invite stashed by /i/[code] before the user signed up. Redeemed on
 // first authenticated load so the new user lands already connected.
 const inviteCookie = useCookie<string | null>('cd_invite', { path: '/' })
@@ -54,6 +55,7 @@ onMounted(async () => {
         method: 'POST',
         body: { code },
       })
+      analytics.inviteRedeem()
       earn(25, '🎉', `Joined — connected with ${inviter?.name ?? 'your inviter'}!`)
       loadConnections(true)
     } catch { /* invalid/expired/already connected — ignore */ }

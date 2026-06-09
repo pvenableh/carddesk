@@ -1,16 +1,15 @@
 import { updateItem } from '@directus/sdk'
-import { getDirectus } from '../../utils/directus'
-import { getCurrentUserId } from '../../utils/auth'
+import { getUserClient } from '../../utils/auth'
 import { getOrCreateCard, assetUrl } from '../../utils/cards'
 import { SOCIAL_KEYS } from '~/types/socials'
 
 const EDITABLE = ['display_name', 'title', 'company', 'email', 'phone', 'website', ...SOCIAL_KEYS, 'headline', 'broadcast_activity']
 
-/** Update the signed-in user's card (admin-token write; server owns the row). */
+/** Update the signed-in user's card (written as the user; row is scoped to them). */
 export default defineEventHandler(async (event) => {
-  const me = await getCurrentUserId(event)
+  const { me, directus } = await getUserClient(event)
   const body = await readBody(event)
-  const card = await getOrCreateCard(me)
+  const card = await getOrCreateCard(me, directus)
 
   const payload: Record<string, any> = {}
   for (const f of EDITABLE) {
@@ -18,7 +17,6 @@ export default defineEventHandler(async (event) => {
   }
   if (!Object.keys(payload).length) return { ...card, imageUrl: assetUrl(card.image) }
 
-  const admin = getDirectus()
-  const updated = (await admin.request(updateItem('cd_cards' as any, card.id, payload as any))) as any
+  const updated = (await directus.request(updateItem('cd_cards' as any, card.id, payload as any))) as any
   return { ...updated, name: updated.display_name || 'CardDesk user', imageUrl: assetUrl(updated.image) }
 })

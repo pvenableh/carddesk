@@ -53,6 +53,7 @@ export function buildVCard(c: ShareableContact): string {
 }
 
 export function useShare() {
+  const analytics = useAnalytics()
   const supported = computed(() => import.meta.client && typeof navigator !== 'undefined' && !!navigator.share)
 
   async function copyToClipboard(text: string): Promise<boolean> {
@@ -90,6 +91,7 @@ export function useShare() {
         const file = new File([vcf], filename, { type: 'text/vcard' })
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file], title: full })
+          analytics.share('contact', 'native')
           return 'shared'
         }
       } catch (err: any) {
@@ -98,6 +100,7 @@ export function useShare() {
       }
     }
     downloadFile(filename, vcf, 'text/vcard')
+    analytics.share('contact', 'download')
     return 'downloaded'
   }
 
@@ -109,12 +112,14 @@ export function useShare() {
     if (supported.value) {
       try {
         await navigator.share({ url: opts.url, title: opts.title, text: opts.text })
+        analytics.share('url', 'native')
         return 'shared'
       } catch (err: any) {
         if (err?.name === 'AbortError') return 'cancelled'
       }
     }
     const ok = await copyToClipboard(opts.url)
+    if (ok) analytics.share('url', 'clipboard')
     return ok ? 'copied' : 'cancelled'
   }
 

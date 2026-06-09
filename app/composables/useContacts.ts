@@ -2,6 +2,7 @@ import type { CdContact, CdActivity } from '~/types/directus'
 
 export function useContacts() {
   const contacts = useState<CdContact[]>('cd_contacts', () => [])
+  const analytics = useAnalytics()
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -31,6 +32,7 @@ export function useContacts() {
       console.error('[useContacts] Failed to log contact_added activity:', err?.data?.message ?? err)
     }
     contacts.value = [{ ...contact, activities: activity ? [activity] : [] }, ...contacts.value]
+    analytics.contactCreate()
     return contact
   }
 
@@ -50,6 +52,8 @@ export function useContacts() {
 
   async function logActivity(payload: Partial<CdActivity> & { contact: string }): Promise<CdActivity> {
     const activity = await $fetch<CdActivity>('/api/activities', { method: 'POST', body: payload })
+    // Stage changes are tracked separately as `pipeline_stage_move` — don't double-count.
+    if (payload.type && payload.type !== 'stage_change') analytics.activityLog(payload.type)
     contacts.value = contacts.value.map((c) => {
       if (c.id !== payload.contact) return c
       return { ...c, activities: [activity, ...((c.activities as CdActivity[]) ?? [])] }
@@ -65,6 +69,7 @@ export function useContacts() {
       if (c.id !== contactId) return c
       return { ...c, activities: (c.activities as CdActivity[]).map((a) => a.id === activityId ? { ...a, ...updated } : a) }
     })
+    analytics.contactResponded()
   }
 
   async function updateActivity(contactId: string, activityId: string, payload: Partial<CdActivity>) {

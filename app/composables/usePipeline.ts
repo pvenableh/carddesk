@@ -31,6 +31,7 @@ export const LOST_REASON_XP = 10
 export function usePipeline() {
   const { contacts, updateContact, logActivity } = useContacts()
   const { earn } = useXp()
+  const analytics = useAnalytics()
 
   async function moveToStage(
     contactId: string,
@@ -57,6 +58,11 @@ export function usePipeline() {
       date: new Date().toISOString().slice(0, 10),
       note: `Pipeline: ${fromLabel} → ${stageLabel}${metadata?.lost_reason ? ` (${metadata.lost_reason})` : ''}`,
     } as any)
+
+    // Analytics: stage move, plus the two outcome conversions (won/lost).
+    analytics.pipelineMove(oldStage ?? 'none', stage)
+    if (stage === 'won') analytics.pipelineWon(metadata?.estimated_value ?? contact.estimated_value ?? 0)
+    if (stage === 'lost') analytics.pipelineLost(metadata?.lost_reason)
 
     // Award XP for pipeline progression
     const xpAmount = PIPELINE_XP[stage]

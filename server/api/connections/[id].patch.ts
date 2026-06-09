@@ -1,6 +1,6 @@
 import { readItem, updateItem, deleteItem } from '@directus/sdk'
 import { getDirectus } from '../../utils/directus'
-import { getCurrentUserId } from '../../utils/auth'
+import { getUserClient } from '../../utils/auth'
 import { emitFeedEvent } from '../../utils/feed'
 import { awardServerXp } from '../../utils/xp'
 
@@ -13,7 +13,7 @@ import { awardServerXp } from '../../utils/xp'
  *  - block / remove: either party may act.
  */
 export default defineEventHandler(async (event) => {
-  const me = await getCurrentUserId(event)
+  const { me, directus } = await getUserClient(event)
   const id = getRouterParam(event, 'id')
   const { action } = await readBody(event)
 
@@ -33,8 +33,10 @@ export default defineEventHandler(async (event) => {
   if (!isRequester && !isAddressee)
     throw createError({ statusCode: 403, message: 'Not your connection' })
 
+  // Mutating writes go through the user's own token (either party is on the row,
+  // so the ownership-scoped permission allows it); feed/XP fan-out stays admin.
   if (action === 'remove') {
-    await admin.request(deleteItem('cd_connections' as any, id))
+    await directus.request(deleteItem('cd_connections' as any, id))
     return { ok: true, removed: true }
   }
 
@@ -43,7 +45,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 403, message: 'Only the recipient can respond to this request' })
     if (row.status !== 'pending')
       throw createError({ statusCode: 409, message: `Request is already ${row.status}` })
-    const updated = await admin.request(
+    const updated = await directus.request(
       updateItem('cd_connections' as any, id, { status: action === 'accept' ? 'accepted' : 'declined' } as any),
     )
     if (action === 'accept') {
@@ -56,7 +58,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // block — either party
-  const updated = await admin.request(
+  const updated = await directus.request(
     updateItem('cd_connections' as any, id, { status: 'blocked' } as any),
   )
   return { connection: updated }

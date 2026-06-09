@@ -1,6 +1,7 @@
 export function useAuth() {
   const { user, loggedIn, fetch: fetchSession, clear: clearSession } = useUserSession()
   const router = useRouter()
+  const analytics = useAnalytics()
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -9,6 +10,7 @@ export function useAuth() {
     try {
       await $fetch('/api/auth/login', { method: 'POST', body: { email, password } })
       await fetchSession()
+      analytics.login()
       await router.push('/')
     } catch (err: any) {
       error.value = err?.data?.message ?? 'Login failed'
@@ -21,6 +23,7 @@ export function useAuth() {
     try {
       await $fetch('/api/auth/register', { method: 'POST', body: data })
       await fetchSession()
+      analytics.signUp()
       await router.push('/')
     } catch (err: any) {
       error.value = err?.data?.message ?? 'Registration failed'
@@ -32,6 +35,7 @@ export function useAuth() {
     loading.value = true; error.value = null
     try {
       await $fetch('/api/auth/password-request', { method: 'POST', body: { email } })
+      analytics.passwordResetRequest()
     } catch (err: any) {
       error.value = err?.data?.message ?? 'Request failed'
       throw err
@@ -42,6 +46,7 @@ export function useAuth() {
     loading.value = true; error.value = null
     try {
       await $fetch('/api/auth/password-reset', { method: 'POST', body: { token, password } })
+      analytics.passwordResetComplete()
     } catch (err: any) {
       error.value = err?.data?.message ?? 'Password reset failed'
       throw err
@@ -52,6 +57,7 @@ export function useAuth() {
     loading.value = true; error.value = null
     try {
       await $fetch('/api/auth/accept-invite', { method: 'POST', body: { token, password } })
+      analytics.inviteAccept()
     } catch (err: any) {
       error.value = err?.data?.message ?? 'Failed to accept invitation'
       throw err
@@ -62,6 +68,7 @@ export function useAuth() {
     loading.value = true
     try {
       await $fetch('/api/auth/logout', { method: 'POST' })
+      analytics.logout()
       await clearSession()
       await router.push('/login')
     } finally { loading.value = false }

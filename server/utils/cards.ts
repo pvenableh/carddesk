@@ -10,18 +10,24 @@ export const CARD_FIELDS = [
 
 /**
  * One cd_cards row per user, created lazily and seeded from the user's Directus
- * profile (name/title) + primary org (company) on first access. All access is
- * admin-token (the user role has no field perms on this collection) with the
- * server enforcing `user` ownership.
+ * profile (name/title) + primary org (company) on first access.
+ *
+ * Pass `db` — a Directus client bound to the acting user's token (see
+ * getUserClient) — so the cd_cards read/create is attributed to the user in the
+ * Directus activity log; the user role is scoped to its own `user` row. The
+ * profile/org seed read always uses the static token because the user role
+ * can't read directus_users. Falls back to the static token when `db` is
+ * omitted (system callers).
  */
-export async function getOrCreateCard(userId: string): Promise<any> {
+export async function getOrCreateCard(userId: string, db?: any): Promise<any> {
   const admin = getDirectus()
-  const rows = (await admin.request(
+  const client = db ?? admin
+  const rows = (await client.request(
     readItems('cd_cards' as any, { filter: { user: { _eq: userId } } as any, fields: CARD_FIELDS as any, limit: 1 }),
   )) as any[]
   if (rows?.length) return rows[0]
 
-  // Seed from the user's profile + first org.
+  // Seed from the user's profile + first org (static token — user role can't read users).
   const users = (await admin.request(
     readUsers({
       filter: { id: { _eq: userId } } as any,
@@ -30,7 +36,7 @@ export async function getOrCreateCard(userId: string): Promise<any> {
     }),
   )) as any[]
   const u = users?.[0] ?? {}
-  const created = (await admin.request(
+  const created = (await client.request(
     createItem('cd_cards' as any, {
       user: userId,
       display_name: [u.first_name, u.last_name].filter(Boolean).join(' ') || null,

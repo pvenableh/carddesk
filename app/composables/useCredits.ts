@@ -36,6 +36,7 @@ export function useCredits() {
   const showBuyModal = useState<boolean>('cd_buy_modal', () => false)
   const purchasing = useState<string | null>('cd_credits_purchasing', () => null)
   const rewardToast = useState<CreditRewardToast | null>('cd_credit_reward', () => null)
+  const analytics = useAnalytics()
 
   async function loadCredits() {
     try {
@@ -56,6 +57,8 @@ export function useCredits() {
    */
   async function purchase(packageId: string): Promise<string | null> {
     purchasing.value = packageId
+    const pkg = state.value.packages.find((p) => p.id === packageId)
+    if (pkg) analytics.beginCheckout(pkg)
     try {
       const { clientSecret } = await $fetch<{ clientSecret: string | null }>('/api/stripe/credits/checkout', {
         method: 'POST', body: { packageId },
@@ -70,9 +73,20 @@ export function useCredits() {
   /** Called on the success redirect to credit the balance immediately. */
   async function confirmPurchase(sessionId: string) {
     try {
-      const res = await $fetch<{ fulfilled: boolean; credits: number; newBalance?: number }>(
-        '/api/stripe/credits/confirm', { method: 'POST', body: { sessionId } },
-      )
+      const res = await $fetch<{
+        fulfilled: boolean; credits: number; newBalance?: number
+        amountCents?: number; currency?: string
+      }>('/api/stripe/credits/confirm', { method: 'POST', body: { sessionId } })
+      // Fire the GA4 `purchase` conversion once per redirect (the /account page
+      // clears the query after confirming, so a refresh won't re-fire it).
+      if (res && res.credits > 0) {
+        analytics.purchase({
+          transactionId: sessionId,
+          credits: res.credits,
+          amountCents: res.amountCents,
+          currency: res.currency,
+        })
+      }
       await loadCredits()
       return res
     } catch {

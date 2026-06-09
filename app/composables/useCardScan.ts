@@ -8,6 +8,7 @@ export interface ScannedCard {
 export type ScanStep = 'idle' | 'captured-front' | 'processing'
 
 export function useCardScan() {
+  const analytics = useAnalytics()
   const scanning = ref(false)
   const scanStep = ref<ScanStep>('idle')
   const error = ref<string | null>(null)
@@ -67,13 +68,17 @@ export function useCardScan() {
 
   async function processImages(images: { data: string; mediaType: string }[]): Promise<ScannedCard> {
     scanning.value = true; scanStep.value = 'processing'; error.value = null; result.value = null
+    const sides = images.length
+    analytics.cardScanStart(sides)
     try {
       const scanned = await $fetch<ScannedCard>('/api/scan-card', {
         method: 'POST', body: { images },
       })
       result.value = scanned
+      analytics.cardScanSuccess(sides)
       return scanned
     } catch (err: any) {
+      analytics.cardScanFailed(sides)
       const msg = err?.data?.message ?? 'Scan failed — try a clearer photo'
       error.value = msg; throw new Error(msg)
     } finally {

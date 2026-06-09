@@ -1,6 +1,5 @@
 import { updateItem } from '@directus/sdk'
-import { getDirectus } from '../../utils/directus'
-import { getCurrentUserId } from '../../utils/auth'
+import { getUserClient } from '../../utils/auth'
 import { getOrCreateCard, assetUrl } from '../../utils/cards'
 
 /**
@@ -8,7 +7,7 @@ import { getOrCreateCard, assetUrl } from '../../utils/cards'
  * with the static token, then stores the file id on the user's cd_cards row.
  */
 export default defineEventHandler(async (event) => {
-  const me = await getCurrentUserId(event)
+  const { me, directus } = await getUserClient(event)
   const config = useRuntimeConfig()
 
   const parts = await readMultipartFormData(event)
@@ -33,9 +32,8 @@ export default defineEventHandler(async (event) => {
   const fileId = json?.data?.id
   if (!fileId) throw createError({ statusCode: 502, message: 'Image upload failed' })
 
-  const card = await getOrCreateCard(me)
-  const admin = getDirectus()
-  await admin.request(updateItem('cd_cards' as any, card.id, { image: fileId } as any))
+  const card = await getOrCreateCard(me, directus)
+  await directus.request(updateItem('cd_cards' as any, card.id, { image: fileId } as any))
 
   return { image: fileId, imageUrl: assetUrl(fileId) }
 })

@@ -77,8 +77,10 @@ const insights = ref<Array<{ icon: string; title: string; body: string }>>([])
 const insightsLoading = ref(false)
 const insightsError = ref<string | null>(null)
 
+const analytics = useAnalytics()
 async function loadInsights() {
   insightsLoading.value = true; insightsError.value = null; insights.value = []
+  analytics.aiFeatureUse('insights')
   try {
     const data = await $fetch<Array<{ icon: string; title: string; body: string }>>('/api/ai-insights', {
       method: 'POST',

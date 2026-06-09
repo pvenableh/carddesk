@@ -3,6 +3,7 @@ import { loadStripe, type StripeEmbeddedCheckout } from '@stripe/stripe-js'
 
 const { state, showBuyModal, purchasing, loadCredits, closeBuyModal, purchase } = useCredits()
 const config = useRuntimeConfig()
+const analytics = useAnalytics()
 
 const error = ref<string | null>(null)
 const mode = ref<'select' | 'pay'>('select')
@@ -35,7 +36,18 @@ async function choose(packageId: string) {
     await nextTick()
     const stripe = await loadStripe(pk)
     if (!stripe) { error.value = 'Could not load checkout.'; resetCheckout(); return }
-    embedded = await stripe.createEmbeddedCheckoutPage({ clientSecret })
+    embedded = await stripe.createEmbeddedCheckoutPage({
+      clientSecret,
+      // Surface Stripe's in-iframe checkout funnel to GA4 (we can't see inside
+      // the iframe otherwise). Maps to standard ecommerce funnel events.
+      onAnalyticsEvent: (e) => {
+        if (e.eventType === 'checkoutSubmitted') {
+          analytics.addPaymentInfo(e.details.amount ?? 0, e.details.currency ?? 'usd')
+        } else if (e.eventType === 'checkoutSubmitFailed') {
+          analytics.checkoutFailed(e.details.failureReason ?? 'unexpected')
+        }
+      },
+    })
     embedded.mount('#cd-embedded-checkout')
   } catch (err: any) {
     // Tear down without clearing the message so the user sees what failed.
@@ -218,6 +230,13 @@ onBeforeUnmount(resetCheckout)
   max-height: 62vh;
   overflow-y: auto;
   border-radius: 12px;
+  /* Stripe's embedded checkout iframe follows the account's Dashboard branding
+     (the API exposes no per-session theme). Frame it as a clean inset card with
+     its own background + padding so it reads as deliberate against the themed
+     sheet in either light or dark mode, rather than a bare flash of white. */
+  background: var(--cd-checkout-surface, #ffffff);
+  padding: 8px;
+  border: 1px solid var(--cd-bdr);
 }
 .cd-buy-back {
   display: block;

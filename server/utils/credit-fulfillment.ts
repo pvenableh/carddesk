@@ -9,6 +9,10 @@ export interface FulfillResult {
   credits: number
   newBalance?: number
   userId?: string
+  /** Paid amount + currency from the Stripe session — surfaced so the client
+   *  can fire an accurate GA4 `purchase` event with real revenue. */
+  amountCents?: number
+  currency?: string
 }
 
 /**
@@ -56,7 +60,10 @@ export async function fulfillCreditCheckout(session: Stripe.Checkout.Session): P
   } catch (err: any) {
     const msg = JSON.stringify(err?.errors ?? err?.message ?? err)
     if (/unique|duplicate|RECORD_NOT_UNIQUE/i.test(msg)) {
-      return { fulfilled: false, alreadyFulfilled: true, credits, userId }
+      return {
+        fulfilled: false, alreadyFulfilled: true, credits, userId,
+        amountCents: session.amount_total ?? 0, currency: session.currency ?? 'usd',
+      }
     }
     throw err
   }
@@ -65,7 +72,10 @@ export async function fulfillCreditCheckout(session: Stripe.Checkout.Session): P
   // (otherwise the duplicate-insert short-circuit would strand the payment).
   try {
     const newBalance = await addCreditsToUser(userId, credits)
-    return { fulfilled: true, alreadyFulfilled: false, credits, newBalance, userId }
+    return {
+      fulfilled: true, alreadyFulfilled: false, credits, newBalance, userId,
+      amountCents: session.amount_total ?? 0, currency: session.currency ?? 'usd',
+    }
   } catch (err: any) {
     try {
       await admin.request(deleteItem('cd_credit_purchases', purchaseId))
