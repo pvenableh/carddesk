@@ -155,23 +155,23 @@ async function doQuickLog() {
     <div class="cd-scrl cd-pad">
       <CdPushPrompt />
       <div class="cd-hero">
-        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 2px; color: #00ff87; margin-bottom: 2px">
+        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 2px; color: var(--cd-green); margin-bottom: 2px">
           <CdIcon emoji="🏆" icon="lucide:trophy" :size="11" /> Rockstar Networker
         </div>
         <div style="font-family: 'Bebas Neue', sans-serif; font-size: 40px; line-height: 1">
           {{ curLevel.title }}
         </div>
-        <div style="font-size: 11px; color: #8898b0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px">
+        <div style="font-size: 11px; color: var(--cd-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px">
           Level {{ xp.level }} · {{ xp.total_xp }} XP
         </div>
         <div class="cd-xp-track">
           <div class="cd-xp-fill" :style="'width:' + xpPct + '%'"></div>
         </div>
         <div style="display: flex; gap: 7px; margin-top: 10px">
-          <span style="background: rgba(0,255,135,0.1); border: 1px solid rgba(0,255,135,0.25); border-radius: 8px; padding: 4px 11px; font-size: 13px; font-weight: 800; color: #00ff87">
+          <span style="background: rgba(0,255,135,0.1); border: 1px solid rgba(0,255,135,0.25); border-radius: 8px; padding: 4px 11px; font-size: 13px; font-weight: 800; color: var(--cd-green)">
             LVL {{ xp.level }}
           </span>
-          <span v-if="nextLevel" style="background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.25); border-radius: 8px; padding: 4px 11px; font-size: 13px; font-weight: 800; color: #ffd700">
+          <span v-if="nextLevel" style="background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.25); border-radius: 8px; padding: 4px 11px; font-size: 13px; font-weight: 800; color: var(--cd-gold)">
             {{ nextLevel.xp - xp.total_xp }} XP to {{ nextLevel.title }}
           </span>
         </div>
@@ -179,7 +179,7 @@ async function doQuickLog() {
 
       <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 11px">
         <div class="cd-stat">
-          <div class="cd-stat-n" style="color: #00ff87">{{ contacts.length }}</div>
+          <div class="cd-stat-n" style="color: var(--cd-green)">{{ contacts.length }}</div>
           <div class="cd-stat-l">Contacts</div>
         </div>
         <div class="cd-stat">
@@ -191,22 +191,22 @@ async function doQuickLog() {
           <div class="cd-stat-l">Clients</div>
         </div>
         <div class="cd-stat">
-          <div class="cd-stat-n" style="color: #ffe033">{{ alertCs.length }}</div>
+          <div class="cd-stat-n" style="color: var(--cd-gold)">{{ alertCs.length }}</div>
           <div class="cd-stat-l">Overdue</div>
         </div>
       </div>
 
       <div v-if="industryStats.length" class="cd-vc" style="border-color: rgba(77, 166, 255, 0.15); margin-bottom: 11px">
-        <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: #3e4f68; margin-bottom: 8px">
+        <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim); margin-bottom: 8px">
           <CdIcon emoji="🏢" icon="lucide:building-2" :size="12" /> Your Network by Industry
         </div>
         <div v-for="ind in industryStats.slice(0, 5)" :key="ind.name" style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px">
           <div style="flex: 1; min-width: 0">
             <div style="display: flex; justify-content: space-between; margin-bottom: 3px">
               <span style="font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ ind.name }}</span>
-              <span style="font-size: 11px; color: #8898b0; flex-shrink: 0; margin-left: 6px">{{ ind.count }}</span>
+              <span style="font-size: 11px; color: var(--cd-muted); flex-shrink: 0; margin-left: 6px">{{ ind.count }}</span>
             </div>
-            <div style="height: 4px; background: #1c2330; border-radius: 2px; overflow: hidden">
+            <div style="height: 4px; background: var(--cd-bdr); border-radius: 2px; overflow: hidden">
               <div
                 style="height: 100%; border-radius: 2px; transition: width 0.3s"
                 :style="'width:' + Math.round((ind.count / contacts.length) * 100) + '%;background:' + (ind.hot ? '#ff6b35' : ind.clients ? '#00ff87' : '#4da6ff')"
@@ -217,7 +217,7 @@ async function doQuickLog() {
             <span v-if="ind.hot" style="font-size: 9px; background: rgba(255,107,53,0.12); color: #ff6b35; padding: 1px 5px; border-radius: 4px; font-weight: 700">
               <CdIcon emoji="🔥" icon="lucide:flame" :size="8" />{{ ind.hot }}
             </span>
-            <span v-if="ind.clients" style="font-size: 9px; background: rgba(0,255,135,0.1); color: #00ff87; padding: 1px 5px; border-radius: 4px; font-weight: 700">
+            <span v-if="ind.clients" style="font-size: 9px; background: rgba(0,255,135,0.1); color: var(--cd-green); padding: 1px 5px; border-radius: 4px; font-weight: 700">
               <CdIcon emoji="💰" icon="lucide:badge-check" :size="8" />{{ ind.clients }}
             </span>
           </div>
@@ -225,25 +225,25 @@ async function doQuickLog() {
       </div>
 
       <div v-if="channelStats.length" class="cd-vc" style="border-color: rgba(255,224,51,0.15); margin-bottom: 11px">
-        <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: #3e4f68; margin-bottom: 8px">
+        <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim); margin-bottom: 8px">
           <CdIcon emoji="📊" icon="lucide:bar-chart-3" :size="12" /> Best Channels to Connect
         </div>
         <div v-for="ch in channelStats" :key="ch.type" style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px">
           <span style="font-size: 12px; font-weight: 700; width: 70px; flex-shrink: 0">{{ ch.type }}</span>
-          <div style="flex: 1; height: 4px; background: #1c2330; border-radius: 2px; overflow: hidden">
+          <div style="flex: 1; height: 4px; background: var(--cd-bdr); border-radius: 2px; overflow: hidden">
             <div
               style="height: 100%; border-radius: 2px; background: #ffe033; transition: width 0.3s"
               :style="'width:' + (channelStats[0].count ? Math.round((ch.count / channelStats[0].count) * 100) : 0) + '%'"
             ></div>
           </div>
-          <span style="font-size: 11px; color: #8898b0; width: 24px; text-align: right; flex-shrink: 0">{{ ch.count }}</span>
+          <span style="font-size: 11px; color: var(--cd-muted); width: 24px; text-align: right; flex-shrink: 0">{{ ch.count }}</span>
           <span
             style="font-size: 9px; padding: 1px 5px; border-radius: 4px; font-weight: 700; width: 36px; text-align: center; flex-shrink: 0"
-            :style="ch.rate >= 30 ? 'background:rgba(0,255,135,0.1);color:#00ff87' : ch.rate > 0 ? 'background:rgba(255,224,51,0.1);color:#ffe033' : 'background:rgba(62,79,104,0.2);color:#3e4f68'"
+            :style="ch.rate >= 30 ? 'background:rgba(0,255,135,0.1);color:var(--cd-green)' : ch.rate > 0 ? 'background:rgba(255,224,51,0.1);color:var(--cd-gold)' : 'background:rgba(62,79,104,0.2);color:var(--cd-dim)'"
           >{{ ch.rate }}%</span>
         </div>
-        <div style="font-size: 10px; color: #3e4f68; margin-top: 4px; text-align: right">
-          Overall response rate: <strong :style="responseRate >= 30 ? 'color:#00ff87' : 'color:#ffe033'">{{ responseRate }}%</strong>
+        <div style="font-size: 10px; color: var(--cd-dim); margin-top: 4px; text-align: right">
+          Overall response rate: <strong :style="responseRate >= 30 ? 'color:var(--cd-green)' : 'color:var(--cd-gold)'">{{ responseRate }}%</strong>
         </div>
       </div>
 
@@ -265,19 +265,19 @@ async function doQuickLog() {
           </CdButton>
         </div>
         <div v-if="insightsError" style="font-size: 12px; color: #f87171; margin-bottom: 6px">{{ insightsError }}</div>
-        <div v-if="!insights.length && !insightsLoading && !insightsError" style="font-size: 11px; color: #3e4f68; line-height: 1.5">
+        <div v-if="!insights.length && !insightsLoading && !insightsError" style="font-size: 11px; color: var(--cd-dim); line-height: 1.5">
           Tap <strong style="color: #b87dff">Analyze My Network</strong> for AI-powered insights on your industries, channels, and connection strategies.
         </div>
         <div v-if="insightsLoading" style="text-align: center; padding: 10px 0">
-          <div style="font-size: 12px; color: #8898b0; animation: cd-pulse 1.5s ease-in-out infinite">Crunching your network data...</div>
+          <div style="font-size: 12px; color: var(--cd-muted); animation: cd-pulse 1.5s ease-in-out infinite">Crunching your network data...</div>
         </div>
         <div
           v-for="(s, i) in insights"
           :key="i"
-          style="background: #0d1018; border: 1px solid #1c2330; border-radius: 10px; padding: 9px 11px; margin-bottom: 6px"
+          style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 10px; padding: 9px 11px; margin-bottom: 6px"
         >
           <div style="font-size: 13px; font-weight: 700; margin-bottom: 2px">{{ s.icon }} {{ s.title }}</div>
-          <div style="font-size: 11px; color: #8898b0; line-height: 1.5">{{ s.body }}</div>
+          <div style="font-size: 11px; color: var(--cd-muted); line-height: 1.5">{{ s.body }}</div>
         </div>
       </div>
 
@@ -285,7 +285,7 @@ async function doQuickLog() {
         <div style="font-size: 34px; animation: cd-wig 1.8s ease-in-out infinite; flex-shrink: 0"><CdIcon emoji="🔥" icon="lucide:flame" :size="34" /></div>
         <div style="flex: 1">
           <div style="font-family: 'Bebas Neue', sans-serif; font-size: 40px; color: #ff4500; line-height: 1">{{ xp.streak }}</div>
-          <div style="font-size: 11px; font-weight: 700; color: #8898b0; text-transform: uppercase">Day Streak</div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--cd-muted); text-transform: uppercase">Day Streak</div>
         </div>
         <div style="display: flex; gap: 4px">
           <div v-for="(d, i) in sDots" :key="i" class="cd-sdot" :class="d"></div>
@@ -301,17 +301,17 @@ async function doQuickLog() {
             <CdIcon emoji="📝" icon="lucide:pencil-line" :size="16" />
             <span style="font-size: 13px; font-weight: 800">Quick Log Event</span>
           </div>
-          <span style="font-size: 11px; color: #3e4f68">{{ logOpen ? '▲' : '▼' }}</span>
+          <span style="font-size: 11px; color: var(--cd-dim)">{{ logOpen ? '▲' : '▼' }}</span>
         </div>
         <template v-if="logOpen">
           <div style="margin-top: 10px">
-            <label style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #3e4f68; letter-spacing: 0.5px; display: block; margin-bottom: 4px">Contact</label>
+            <label style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--cd-dim); letter-spacing: 0.5px; display: block; margin-bottom: 4px">Contact</label>
             <select v-model="logContact" class="cd-inp" style="margin-bottom: 8px">
               <option value="" disabled>Select a contact...</option>
               <option v-for="c in activeContacts" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
-            <label style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #3e4f68; letter-spacing: 0.5px; display: block; margin-bottom: 4px">Type</label>
-            <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px">
+            <label style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--cd-dim); letter-spacing: 0.5px; display: block; margin-bottom: 4px">Type</label>
+            <div class="cd-hscroll" style="display: flex; gap: 6px; margin-bottom: 8px; padding-bottom: 4px">
               <button
                 v-for="t in ACT_TYPES.slice(0, 6)"
                 :key="t.key"
@@ -322,7 +322,7 @@ async function doQuickLog() {
                 <span style="font-size: 13px; display: block; margin-bottom: 1px"><CdIcon :emoji="t.icon" :icon="t.lucide" :size="13" /></span>{{ t.label }}
               </button>
             </div>
-            <label style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #3e4f68; letter-spacing: 0.5px; display: block; margin-bottom: 4px">Details</label>
+            <label style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--cd-dim); letter-spacing: 0.5px; display: block; margin-bottom: 4px">Details</label>
             <textarea v-model="logNote" class="cd-inp" placeholder="What happened? Add details..." style="min-height: 50px; resize: vertical; margin-bottom: 8px"></textarea>
             <div style="display: flex; gap: 6px; align-items: stretch">
               <input v-model="logDate" type="date" class="cd-inp" style="flex: 0 0 130px; margin-bottom: 0" />
@@ -351,13 +351,13 @@ async function doQuickLog() {
         <span style="font-size: 20px; width: 30px; text-align: center; flex-shrink: 0"><CdIcon :emoji="m.icon" :icon="m.lucide" :size="20" /></span>
         <div style="flex: 1">
           <div style="font-size: 13px; font-weight: 700">{{ m.label }}</div>
-          <div style="font-size: 10px; color: #3e4f68; font-style: italic">{{ m.hype }}</div>
+          <div style="font-size: 10px; color: var(--cd-dim); font-style: italic">{{ m.hype }}</div>
         </div>
         <span v-if="!xp.completed_missions.includes(m.key)" class="cd-xpb">+{{ m.xp }} XP</span>
         <span v-else><CdIcon emoji="✅" icon="lucide:check-circle" :size="16" /></span>
       </div>
 
-      <div style="display: flex; gap: 7px; overflow-x: auto; padding: 4px 0 8px; margin-top: 8px">
+      <div class="cd-hscroll" style="display: flex; gap: 7px; padding: 4px 0 8px; margin-top: 8px">
         <div
           v-for="b in BADGES"
           :key="b.key"
@@ -370,7 +370,7 @@ async function doQuickLog() {
           ><CdIcon :emoji="b.emoji" :icon="b.lucide" :size="22" /></div>
           <div
             style="font-size: 9px; text-transform: uppercase; font-weight: 700"
-            :style="xp.unlocked_badges.includes(b.key) ? 'color:#ffd700' : 'color:#3e4f68'"
+            :style="xp.unlocked_badges.includes(b.key) ? 'color:var(--cd-gold)' : 'color:var(--cd-dim)'"
           >{{ b.label }}</div>
         </div>
       </div>

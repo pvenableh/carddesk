@@ -26,7 +26,7 @@ async function handleSubmit() {
         <div style="font-size: 48px; margin-bottom: 16px">📧</div>
         <h1 class="auth-title">Check your email</h1>
         <p class="auth-subtitle" style="margin-bottom: 24px">
-          If an account exists for <strong style="color: #f0f4ff">{{ email }}</strong>,
+          If an account exists for <strong style="color: var(--cd-text)">{{ email }}</strong>,
           you'll receive a password reset link shortly.
         </p>
         <button type="button" class="auth-link" @click="emit('login')">← Back to sign in</button>

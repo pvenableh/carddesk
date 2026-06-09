@@ -12,11 +12,11 @@ defineProps<{
         style="
           font-family: 'Bebas Neue', sans-serif;
           font-size: 20px;
-          color: #00ff87;
+          color: var(--cd-green);
           letter-spacing: 1px;
         "
       >{{ toast.xp }}</span>
-      <span style="font-size: 11px; color: #8898b0; font-weight: 600">{{ toast.msg }}</span>
+      <span style="font-size: 11px; color: var(--cd-muted); font-weight: 600">{{ toast.msg }}</span>
     </div>
   </Transition>
 </template>

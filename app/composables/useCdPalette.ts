@@ -24,10 +24,21 @@ import {
 
 const PALETTE_KEY = 'cd-palette'
 const TINT_KEY = 'cd-palette-tint'
+const GLASS_KEY = 'cd-glass-intensity'
+const CHROME_KEY = 'cd-glass-chrome'
+
+export type GlassIntensity = 'full' | 'restrained'
 
 export function useCdPalette() {
   const palette = useState<CdPaletteId>('cd-palette', () => 'seaMist')
   const paletteTint = useState<boolean>('cd-palette-tint', () => true)
+  // 'full' = ambient tinted background + translucent liquid-glass cards.
+  // 'restrained' = neutral background, flat clean cards, glass only on chrome.
+  const glassIntensity = useState<GlassIntensity>('cd-glass-intensity', () => 'full')
+  // Glass chrome (Earnest parity): when on, primary buttons + chips become
+  // frosted translucent with palette-tinted accents instead of solid fills.
+  // data-surface = 'glass' | 'solid'. Default off (bold solid CTAs).
+  const glassChrome = useState<boolean>('cd-glass-chrome', () => false)
 
   function apply() {
     if (!import.meta.client) return
@@ -36,9 +47,16 @@ export function useCdPalette() {
       'data-cd-tint',
       paletteTint.value ? 'on' : 'off',
     )
+    document.documentElement.setAttribute('data-cd-glass', glassIntensity.value)
+    document.documentElement.setAttribute(
+      'data-surface',
+      glassChrome.value ? 'glass' : 'solid',
+    )
     try {
       localStorage.setItem(PALETTE_KEY, palette.value)
       localStorage.setItem(TINT_KEY, paletteTint.value ? 'on' : 'off')
+      localStorage.setItem(GLASS_KEY, glassIntensity.value)
+      localStorage.setItem(CHROME_KEY, glassChrome.value ? 'on' : 'off')
     } catch {
       // Quota / private-mode — keep the in-memory state so the UI still
       // reflects the user's intent for this session.
@@ -56,6 +74,16 @@ export function useCdPalette() {
     apply()
   }
 
+  function setGlassIntensity(next: GlassIntensity): void {
+    glassIntensity.value = next
+    apply()
+  }
+
+  function setGlassChrome(next: boolean): void {
+    glassChrome.value = next
+    apply()
+  }
+
   function init(): void {
     if (!import.meta.client) return
     const savedPalette = localStorage.getItem(PALETTE_KEY)
@@ -64,6 +92,10 @@ export function useCdPalette() {
     // Default to ON when no preference has been saved — first-load users
     // see the tint and discover the toggle in account settings.
     paletteTint.value = savedTint === null ? true : savedTint === 'on'
+    const savedGlass = localStorage.getItem(GLASS_KEY)
+    glassIntensity.value = savedGlass === 'restrained' ? 'restrained' : 'full'
+    const savedChrome = localStorage.getItem(CHROME_KEY)
+    glassChrome.value = savedChrome === 'on'
     apply()
   }
 
@@ -74,6 +106,10 @@ export function useCdPalette() {
     palettes: CD_PALETTES,
     paletteTint,
     setPaletteTint,
+    glassIntensity,
+    setGlassIntensity,
+    glassChrome,
+    setGlassChrome,
     init,
   }
 }

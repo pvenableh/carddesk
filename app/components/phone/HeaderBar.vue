@@ -5,6 +5,17 @@ const { user } = useUserSession()
 const { logout } = useAuth()
 const { theme, isDark, setTheme, toggleDarkMode, THEMES } = useTheme()
 const router = useRouter()
+const { nav } = useNavigation()
+
+// Logo → home (the Vibe screen). If we somehow aren't on the app route,
+// route there first.
+function goHome() {
+  if (router.currentRoute.value.path !== '/') router.push('/')
+  nav('vibe')
+}
+
+// Sleeper is hidden from the picker for the beta (kept in code).
+const visibleThemes = computed(() => THEMES.filter((t) => t.id !== 'sleeper'))
 
 const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
@@ -69,7 +80,7 @@ function onClickOutside(e: MouseEvent) {
 <template>
   <div class="cd-sbar">
     <span class="cd-sbar-time">{{ time }}</span>
-    <span class="cd-sbar-logo">CARD<span class="cd-sbar-logo-accent">DESK</span></span>
+    <button class="cd-sbar-logo" type="button" aria-label="Home" @click="goHome">CARD<span class="cd-sbar-logo-accent">DESK</span></button>
     <div ref="dropdownRef" class="cd-avatar-wrap">
       <button class="cd-avatar" @click="toggleDropdown">
         {{ initials }}
@@ -81,20 +92,6 @@ function onClickOutside(e: MouseEvent) {
             Account
           </button>
           <div class="cd-dd-divider" />
-          <div class="cd-dd-label">Theme</div>
-          <button
-            v-for="t in THEMES"
-            :key="t.id"
-            class="cd-dd-item cd-dd-theme"
-            :class="{ active: theme === t.id }"
-            @click="selectTheme(t.id)"
-          >
-            <span class="cd-dd-check">{{ theme === t.id ? '●' : '○' }}</span>
-            <span>
-              <span class="cd-dd-theme-name">{{ t.label }}</span>
-              <span class="cd-dd-theme-desc">{{ t.description }}</span>
-            </span>
-          </button>
           <div class="cd-dd-row">
             <span class="cd-dd-row-label">Dark Mode</span>
             <PhoneDarkModeToggle />
@@ -133,6 +130,13 @@ function onClickOutside(e: MouseEvent) {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font-weight: inherit;
+  cursor: pointer;
 }
 .cd-sbar-logo-accent {
   color: var(--cd-accent);

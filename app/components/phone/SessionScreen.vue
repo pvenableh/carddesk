@@ -69,7 +69,7 @@ watch(sessionMode, (mode) => {
         <div style="font-family: 'Bebas Neue', sans-serif; font-size: 44px; line-height: 1">
           Need a session?
         </div>
-        <div style="font-size: 12px; color: #8898b0; margin-top: 4px">Pick your vibe.</div>
+        <div style="font-size: 12px; color: var(--cd-muted); margin-top: 4px">Pick your vibe.</div>
       </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px">
         <div class="cd-mcard tg" :class="{ sel: sessionMode === 'tough' }" @click="sessionMode = 'tough'">
@@ -89,11 +89,11 @@ watch(sessionMode, (mode) => {
             <div class="cd-sc-eye orange">Round {{ (toughIdx % toughCards.length) + 1 }} of {{ toughCards.length }}</div>
             <button
               v-if="aiToughCards.length"
-              style="font-size: 9px; color: #3e4f68; background: none; border: none; cursor: pointer; padding: 2px 4px"
+              style="font-size: 9px; color: var(--cd-dim); background: none; border: none; cursor: pointer; padding: 2px 4px"
               @click.stop="loadAiCards('tough')"
             ><CdIcon emoji="🔄" icon="lucide:refresh-cw" :size="9" /> refresh</button>
           </div>
-          <div v-if="aiLoading === 'tough'" style="text-align: center; padding: 12px 0; font-size: 12px; color: #8898b0; animation: cd-pulse 1.5s ease-in-out infinite">
+          <div v-if="aiLoading === 'tough'" style="text-align: center; padding: 12px 0; font-size: 12px; color: var(--cd-muted); animation: cd-pulse 1.5s ease-in-out infinite">
             Personalizing your session...
           </div>
           <template v-else>
@@ -113,11 +113,11 @@ watch(sessionMode, (mode) => {
             <div class="cd-sc-eye green">Round {{ (hypeIdx % hypeCards.length) + 1 }} of {{ hypeCards.length }}</div>
             <button
               v-if="aiHypeCards.length"
-              style="font-size: 9px; color: #3e4f68; background: none; border: none; cursor: pointer; padding: 2px 4px"
+              style="font-size: 9px; color: var(--cd-dim); background: none; border: none; cursor: pointer; padding: 2px 4px"
               @click.stop="loadAiCards('hype')"
             ><CdIcon emoji="🔄" icon="lucide:refresh-cw" :size="9" /> refresh</button>
           </div>
-          <div v-if="aiLoading === 'hype'" style="text-align: center; padding: 12px 0; font-size: 12px; color: #8898b0; animation: cd-pulse 1.5s ease-in-out infinite">
+          <div v-if="aiLoading === 'hype'" style="text-align: center; padding: 12px 0; font-size: 12px; color: var(--cd-muted); animation: cd-pulse 1.5s ease-in-out infinite">
             Personalizing your session...
           </div>
           <template v-else>
@@ -135,9 +135,9 @@ watch(sessionMode, (mode) => {
       </Transition>
       <div v-if="sessionMode" class="cd-lucky">
         <div style="font-size: 18px; margin-bottom: 4px"><CdIcon emoji="✨" icon="lucide:sparkles" :size="18" /></div>
-        <div style="font-size: 15px; font-weight: 800; color: #00ff87; margin-bottom: 3px">Remember</div>
-        <div style="font-size: 12px; color: #8898b0; line-height: 1.6">
-          <em style="color: #f0f4ff">They are the lucky ones to hear from you.</em><br />
+        <div class="cd-hand" style="font-size: 19px; color: var(--cd-green); margin-bottom: 3px">Remember</div>
+        <div style="font-size: 12px; color: var(--cd-muted); line-height: 1.6">
+          <em class="cd-hand" style="color: var(--cd-text); font-size: 15px; font-style: normal">They are the lucky ones to hear from you.</em><br />
           You reaching out is a gift. Own it.
         </div>
       </div>

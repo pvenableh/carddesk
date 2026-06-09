@@ -9,7 +9,7 @@ const token = computed(() => (route.query.token as string) || '')
   <div class="auth-page">
     <div class="auth-container">
       <div class="auth-logo">
-        CARD<span style="color: #00ff87">DESK</span>
+        CARD<span style="color: var(--cd-accent)">DESK</span>
       </div>
       <p class="auth-tagline">Your network. Gamified.</p>
       <div v-if="!token" class="auth-card" style="text-align: center; padding: 40px 32px">
@@ -28,7 +28,7 @@ const token = computed(() => (route.query.token as string) || '')
 <style scoped>
 .auth-page {
   min-height: 100vh;
-  background: #060810;
+  background: var(--cd-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -47,7 +47,7 @@ const token = computed(() => (route.query.token as string) || '')
 }
 .auth-tagline {
   text-align: center;
-  color: #3e4f68;
+  color: var(--cd-dim);
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;

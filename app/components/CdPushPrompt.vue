@@ -138,7 +138,7 @@ function neverShow() {
   height: 38px;
   border-radius: 12px;
   background: rgba(0, 255, 135, 0.16);
-  color: #00ff87;
+  color: var(--cd-green);
   display: grid;
   place-items: center;
 }

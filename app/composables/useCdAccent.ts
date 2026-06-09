@@ -70,6 +70,17 @@ const NEUTRAL_SOURCE: readonly HSL[] = [
   { h: 220, s: 45, l: 28 },
 ] as const
 
+/** High Contrast — bold, max-saturation hues spread wide for maximum pop. */
+const HIGH_CONTRAST_SOURCE: readonly HSL[] = [
+  { h: 222, s: 95, l: 55 }, // electric blue
+  { h: 270, s: 90, l: 58 }, // violet
+  { h: 320, s: 92, l: 56 }, // magenta
+  { h: 5, s: 90, l: 58 }, // red-orange
+  { h: 40, s: 98, l: 54 }, // amber
+  { h: 150, s: 85, l: 45 }, // green
+  { h: 180, s: 90, l: 47 }, // cyan
+] as const
+
 export const CD_PALETTES = {
   seaMist: {
     meta: { label: 'Fresh', hint: 'Aquamarine through bright sky blue' },
@@ -86,10 +97,15 @@ export const CD_PALETTES = {
     sourceColors: NEUTRAL_SOURCE,
     primary: { h: 196, s: 100, l: 50 },
   },
+  highContrast: {
+    meta: { label: 'High Contrast', hint: 'Bold, vivid, maximum pop' },
+    sourceColors: HIGH_CONTRAST_SOURCE,
+    primary: { h: 222, s: 95, l: 50 },
+  },
 } as const satisfies Record<string, PaletteDef>
 
 export type CdPaletteId = keyof typeof CD_PALETTES
-export const CD_PALETTE_IDS: readonly CdPaletteId[] = ['seaMist', 'aurora', 'neutral']
+export const CD_PALETTE_IDS: readonly CdPaletteId[] = ['seaMist', 'aurora', 'neutral', 'highContrast']
 
 export function resolvePaletteId(raw: unknown): CdPaletteId {
   if (typeof raw !== 'string') return 'seaMist'

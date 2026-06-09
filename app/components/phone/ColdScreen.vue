@@ -32,7 +32,7 @@ async function doWake(id: string) {
       <div v-if="!coldCs.length && !hibCs.length" class="cd-empty">
         <div style="font-size: 40px; margin-bottom: 10px"><CdIcon emoji="❄️" icon="lucide:snowflake" :size="40" /></div>
         <div style="font-size: 18px; font-weight: 800; margin-bottom: 6px">No cold contacts</div>
-        <div style="font-size: 12px; color: #8898b0">Rate a contact <CdIcon emoji="❄️" icon="lucide:snowflake" :size="12" /> Cold and they'll appear here.</div>
+        <div style="font-size: 12px; color: var(--cd-muted)">Rate a contact <CdIcon emoji="❄️" icon="lucide:snowflake" :size="12" /> Cold and they'll appear here.</div>
       </div>
       <template v-if="coldCs.length">
         <div class="cd-sec-lbl"><CdIcon emoji="❄️" icon="lucide:snowflake" :size="10" /> Cold</div>
@@ -71,7 +71,7 @@ async function doWake(id: string) {
           </div>
           <Transition name="cd-expand">
             <div v-if="openCold.has(c.id + '_h')" class="cd-cw">
-              <div class="cd-cw-q" style="color: #3e4f68">Smart networkers pause, not delete.</div>
+              <div class="cd-cw-q" style="color: var(--cd-dim)">Smart networkers pause, not delete.</div>
               <button class="cd-cwb wake" @click="doWake(c.id); openCold.delete(c.id + '_h')">
                 Wake up <CdIcon emoji="🌅" icon="lucide:sunrise" :size="12" />
               </button>

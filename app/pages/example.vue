@@ -926,7 +926,7 @@ onMounted(() => { load(); seed() })
             <!-- View mode -->
             <template v-else>
               <div class="cd-scrl cd-pad">
-                <button class="cd-back" @click="nav('contacts')">← Back to Network</button>
+                <button class="cd-back" @click="nav('contacts')"><CdIcon emoji="‹" icon="lucide:chevron-left" :size="14" /> Back to Network</button>
 
                 <!-- Hero -->
                 <div class="cd-det-hero">
@@ -1036,7 +1036,7 @@ onMounted(() => { load(); seed() })
         <!-- ■■ ADD CONTACT ■■ -->
         <div class="cd-screen" :class="{on:screen==='add'}">
           <div class="cd-shdr">
-            <button class="cd-back" style="margin-bottom:6px" @click="nav('contacts')">← Back</button>
+            <button class="cd-back" style="margin-bottom:6px" @click="nav('contacts')"><CdIcon emoji="‹" icon="lucide:chevron-left" :size="14" /> Back</button>
             <div class="cd-stitle">Add Contact</div>
             <div class="cd-ssub">Scan or enter manually · <span style="color:var(--cd-accent)">+50 XP</span> on scan</div>
           </div>

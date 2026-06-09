@@ -94,7 +94,7 @@ const wonLost = computed(() => {
       />
 
       <!-- Rating filter (only in rating mode) -->
-      <div v-if="viewMode === 'rating'" style="overflow-x: auto; padding-bottom: 2px">
+      <div v-if="viewMode === 'rating'" class="cd-hscroll" style="padding-bottom: 2px">
         <CdTabs v-model="cFilter" :items="ratingTabItems" size="sm" />
       </div>
     </div>
@@ -117,7 +117,7 @@ const wonLost = computed(() => {
           <span v-if="c.rating" class="cd-rpill" :class="c.rating">
             <CdIcon :emoji="getRating(c.rating)?.emoji ?? ''" :icon="getRating(c.rating)?.lucide" :size="10" /> {{ getRating(c.rating)?.label }}
           </span>
-          <span v-if="(c as any).is_client" style="font-size: 9px; color: #00ff87; font-weight: 700"><CdIcon emoji="💰" icon="lucide:badge-check" :size="9" /> client</span>
+          <span v-if="(c as any).is_client" style="font-size: 9px; color: var(--cd-green); font-weight: 700"><CdIcon emoji="💰" icon="lucide:badge-check" :size="9" /> client</span>
           <span v-else-if="followUpStatus(c) === 'overdue'" style="font-size: 9px; color: #ff6b35; font-weight: 700"><CdIcon emoji="⚡" icon="lucide:alert-triangle" :size="9" /> overdue</span>
         </div>
       </div>
@@ -125,7 +125,7 @@ const wonLost = computed(() => {
 
     <!-- Pipeline view (horizontal scrollable lanes) -->
     <div v-else class="cd-scrl" style="padding: 4px 0 8px">
-      <div style="display: flex; gap: 10px; overflow-x: auto; padding: 0 14px; min-height: 200px">
+      <div class="cd-hscroll" style="display: flex; gap: 10px; padding: 0 14px; min-height: 200px">
         <div
           v-for="lane in pipelineGroups"
           :key="lane.key"

@@ -6,7 +6,11 @@ definePageMeta({ middleware: 'auth' })
 const { user } = useUserSession()
 const { logout } = useAuth()
 const { theme, isDark, setTheme, toggleDarkMode, THEMES } = useTheme()
-const { palette, setPalette, paletteIds, palettes, paletteTint, setPaletteTint } = useCdPalette()
+const { palette, setPalette, paletteIds, palettes, paletteTint, setPaletteTint, glassIntensity, setGlassIntensity, glassChrome, setGlassChrome } = useCdPalette()
+
+// Sleeper is kept in code but hidden from the picker for the beta — only the
+// glass theme is user-facing for now.
+const visibleThemes = computed(() => THEMES.filter((t) => t.id !== 'sleeper'))
 const { profile, loading: profileLoading, saved: profileSaved, loadProfile, saveProfile, fullName, company } = useProfile()
 
 const email = computed(() => (user.value?.email as string) ?? '')
@@ -77,7 +81,7 @@ async function suggestGoal() {
 <template>
   <div class="acct-page">
     <div class="acct-container">
-      <NuxtLink to="/" class="acct-back">← Back</NuxtLink>
+      <NuxtLink to="/" class="cd-back"><CdIcon emoji="‹" icon="lucide:chevron-left" :size="14" /> Back</NuxtLink>
 
       <div class="acct-hero">
         <div class="acct-avatar">{{ initial }}</div>
@@ -162,7 +166,7 @@ async function suggestGoal() {
         <div class="acct-section-title">Theme</div>
         <div class="acct-theme-list">
           <button
-            v-for="t in THEMES"
+            v-for="t in visibleThemes"
             :key="t.id"
             class="acct-theme-card"
             :class="{ active: theme === t.id }"
@@ -184,7 +188,7 @@ async function suggestGoal() {
             <div class="acct-dm-label">Dark Mode</div>
             <div class="acct-dm-desc">{{ isDark ? 'On' : 'Off' }}</div>
           </div>
-          <UiDarkModeToggle />
+          <PhoneDarkModeToggle />
         </div>
       </div>
 
@@ -228,6 +232,51 @@ async function suggestGoal() {
             :class="{ on: paletteTint }"
             :aria-pressed="paletteTint"
             @click="setPaletteTint(!paletteTint)"
+          >
+            <span class="acct-pal-toggle-knob" />
+          </button>
+        </div>
+
+        <div style="margin-top: 14px">
+          <div class="acct-dm-label" style="margin-bottom: 8px">Glass Intensity</div>
+          <div class="cd-tabs acct-glass-seg" role="tablist">
+            <button
+              type="button"
+              class="cd-tab ios-press"
+              :class="{ on: glassIntensity === 'full' }"
+              :aria-selected="glassIntensity === 'full'"
+              @click="setGlassIntensity('full')"
+            >Full</button>
+            <button
+              type="button"
+              class="cd-tab ios-press"
+              :class="{ on: glassIntensity === 'restrained' }"
+              :aria-selected="glassIntensity === 'restrained'"
+              @click="setGlassIntensity('restrained')"
+            >Restrained</button>
+          </div>
+          <div class="acct-dm-desc" style="margin-top: 8px">
+            {{ glassIntensity === 'full'
+              ? 'Ambient tint + translucent liquid-glass cards'
+              : 'Clean flat cards, glass only on nav & bars' }}
+          </div>
+        </div>
+
+        <div class="acct-dm-row" style="margin-top: 14px">
+          <div>
+            <div class="acct-dm-label">Glass Chrome</div>
+            <div class="acct-dm-desc">
+              {{ glassChrome
+                ? 'Frosted buttons + chips with palette-tinted accents'
+                : 'Solid accent buttons & chips' }}
+            </div>
+          </div>
+          <button
+            type="button"
+            class="acct-pal-toggle"
+            :class="{ on: glassChrome }"
+            :aria-pressed="glassChrome"
+            @click="setGlassChrome(!glassChrome)"
           >
             <span class="acct-pal-toggle-knob" />
           </button>
@@ -561,5 +610,13 @@ async function suggestGoal() {
 }
 .acct-pal-toggle.on .acct-pal-toggle-knob {
   transform: translateX(18px);
+}
+.acct-glass-seg {
+  display: flex;
+  width: 100%;
+}
+.acct-glass-seg .cd-tab {
+  flex: 1;
+  justify-content: center;
 }
 </style>

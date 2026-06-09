@@ -118,7 +118,7 @@ const SUG_ACTIONS: Record<string, { label: string; icon: string; lucide: string;
   call: { label: 'Call', icon: '📞', lucide: 'lucide:phone', color: '#00ff87' },
   text: { label: 'Text', icon: '📱', lucide: 'lucide:message-circle', color: '#4da6ff' },
   email: { label: 'Email', icon: '📧', lucide: 'lucide:mail', color: '#b87dff' },
-  view: { label: 'View', icon: '👤', lucide: 'lucide:user', color: '#8898b0' },
+  view: { label: 'View', icon: '👤', lucide: 'lucide:user', color: 'var(--cd-muted)' },
 }
 
 // AI lead suggestions
@@ -213,7 +213,7 @@ async function loadLeadSuggestions() {
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px">
           <div style="position: relative; width: 56px; height: 56px; flex-shrink: 0">
             <svg viewBox="0 0 36 36" style="width: 56px; height: 56px; transform: rotate(-90deg)">
-              <circle cx="18" cy="18" r="15.5" fill="none" stroke="#1c2330" stroke-width="3" />
+              <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--cd-bdr)" stroke-width="3" />
               <circle
                 cx="18" cy="18" r="15.5" fill="none" stroke="#00ff87" stroke-width="3"
                 stroke-linecap="round"
@@ -223,17 +223,17 @@ async function loadLeadSuggestions() {
               />
             </svg>
             <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column">
-              <div style="font-family: 'Bebas Neue', sans-serif; font-size: 15px; line-height: 1; color: #00ff87">{{ xp.level }}</div>
-              <div style="font-size: 7px; color: #3e4f68; font-weight: 700; text-transform: uppercase">LVL</div>
+              <div style="font-family: 'Bebas Neue', sans-serif; font-size: 15px; line-height: 1; color: var(--cd-green)">{{ xp.level }}</div>
+              <div style="font-size: 7px; color: var(--cd-dim); font-weight: 700; text-transform: uppercase">LVL</div>
             </div>
           </div>
           <div style="flex: 1">
-            <div style="font-family: 'Bebas Neue', sans-serif; font-size: 28px; line-height: 1; color: #f0f4ff">{{ xp.total_xp.toLocaleString() }} <span style="font-size: 13px; color: #3e4f68">XP</span></div>
-            <div v-if="nextLevel" style="font-size: 10px; color: #8898b0; margin-top: 2px">
+            <div style="font-family: 'Bebas Neue', sans-serif; font-size: 28px; line-height: 1; color: var(--cd-text)">{{ xp.total_xp.toLocaleString() }} <span style="font-size: 13px; color: var(--cd-dim)">XP</span></div>
+            <div v-if="nextLevel" style="font-size: 10px; color: var(--cd-muted); margin-top: 2px">
               {{ (nextLevel.xp - xp.total_xp).toLocaleString() }} XP to {{ nextLevel.title }}
             </div>
             <div style="display: flex; gap: 8px; margin-top: 4px">
-              <span style="font-size: 10px; color: #00ff87; font-weight: 700">
+              <span style="font-size: 10px; color: var(--cd-green); font-weight: 700">
                 <CdIcon emoji="🔥" icon="lucide:flame" :size="10" /> {{ xp.streak }}d streak
               </span>
               <span style="font-size: 10px; color: #4da6ff; font-weight: 700">
@@ -243,7 +243,7 @@ async function loadLeadSuggestions() {
           </div>
         </div>
 
-        <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: #3e4f68; margin-bottom: 6px">
+        <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim); margin-bottom: 6px">
           <CdIcon emoji="📈" icon="lucide:bar-chart-3" :size="10" /> 7-Day Activity
         </div>
         <div style="display: flex; align-items: flex-end; gap: 4px; height: 60px; margin-bottom: 4px">
@@ -257,7 +257,7 @@ async function loadLeadSuggestions() {
                 style="width: 100%; max-width: 20px; border-radius: 4px 4px 0 0; transition: height 0.4s ease; min-height: 2px"
                 :style="{
                   height: day.count ? Math.max(12, (day.count / maxDayCount) * 100) + '%' : '4%',
-                  background: day.count === 0 ? '#1c2330' : day.count >= 3 ? '#00ff87' : day.count >= 2 ? '#4da6ff' : '#ffe033',
+                  background: day.count === 0 ? 'var(--cd-bdr)' : day.count >= 3 ? '#00ff87' : day.count >= 2 ? '#4da6ff' : '#ffe033',
                 }"
               >
                 <div v-if="day.count" style="text-align: center; font-size: 8px; font-weight: 800; color: #0a0e14; padding-top: 1px">
@@ -267,23 +267,23 @@ async function loadLeadSuggestions() {
             </div>
             <div
               style="font-size: 8px; font-weight: 700; margin-top: 3px; text-transform: uppercase"
-              :style="day.date === new Date().toISOString().slice(0, 10) ? 'color: #00ff87' : 'color: #3e4f68'"
+              :style="day.date === new Date().toISOString().slice(0, 10) ? 'color: var(--cd-green)' : 'color: var(--cd-dim)'"
             >{{ day.label }}</div>
           </div>
         </div>
-        <div style="display: flex; justify-content: space-between; font-size: 9px; color: #3e4f68; margin-bottom: 8px">
+        <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--cd-dim); margin-bottom: 8px">
           <span>{{ weekTotal }} touchpoints this week</span>
           <span v-if="weekTotal">avg {{ (weekTotal / 7).toFixed(1) }}/day</span>
         </div>
 
         <template v-if="xpSources.length">
-          <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: #3e4f68; margin-bottom: 5px">
+          <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim); margin-bottom: 5px">
             <CdIcon emoji="⚡" icon="lucide:zap" :size="10" /> Points Breakdown
           </div>
           <div v-for="src in xpSources" :key="src.label" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px">
             <CdIcon :emoji="src.icon" :icon="src.lucide" :size="12" />
             <span style="font-size: 11px; font-weight: 700; width: 72px; flex-shrink: 0">{{ src.label }}</span>
-            <div style="flex: 1; height: 4px; background: #1c2330; border-radius: 2px; overflow: hidden">
+            <div style="flex: 1; height: 4px; background: var(--cd-bdr); border-radius: 2px; overflow: hidden">
               <div
                 style="height: 100%; border-radius: 2px; transition: width 0.4s ease"
                 :style="'width:' + (xpSources[0].xp ? Math.round((src.xp / xpSources[0].xp) * 100) : 0) + '%;background:' + src.color"
@@ -300,7 +300,7 @@ async function loadLeadSuggestions() {
         <div class="cd-vct">
           <span class="cd-vci"><CdIcon :emoji="hypeClaimed ? '✅' : '🏆'" :icon="hypeClaimed ? 'lucide:check-circle' : 'lucide:trophy'" /></span>
           <div>
-            <div class="cd-vch" style="color: #00ff87">{{ hypeClaimed ? 'Hype claimed today!' : 'Nobody crushes it like you.' }}</div>
+            <div class="cd-vch cd-hand" style="color: var(--cd-green)">{{ hypeClaimed ? 'Hype claimed today!' : 'Nobody crushes it like you.' }}</div>
             <div class="cd-vcb">
               {{ contacts.length }} contacts · {{ xp.streak }}-day streak.
               <strong>{{ hypeClaimed ? 'Come back tomorrow for more.' : 'You\'re building something real.' }}</strong>
@@ -365,7 +365,7 @@ async function loadLeadSuggestions() {
           </div>
           <button
             class="cd-abtn"
-            style="font-size: 10px; padding: 4px 10px; background: transparent; border-color: #1c2330; color: #4da6ff; width: auto; flex-shrink: 0"
+            style="font-size: 10px; padding: 4px 10px; background: transparent; border-color: var(--cd-bdr); color: #4da6ff; width: auto; flex-shrink: 0"
             :disabled="leadSugLoading"
             @click="loadLeadSuggestions"
           >
@@ -374,16 +374,16 @@ async function loadLeadSuggestions() {
           </button>
         </div>
         <div v-if="leadSugError" style="font-size: 12px; color: #f87171; margin-bottom: 6px">{{ leadSugError }}</div>
-        <div v-if="!leadSuggestions.length && !leadSugLoading && !leadSugError" style="font-size: 11px; color: #3e4f68; line-height: 1.5">
+        <div v-if="!leadSuggestions.length && !leadSugLoading && !leadSugError" style="font-size: 11px; color: var(--cd-dim); line-height: 1.5">
           Tap <strong style="color: #4da6ff">Get AI Ideas</strong> for personalized suggestions on growing your leads.
         </div>
         <div v-if="leadSugLoading" style="text-align: center; padding: 10px 0">
-          <div style="font-size: 12px; color: #8898b0; animation: cd-pulse 1.5s ease-in-out infinite">Analyzing your network...</div>
+          <div style="font-size: 12px; color: var(--cd-muted); animation: cd-pulse 1.5s ease-in-out infinite">Analyzing your network...</div>
         </div>
         <div
           v-for="(s, i) in leadSuggestions"
           :key="i"
-          style="background: #0d1018; border: 1px solid #1c2330; border-radius: 10px; padding: 9px 11px; margin-bottom: 6px"
+          style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 10px; padding: 9px 11px; margin-bottom: 6px"
         >
           <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px">
             <div style="font-size: 13px; font-weight: 700">{{ s.icon }} {{ s.title }}</div>
@@ -392,7 +392,7 @@ async function loadLeadSuggestions() {
               style="font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(77,166,255,0.1); border: 1px solid rgba(77,166,255,0.2); border-radius: 4px; padding: 1px 5px; color: #4da6ff; flex-shrink: 0"
             >{{ getContact(s.contactId)?.pipeline_stage?.replace('_', ' ') }}</span>
           </div>
-          <div style="font-size: 11px; color: #8898b0; line-height: 1.5">{{ s.body }}</div>
+          <div style="font-size: 11px; color: var(--cd-muted); line-height: 1.5">{{ s.body }}</div>
           <div v-if="s.contactId" style="display: flex; gap: 6px; margin-top: 7px">
             <button
               v-if="s.action && SUG_ACTIONS[s.action]"
@@ -407,7 +407,7 @@ async function loadLeadSuggestions() {
             <button
               v-if="s.action !== 'view'"
               class="cd-abtn"
-              style="font-size: 10px; padding: 4px 10px; width: auto; flex-shrink: 0; background: transparent; border-color: #1c2330; color: #3e4f68"
+              style="font-size: 10px; padding: 4px 10px; width: auto; flex-shrink: 0; background: transparent; border-color: var(--cd-bdr); color: var(--cd-dim)"
               @click="goDetail(s.contactId!)"
             >
               <CdIcon emoji="👤" icon="lucide:user" :size="11" /> View
@@ -465,7 +465,7 @@ async function loadLeadSuggestions() {
         <div style="font-size: 24px; margin-bottom: 5px"><CdIcon :emoji="curMood.e" :icon="curMood.lucide" :size="24" /></div>
         <div class="cd-mc-t" :class="curMood.color">{{ curMood.title }}</div>
         <div class="cd-mc-b">{{ curMood.body }}</div>
-        <div style="font-size: 10px; color: #3e4f68; margin-top: 6px">tap to rotate</div>
+        <div style="font-size: 10px; color: var(--cd-dim); margin-top: 6px">tap to rotate</div>
       </div>
     </div>
   </div>

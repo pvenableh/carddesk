@@ -259,13 +259,13 @@ async function loadSuggestions() {
       </template>
       <template v-else>
         <div class="cd-scrl cd-pad">
-          <button class="cd-back" @click="nav('contacts')">← Back</button>
+          <button class="cd-back" @click="nav('contacts')"><CdIcon emoji="‹" icon="lucide:chevron-left" :size="14" /> Back</button>
           <div class="cd-det-hero">
             <div style="display: flex; align-items: center; gap: 11px; margin-bottom: 10px">
               <div class="cd-det-av"><CdIcon :emoji="cEmoji(selContact)" icon="lucide:user" :size="24" /></div>
               <div>
                 <div style="font-family: 'Bebas Neue', sans-serif; font-size: 26px; line-height: 1; margin-bottom: 3px">{{ selContact.name }}</div>
-                <div style="font-size: 12px; color: #8898b0">
+                <div style="font-size: 12px; color: var(--cd-muted)">
                   {{ [(selContact as any).title, (selContact as any).company].filter(Boolean).join(' · ') }}
                 </div>
               </div>
@@ -274,7 +274,7 @@ async function loadSuggestions() {
               <span v-if="selContact.rating" class="cd-rpill" :class="selContact.rating">
                 <CdIcon :emoji="getRating(selContact.rating)?.emoji ?? ''" :icon="getRating(selContact.rating)?.lucide" :size="10" /> {{ getRating(selContact.rating)?.label }}
               </span>
-              <span v-if="(selContact as any).is_client" style="background: rgba(0,255,135,0.12); border: 1px solid rgba(0,255,135,0.3); border-radius: 6px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #00ff87">
+              <span v-if="(selContact as any).is_client" style="background: rgba(0,255,135,0.12); border: 1px solid rgba(0,255,135,0.3); border-radius: 6px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: var(--cd-green)">
                 <CdIcon emoji="💰" icon="lucide:badge-check" :size="10" /> Client
               </span>
               <button
@@ -317,12 +317,12 @@ async function loadSuggestions() {
 
           <div class="cd-log-sec" style="margin-bottom: 16px">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
-              <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: #3e4f68">
+              <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim)">
                 Next Steps
               </div>
               <button
                 class="cd-abtn"
-                style="font-size: 11px; padding: 5px 10px; background: transparent; border-color: #1c2330; color: #4da6ff"
+                style="font-size: 11px; padding: 5px 10px; background: transparent; border-color: var(--cd-bdr); color: #4da6ff"
                 :disabled="sugLoading"
                 @click="loadSuggestions"
               >
@@ -334,18 +334,18 @@ async function loadSuggestions() {
             <div
               v-for="(s, i) in suggestions"
               :key="i"
-              style="background: #0d1018; border: 1px solid #1c2330; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px"
+              style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px"
             >
               <div style="font-size: 14px; font-weight: 700; margin-bottom: 3px">{{ s.icon }} {{ s.title }}</div>
-              <div style="font-size: 12px; color: #8898b0; line-height: 1.5">{{ s.body }}</div>
+              <div style="font-size: 12px; color: var(--cd-muted); line-height: 1.5">{{ s.body }}</div>
             </div>
           </div>
 
           <div class="cd-log-sec">
-            <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: #3e4f68; margin-bottom: 8px">
+            <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim); margin-bottom: 8px">
               Log a touchpoint
             </div>
-            <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px">
+            <div class="cd-hscroll" style="display: flex; gap: 6px; margin-bottom: 8px; padding-bottom: 4px">
               <button
                 v-for="t in ACT_TYPES"
                 :key="t.key"
@@ -357,10 +357,10 @@ async function loadSuggestions() {
               </button>
             </div>
             <input v-model="actNote" class="cd-inp" placeholder="Quick note..." style="margin-bottom: 7px" />
+            <input v-model="actDate" type="date" class="cd-inp" style="margin-bottom: 7px" />
             <div style="display: flex; gap: 6px">
-              <input v-model="actDate" type="date" class="cd-inp" style="flex: 0 0 130px; margin-bottom: 0" />
-              <button class="cd-abtn g" style="flex: 1; font-size: 12px; padding: 9px 6px" @click="doLogAct(false)"><CdIcon emoji="✅" icon="lucide:check-circle" :size="12" /> Log +25 XP</button>
-              <button class="cd-abtn b" style="flex: 1; font-size: 12px; padding: 9px 6px" @click="doLogAct(true)"><CdIcon emoji="🎉" icon="lucide:party-popper" :size="12" /> Replied! +100</button>
+              <button class="cd-abtn g" style="flex: 1; font-size: 12px; padding: 10px 6px" @click="doLogAct(false)"><CdIcon emoji="✅" icon="lucide:check-circle" :size="12" /> Log +25 XP</button>
+              <button class="cd-abtn b" style="flex: 1; font-size: 12px; padding: 10px 6px" @click="doLogAct(true)"><CdIcon emoji="🎉" icon="lucide:party-popper" :size="12" /> Replied! +100</button>
             </div>
           </div>
 
@@ -371,10 +371,10 @@ async function loadSuggestions() {
           >
             <div
               v-if="i < sortedActs.length - 1"
-              style="position: absolute; left: 17px; top: 36px; width: 2px; bottom: -13px; background: #1c2330"
+              style="position: absolute; left: 17px; top: 36px; width: 2px; bottom: -13px; background: var(--cd-bdr)"
             ></div>
             <div class="cd-tl-dot" :class="act.type"><CdIcon :emoji="getAct(act.type).icon" :icon="getAct(act.type).lucide" :size="17" /></div>
-            <div style="flex: 1; background: #0d1018; border: 1px solid #1c2330; border-radius: 12px; padding: 10px 12px">
+            <div style="flex: 1; background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 12px; padding: 10px 12px">
               <template v-if="editingActId === act.id">
                 <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #4da6ff; margin-bottom: 6px">Edit Activity</div>
                 <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px">
@@ -393,27 +393,27 @@ async function loadSuggestions() {
                 <div style="display: flex; gap: 5px">
                   <input v-model="editActForm.date" type="date" class="cd-inp" style="flex: 0 0 120px; margin-bottom: 0; font-size: 11px; padding: 5px 6px" />
                   <button class="cd-abtn g" style="flex: 1; font-size: 11px; padding: 6px" @click="doSaveAct">Save</button>
-                  <button class="cd-abtn" style="font-size: 11px; padding: 6px; background: transparent; color: #8898b0; border-color: #1c2330" @click="cancelEditAct">Cancel</button>
+                  <button class="cd-abtn" style="font-size: 11px; padding: 6px; background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr)" @click="cancelEditAct">Cancel</button>
                 </div>
               </template>
               <template v-else>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 4px">
                   <div style="font-size: 14px; font-weight: 800">{{ act.label }}</div>
                   <div style="display: flex; align-items: center; gap: 6px">
-                    <div style="font-size: 10px; color: #3e4f68; font-family: monospace">{{ fmtFull(act.date) }}</div>
+                    <div style="font-size: 10px; color: var(--cd-dim); font-family: monospace">{{ fmtFull(act.date) }}</div>
                     <button
-                      style="background: none; border: none; cursor: pointer; padding: 2px; font-size: 10px; color: #3e4f68"
+                      style="background: none; border: none; cursor: pointer; padding: 2px; font-size: 10px; color: var(--cd-dim)"
                       title="Edit"
                       @click="startEditAct(act)"
                     ><CdIcon emoji="✏️" icon="lucide:pencil" :size="10" /></button>
                     <button
-                      style="background: none; border: none; cursor: pointer; padding: 2px; font-size: 10px; color: #3e4f68"
+                      style="background: none; border: none; cursor: pointer; padding: 2px; font-size: 10px; color: var(--cd-dim)"
                       title="Delete"
                       @click="confirmDeleteId = act.id"
                     ><CdIcon emoji="🗑" icon="lucide:trash-2" :size="10" /></button>
                   </div>
                 </div>
-                <div v-if="act.note" style="font-size: 12px; color: #8898b0; line-height: 1.5; margin-bottom: 7px">{{ act.note }}</div>
+                <div v-if="act.note" style="font-size: 12px; color: var(--cd-muted); line-height: 1.5; margin-bottom: 7px">{{ act.note }}</div>
                 <div v-if="confirmDeleteId === act.id" style="background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); border-radius: 8px; padding: 8px; margin-bottom: 7px">
                   <div style="font-size: 11px; font-weight: 700; color: #f87171; margin-bottom: 6px">Delete this activity? You'll lose {{ xpForActivity(act) }} XP.</div>
                   <div style="display: flex; gap: 6px">
@@ -424,7 +424,7 @@ async function loadSuggestions() {
                     ><CdIcon emoji="🗑" icon="lucide:trash-2" :size="10" /> Delete</button>
                     <button
                       class="cd-abtn"
-                      style="flex: 1; font-size: 11px; padding: 6px; background: transparent; color: #8898b0; border-color: #1c2330"
+                      style="flex: 1; font-size: 11px; padding: 6px; background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr)"
                       @click="confirmDeleteId = null"
                     >Cancel</button>
                   </div>
@@ -443,24 +443,24 @@ async function loadSuggestions() {
           <button
             v-if="!(selContact as any).is_client"
             class="cd-abtn"
-            style="width: 100%; margin: 8px 0; background: rgba(0,255,135,0.08); border-color: rgba(0,255,135,0.3); color: #00ff87; font-size: 14px; padding: 12px; font-weight: 800"
+            style="width: 100%; margin: 8px 0; background: rgba(0,255,135,0.08); border-color: rgba(0,255,135,0.3); color: var(--cd-green); font-size: 14px; padding: 12px; font-weight: 800"
             @click="doMarkClient"
           ><CdIcon emoji="💰" icon="lucide:badge-check" :size="14" /> Mark as Client +200 XP</button>
 
           <div style="display: flex; gap: 7px; margin: 8px 0 20px">
             <button
               class="cd-abtn"
-              style="flex: 1; background: transparent; color: #8898b0; border-color: #1c2330; font-size: 12px; padding: 9px"
+              style="flex: 1; background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr); font-size: 12px; padding: 9px"
               @click="startEdit"
             ><CdIcon emoji="✏️" icon="lucide:pencil" :size="12" /> Edit</button>
             <button
               class="cd-abtn"
-              style="flex: 1; background: transparent; color: #8898b0; border-color: #1c2330; font-size: 12px; padding: 9px"
+              style="flex: 1; background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr); font-size: 12px; padding: 9px"
               @click="shareContact"
             ><CdIcon emoji="📤" icon="lucide:share-2" :size="12" /> {{ shareCopied ? 'Copied!' : 'Share' }}</button>
             <button
               class="cd-abtn"
-              style="flex: 1; background: transparent; color: #3e4f68; border-color: #1c2330; font-size: 12px; padding: 9px"
+              style="flex: 1; background: transparent; color: var(--cd-dim); border-color: var(--cd-bdr); font-size: 12px; padding: 9px"
               @click="doHibernate(selContact.id)"
             ><CdIcon emoji="😴" icon="lucide:moon" :size="12" /> Hibernate</button>
           </div>
