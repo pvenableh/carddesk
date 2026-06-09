@@ -1,12 +1,15 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getValidToken } from "../utils/auth";
 import { fetchUserProfile } from "../utils/profile";
+import { enforceCredits, chargeCredits } from "../utils/ai-credits";
 
 export default defineEventHandler(async (event) => {
   const token = await getValidToken(event);
   const config = useRuntimeConfig();
   if (!config.anthropicApiKey)
     throw createError({ statusCode: 500, message: "Anthropic API key not configured" });
+
+  const account = await enforceCredits(event, "ai-goal");
 
   let profile: Record<string, any> = {};
   try {
@@ -43,9 +46,16 @@ Return ONLY the goal text — no quotes, no preamble, no explanation. Just the 2
       .map((b) => (b as any).text)
       .join("")
       .trim();
+    chargeCredits(account, {
+      model: "claude-sonnet-4-20250514",
+      inputTokens: response.usage?.input_tokens ?? 0,
+      outputTokens: response.usage?.output_tokens ?? 0,
+    });
     return { goal: text };
   } catch (err: any) {
     if (err.statusCode) throw err;
-    throw createError({ statusCode: 500, message: "AI goal suggestion failed" });
+    const detail = err?.error?.error?.message || err?.message || "unknown error";
+    console.error("[ai-goal] Anthropic error:", err?.status ?? err?.statusCode, detail, err);
+    throw createError({ statusCode: 502, message: `AI goal suggestion failed: ${detail}` });
   }
 });

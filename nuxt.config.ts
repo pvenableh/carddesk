@@ -82,6 +82,9 @@ export default defineNuxtConfig({
     vapidPrivateKey: process.env.VAPID_PRIVATE_KEY || '',
     vapidSubject: process.env.VAPID_SUBJECT || 'mailto:hello@earnest.guru',
     cronSecret: process.env.CRON_SECRET || '',
+    stripeSecretKeyTest: process.env.STRIPE_SECRET_KEY_TEST || '',
+    stripeSecretKeyLive: process.env.STRIPE_SECRET_KEY_LIVE || '',
+    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
     public: {
       directusUrl: process.env.DIRECTUS_URL || 'http://localhost:8055',
       websocketUrl: process.env.DIRECTUS_WEBSOCKET_URL || 'ws://localhost:8055/websocket',

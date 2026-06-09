@@ -85,7 +85,10 @@ export const CD_PALETTES = {
   seaMist: {
     meta: { label: 'Fresh', hint: 'Aquamarine through bright sky blue' },
     sourceColors: SEA_MIST_SOURCE,
-    primary: { h: 213, s: 64, l: 52 },
+    // Brighter, more saturated sky-azure — the old 64%-sat steel blue read as
+    // dull on the white light-mode chrome (logo + active nav) vs the other,
+    // punchier palettes. This is the light-mode chrome accent for Fresh.
+    primary: { h: 208, s: 92, l: 54 },
   },
   aurora: {
     meta: { label: 'Aurora', hint: 'Neon pink → ultrasonic blue → sky aqua' },

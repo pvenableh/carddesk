@@ -226,6 +226,70 @@ async function loadSuggestions() {
   } catch { sugError.value = 'Could not load suggestions' }
   finally { sugLoading.value = false }
 }
+
+// Saved AI history for this contact (client-specific sessions + feedback)
+const { saveSession, listSessions, deleteSession, sendFeedback } = useSessions()
+const { claimRewards } = useCredits()
+const aiHistory = ref<any[]>([])
+const historyLoading = ref(false)
+const expandedSession = ref<string | null>(null)
+const sugSaved = ref(false)
+
+async function loadHistory() {
+  if (!selContact.value) { aiHistory.value = []; return }
+  historyLoading.value = true
+  try { aiHistory.value = await listSessions({ contact: (selContact.value as any).id }) }
+  catch { aiHistory.value = [] }
+  finally { historyLoading.value = false }
+}
+watch(selContact, () => loadHistory(), { immediate: true })
+
+async function saveSuggestions() {
+  if (!selContact.value || !suggestions.value.length) return
+  const c = selContact.value as any
+  try {
+    await saveSession({
+      type: 'suggestions',
+      contact: c.id,
+      title: `Next steps — ${c.name}`,
+      messages: [{ role: 'assistant', content: suggestions.value, ai_generated: true }],
+    })
+    sugSaved.value = true
+    earn(10, '💾', 'Saved to this contact')
+    setTimeout(() => (sugSaved.value = false), 2000)
+    await loadHistory()
+    claimRewards()
+  } catch { /* non-fatal */ }
+}
+
+async function rateSession(s: any, rating: 'up' | 'down') {
+  s._rated = rating
+  if (rating === 'up') fireConfetti()
+  try {
+    await sendFeedback({ contact: (selContact.value as any)?.id ?? null, session: s.id, rating, source: s.type })
+    claimRewards()
+  } catch { /* non-fatal */ }
+}
+
+async function removeSession(s: any) {
+  try { await deleteSession(s.id) } catch { /* non-fatal */ }
+  aiHistory.value = aiHistory.value.filter((x) => x.id !== s.id)
+}
+
+// Normalize a saved session's assistant content into displayable lines.
+function sessionLines(s: any): Array<{ title: string; body: string }> {
+  const msgs = s.messages || []
+  const msg = msgs.find((m: any) => m.role === 'assistant') || msgs[0]
+  const content = msg?.content
+  if (!content) return []
+  if (Array.isArray(content)) {
+    return content.map((x: any) => ({ title: `${x.icon ?? ''} ${x.title ?? ''}`.trim(), body: x.body ?? '' }))
+  }
+  if (content.cards) {
+    return content.cards.map((c: any) => ({ title: c.q ?? '', body: String(c.b ?? '').replace(/<[^>]+>/g, '') }))
+  }
+  return []
+}
 </script>
 
 <template>
@@ -338,6 +402,49 @@ async function loadSuggestions() {
             >
               <div style="font-size: 14px; font-weight: 700; margin-bottom: 3px">{{ s.icon }} {{ s.title }}</div>
               <div style="font-size: 12px; color: var(--cd-muted); line-height: 1.5">{{ s.body }}</div>
+            </div>
+            <button
+              v-if="suggestions.length"
+              class="cd-abtn"
+              style="width: 100%; margin-top: 4px; background: transparent; border-color: var(--cd-bdr); color: var(--cd-muted); font-size: 11px; padding: 8px"
+              :disabled="sugSaved"
+              @click="saveSuggestions"
+            >
+              <CdIcon :emoji="sugSaved ? '✅' : '💾'" :icon="sugSaved ? 'lucide:check' : 'lucide:bookmark'" :size="11" />
+              {{ sugSaved ? 'Saved to history' : 'Save these to history' }}
+            </button>
+          </div>
+
+          <div v-if="aiHistory.length || historyLoading" class="cd-log-sec" style="margin-bottom: 16px">
+            <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim); margin-bottom: 8px">
+              AI History
+            </div>
+            <div v-if="historyLoading" style="font-size: 12px; color: var(--cd-muted)">Loading…</div>
+            <div
+              v-for="s in aiHistory"
+              :key="s.id"
+              style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px"
+            >
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px">
+                <button
+                  style="flex: 1; text-align: left; background: none; border: none; cursor: pointer; color: var(--cd-text); padding: 0"
+                  @click="expandedSession = expandedSession === s.id ? null : s.id"
+                >
+                  <div style="font-size: 13px; font-weight: 700">{{ s.title }}</div>
+                  <div style="font-size: 10px; color: var(--cd-dim); font-family: monospace">{{ fmtFull(s.date_created) }} · {{ s.type }}</div>
+                </button>
+                <div style="display: flex; align-items: center; gap: 4px">
+                  <button :style="`background:none;border:none;cursor:pointer;padding:3px;opacity:${s._rated === 'up' ? 1 : 0.4}`" title="Helpful" @click="rateSession(s, 'up')"><CdIcon emoji="👍" icon="lucide:thumbs-up" :size="13" /></button>
+                  <button :style="`background:none;border:none;cursor:pointer;padding:3px;opacity:${s._rated === 'down' ? 1 : 0.4}`" title="Not helpful" @click="rateSession(s, 'down')"><CdIcon emoji="👎" icon="lucide:thumbs-down" :size="13" /></button>
+                  <button style="background: none; border: none; cursor: pointer; padding: 3px; color: var(--cd-dim)" title="Delete" @click="removeSession(s)"><CdIcon emoji="🗑" icon="lucide:trash-2" :size="11" /></button>
+                </div>
+              </div>
+              <div v-if="expandedSession === s.id" style="margin-top: 8px; border-top: 1px solid var(--cd-bdr); padding-top: 8px">
+                <div v-for="(line, li) in sessionLines(s)" :key="li" style="margin-bottom: 7px">
+                  <div v-if="line.title" style="font-size: 12px; font-weight: 700">{{ line.title }}</div>
+                  <div v-if="line.body" style="font-size: 12px; color: var(--cd-muted); line-height: 1.5">{{ line.body }}</div>
+                </div>
+              </div>
             </div>
           </div>
 

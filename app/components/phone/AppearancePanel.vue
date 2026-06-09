@@ -313,6 +313,12 @@ const visibleThemes = computed(() => THEMES.filter((t) => t.id !== 'sleeper'))
   background: var(--cd-accent);
   border-color: var(--cd-accent);
 }
+/* Dark mode: --cd-accent is near-white, hiding the white knob — use brand green
+ * for the on-state, matching the dark-mode toggle. */
+html[data-mode="dark"] .ap-toggle.on {
+  background: var(--cd-green);
+  border-color: var(--cd-green);
+}
 .ap-toggle-knob {
   position: absolute;
   top: 2px;

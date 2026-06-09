@@ -16,7 +16,8 @@ const MODE_KEY = 'cd-dark-mode'
 
 export function useTheme() {
   const theme = useState<ThemeId>('cd-theme', () => 'glass')
-  const isDark = useState<boolean>('cd-dark-mode', () => false)
+  // Dark mode is the default; overridden only by a saved preference (see init()).
+  const isDark = useState<boolean>('cd-dark-mode', () => true)
 
   // Reflect current state to the DOM. Persists the theme choice, but NOT
   // the mode — mode is only persisted on an explicit user toggle so that a
@@ -55,16 +56,8 @@ export function useTheme() {
       if (savedMode === 'light' || savedMode === 'dark') {
         isDark.value = savedMode === 'dark'
       } else {
-        // No explicit preference yet — follow the device's system setting on
-        // first launch, then keep tracking it until the user picks a mode.
-        const mql = window.matchMedia('(prefers-color-scheme: dark)')
-        isDark.value = mql.matches
-        mql.addEventListener('change', (e) => {
-          if (localStorage.getItem(MODE_KEY) === null) {
-            isDark.value = e.matches
-            document.documentElement.setAttribute('data-mode', isDark.value ? 'dark' : 'light')
-          }
-        })
+        // No explicit preference yet — dark mode is the default.
+        isDark.value = true
       }
       apply()
     }

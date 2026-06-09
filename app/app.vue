@@ -8,6 +8,7 @@ const { loggedIn } = useUserSession()
 const { loadXp } = useXp()
 const { fetchContacts } = useContacts()
 const { loadProfile } = useProfile()
+const { loadCredits, claimRewards } = useCredits()
 const { init: initTheme } = useTheme()
 const { init: initPalette } = useCdPalette()
 
@@ -17,9 +18,13 @@ onMounted(() => {
 })
 
 watch(loggedIn, async (val) => {
-  if (val) await Promise.all([loadXp(), fetchContacts(), loadProfile()])
+  if (val) {
+    await Promise.all([loadXp(), fetchContacts(), loadProfile(), loadCredits()])
+    // Grant any earn-as-you-go rewards already earned (streak, level, etc.).
+    claimRewards()
+  }
 }, { immediate: true })
 </script>
 <template>
-  <div><NuxtRouteAnnouncer /><NuxtPage /></div>
+  <div><NuxtRouteAnnouncer /><NuxtPage /><BuyCreditsModal /><CreditRewardToast /><GlassToast /></div>
 </template>

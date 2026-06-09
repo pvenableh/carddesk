@@ -28,6 +28,12 @@ watch(profile, (p) => {
 
 const { contacts } = useContacts()
 
+// Credit purchase: confirm the Stripe checkout on the success redirect.
+const route = useRoute()
+const router = useRouter()
+const { confirmPurchase } = useCredits()
+const purchaseBanner = ref<string | null>(null)
+
 // Earnest Score — server returns { current_score, dimension_scores };
 // label is derived here from score bands to match Earnest's /account page.
 const earnestScore = ref<{ current_score: number; dimension_scores: Record<string, number> } | null>(null)
@@ -46,6 +52,15 @@ onMounted(async () => {
     const score = await $fetch<any>('/api/earnest-score')
     if (score) earnestScore.value = score
   } catch { /* score not available */ }
+
+  if (route.query.credits_purchased === 'true' && typeof route.query.session_id === 'string') {
+    const res = await confirmPurchase(route.query.session_id)
+    purchaseBanner.value = res?.credits
+      ? `🎉 ${res.credits} credits added — happy networking!`
+      : 'Purchase received — your credits will appear shortly.'
+    router.replace({ query: {} })
+    setTimeout(() => (purchaseBanner.value = null), 5000)
+  }
 })
 
 function doSaveProfile() {
@@ -76,6 +91,13 @@ async function suggestGoal() {
   <div class="acct-page">
     <div class="acct-container">
       <NuxtLink to="/" class="cd-back"><CdIcon emoji="‹" icon="lucide:chevron-left" :size="14" /> Back</NuxtLink>
+
+      <div
+        v-if="purchaseBanner"
+        style="margin-bottom: 14px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--cd-accent); background: color-mix(in srgb, var(--cd-accent) 12%, transparent); color: var(--cd-text); font-size: 13px; font-weight: 700; text-align: center"
+      >
+        {{ purchaseBanner }}
+      </div>
 
       <div class="acct-hero">
         <div class="acct-avatar">{{ initial }}</div>

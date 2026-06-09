@@ -6,6 +6,7 @@ const { contacts, createContact, logActivity } = useContacts()
 const { state: xp, earn } = useXp()
 const { scanning, scanStep, error: scanError, captureFront, captureBackAndScan, scanFrontOnly, reset: resetScan } = useCardScan()
 const { nav, goDetail } = useNavigation()
+const { error: showError } = useToast()
 
 const addForm = ref({
   firstName: '', lastName: '', title: '', company: '',
@@ -52,7 +53,10 @@ async function doScanBack() {
     const result = await captureBackAndScan()
     applyResult(result)
   } catch (err: any) {
-    if (err?.message !== 'Cancelled') console.error('[scan]', err)
+    if (err?.message !== 'Cancelled') {
+      console.error('[scan]', err)
+      showError(err?.message || 'Card scan failed — try again')
+    }
   }
 }
 
@@ -62,6 +66,7 @@ async function doSkipBack() {
     applyResult(result)
   } catch (err: any) {
     console.error('[scan]', err)
+    showError(err?.message || 'Card scan failed — try again')
   }
 }
 
@@ -167,7 +172,7 @@ async function doSaveContact() {
 
       <div
         v-if="scanError"
-        style="background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.3); border-radius: 10px; padding: 10px 13px; margin-top: 8px; margin-bottom: 10px; font-size: 12px; color: #ff6b35"
+        style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 10px 13px; margin-top: 8px; margin-bottom: 10px; font-size: 12px; color: #ef4444"
       >{{ scanError }}</div>
       <div style="display: flex; align-items: center; gap: 10px; color: var(--cd-dim); font-size: 10px; margin: 12px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700">
         <div style="flex: 1; height: 1px; background: var(--cd-bdr)"></div>

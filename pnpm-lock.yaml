@@ -65,6 +65,9 @@ dependencies:
   shadcn-nuxt:
     specifier: 2.0.0
     version: 2.0.0
+  stripe:
+    specifier: ^22.2.0
+    version: 22.2.0(@types/node@22.19.13)
   tailwind-merge:
     specifier: ^3.3.1
     version: 3.5.0
@@ -10385,6 +10388,18 @@ packages:
     resolution: {integrity: sha512-8r3mkIM/2+PpjHoOtiAW8Rg3jJLHaV7xPwG+YRGrv6FP0wwk/toTpATxWYOW0BKdWwl82VT2tFYi5DlROa0Mxg==}
     dependencies:
       js-tokens: 9.0.1
+
+  /stripe@22.2.0(@types/node@22.19.13):
+    resolution: {integrity: sha512-WFGpMOom9QZqso1kcnSwJsCdC1QHDlMoCOxBZRf3JraMzhkfw7dgSdD2a1CFZrqC+mzAfqeEtYILrZhWKIDruA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@types/node': '>=18'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
+    dependencies:
+      '@types/node': 22.19.13
+    dev: false
 
   /structured-clone-es@1.0.0:
     resolution: {integrity: sha512-FL8EeKFFyNQv5cMnXI31CIMCsFarSVI2bF0U0ImeNE3g/F1IvJQyqzOXxPBRXiwQfyBTlbNe88jh1jFW0O/jiQ==}

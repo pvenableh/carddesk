@@ -17,6 +17,11 @@
   --cd-orange: #ff6b35;
   --cd-purple: #b87dff;
   --cd-ice: #a8d8ea;
+  /* Session / "tough" accent. Tracks the active palette (chrome accent →
+   * palette primary) so the coaching path harmonises with every palette
+   * instead of the old fixed Sleeper orange. Resolves per-element so it picks
+   * up the palette + light/dark chrome accent in context. */
+  --cd-tough: var(--cd-chrome-accent, var(--cd-palette-primary, #3d8fd6));
 }
 
 /* ── Sleeper Light ── */
@@ -336,9 +341,9 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
   border-color: rgba(77, 166, 255, 0.3);
 }
 .cd-abtn.o {
-  background: rgba(255, 107, 53, 0.1);
-  color: var(--cd-orange);
-  border-color: rgba(255, 107, 53, 0.3);
+  background: color-mix(in srgb, var(--cd-tough) 10%, transparent);
+  color: var(--cd-tough);
+  border-color: color-mix(in srgb, var(--cd-tough) 30%, transparent);
 }
 .cd-abtn.ice {
   background: rgba(168, 216, 234, 0.08);
@@ -525,9 +530,9 @@ select.cd-inp {
   border: 1px solid;
 }
 .cd-semp.tg {
-  background: rgba(255, 107, 53, 0.1);
-  color: var(--cd-orange);
-  border-color: rgba(255, 107, 53, 0.3);
+  background: color-mix(in srgb, var(--cd-tough) 10%, transparent);
+  color: var(--cd-tough);
+  border-color: color-mix(in srgb, var(--cd-tough) 30%, transparent);
 }
 .cd-semp.pk {
   background: rgba(0, 255, 135, 0.1);
@@ -702,8 +707,8 @@ select.cd-inp {
 }
 .cd-mcard.tg.sel,
 .cd-mcard.tg:hover {
-  border-color: rgba(255, 107, 53, 0.5);
-  background: rgba(255, 107, 53, 0.05);
+  border-color: color-mix(in srgb, var(--cd-tough) 50%, transparent);
+  background: color-mix(in srgb, var(--cd-tough) 6%, transparent);
 }
 .cd-mcard.pk.sel,
 .cd-mcard.pk:hover {
@@ -716,7 +721,7 @@ select.cd-inp {
   margin-bottom: 3px;
 }
 .cd-mcard.tg.sel .cd-mc-lbl {
-  color: var(--cd-orange);
+  color: var(--cd-tough);
 }
 .cd-mcard.pk.sel .cd-mc-lbl {
   color: var(--cd-accent);
@@ -732,7 +737,7 @@ select.cd-inp {
 }
 .cd-scard.tc {
   background: linear-gradient(135deg, #190800, #0e0500);
-  border: 1.5px solid rgba(255, 107, 53, 0.3);
+  border: 1.5px solid color-mix(in srgb, var(--cd-tough) 30%, transparent);
 }
 .cd-scard.hc {
   background: linear-gradient(135deg, #041208, #050e06);
@@ -746,7 +751,7 @@ select.cd-inp {
   margin-bottom: 8px;
 }
 .cd-sc-eye.orange {
-  color: var(--cd-orange);
+  color: var(--cd-tough);
 }
 .cd-sc-eye.green {
   color: var(--cd-accent);
@@ -765,7 +770,7 @@ select.cd-inp {
 }
 .cd-sc-b em {
   font-style: normal;
-  color: var(--cd-orange);
+  color: var(--cd-tough);
 }
 .cd-scard.hc .cd-sc-b em {
   color: var(--cd-accent);

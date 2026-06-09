@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getValidToken } from "../utils/auth";
+import { enforceCredits, chargeCredits } from "../utils/ai-credits";
 
 export default defineEventHandler(async (event) => {
   await getValidToken(event);
@@ -40,6 +41,8 @@ export default defineEventHandler(async (event) => {
       message: "Anthropic API key not configured",
     });
 
+  const account = await enforceCredits(event, "scan-card");
+
   const isMultiSide = imageContents.length > 1;
   const prompt = isMultiSide
     ? `These are photos of the front and back of a business card. Extract and merge all contact info from both sides into a single result. Return ONLY JSON (no markdown):
@@ -62,7 +65,7 @@ Rules: name=full name combined. Industry: infer from context (Technology/Finance
   const client = new Anthropic({ apiKey: config.anthropicApiKey });
   try {
     const response = await client.messages.create({
-      model: "claude-opus-4-5",
+      model: "claude-opus-4-8",
       max_tokens: 1024,
       messages: [
         {
@@ -73,6 +76,13 @@ Rules: name=full name combined. Industry: infer from context (Technology/Finance
           ],
         },
       ],
+    });
+    // Charge on any completed Anthropic response, even if parsing fails below.
+    chargeCredits(account, {
+      model: "claude-opus-4-8",
+      inputTokens: response.usage?.input_tokens ?? 0,
+      outputTokens: response.usage?.output_tokens ?? 0,
+      metadata: { multiSide: isMultiSide },
     });
     const text = response.content
       .filter((b) => b.type === "text")
@@ -105,10 +115,14 @@ Rules: name=full name combined. Industry: infer from context (Technology/Finance
       industry: parsed.industry ?? null,
     };
   } catch (err: any) {
-    if (err.statusCode) throw err;
+    if (err.statusCode) throw err; // our own 422/402/etc — pass through
+    // Surface the real Anthropic error (status + message) instead of a generic
+    // 500, so failures are diagnosable in logs and actionable in the UI.
+    const detail = err?.error?.error?.message || err?.message || "unknown error";
+    console.error("[scan-card] Anthropic error:", err?.status ?? err?.statusCode, detail, err);
     throw createError({
-      statusCode: 500,
-      message: "Card scan failed — try again",
+      statusCode: 502,
+      message: `Card scan failed: ${detail}`,
     });
   }
 });

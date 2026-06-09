@@ -60,6 +60,29 @@ watch(sessionMode, (mode) => {
   if (mode === 'tough' && !aiToughCards.value.length) loadAiCards('tough')
   if (mode === 'hype' && !aiHypeCards.value.length) loadAiCards('hype')
 })
+
+// Save the current coaching session to history (general / portfolio-wide).
+const { saveSession } = useSessions()
+const { claimRewards } = useCredits()
+const sessionSaved = ref(false)
+async function saveCurrentSession() {
+  const mode = sessionMode.value
+  if (!mode) return
+  const cards = mode === 'tough' ? toughCards.value : hypeCards.value
+  const aiGenerated = mode === 'tough' ? aiToughCards.value.length > 0 : aiHypeCards.value.length > 0
+  try {
+    await saveSession({
+      type: 'coaching',
+      contact: null,
+      title: mode === 'tough' ? 'Tough-love session' : 'Hype session',
+      messages: [{ role: 'assistant', content: { mode, cards }, ai_generated: aiGenerated }],
+    })
+    sessionSaved.value = true
+    earn(15, '💾', 'Session saved to your history')
+    setTimeout(() => (sessionSaved.value = false), 2500)
+    claimRewards()
+  } catch { /* non-fatal */ }
+}
 </script>
 
 <template>
@@ -133,6 +156,16 @@ watch(sessionMode, (mode) => {
           </template>
         </div>
       </Transition>
+      <button
+        v-if="sessionMode && aiLoading !== sessionMode"
+        class="cd-abtn"
+        style="width: 100%; margin-bottom: 14px; background: transparent; border-color: var(--cd-bdr); color: var(--cd-muted); font-size: 12px; padding: 10px"
+        :disabled="sessionSaved"
+        @click="saveCurrentSession"
+      >
+        <CdIcon :emoji="sessionSaved ? '✅' : '💾'" :icon="sessionSaved ? 'lucide:check' : 'lucide:bookmark'" :size="13" />
+        {{ sessionSaved ? 'Saved to history' : 'Save this session' }}
+      </button>
       <div v-if="sessionMode" class="cd-lucky">
         <div style="font-size: 18px; margin-bottom: 4px"><CdIcon emoji="✨" icon="lucide:sparkles" :size="18" /></div>
         <div class="cd-hand" style="font-size: 19px; color: var(--cd-green); margin-bottom: 3px">Remember</div>

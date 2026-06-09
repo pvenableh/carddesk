@@ -16,7 +16,9 @@ const { isDark, toggleDarkMode } = useTheme()
       class="cd-dm-thumb"
       :class="isDark ? 'cd-dm-thumb-on' : 'cd-dm-thumb-off'"
     >
-      <span class="cd-dm-indicator">{{ isDark ? '🌙' : '☀️' }}</span>
+      <span class="cd-dm-indicator">
+        <CdIcon :emoji="isDark ? '🌙' : '☀'" :icon="isDark ? 'lucide:moon' : 'lucide:sun'" :size="11" />
+      </span>
     </span>
   </button>
 </template>
@@ -43,6 +45,11 @@ const { isDark, toggleDarkMode } = useTheme()
 .cd-dm-on {
   background: var(--cd-accent);
 }
+/* In dark mode --cd-accent is near-white, which leaves the white thumb with no
+ * contrast — use the brand green for a clearly-"on" track instead. */
+html[data-mode="dark"] .cd-dm-on {
+  background: var(--cd-green);
+}
 .cd-dm-off {
   background: var(--cd-bdr);
 }
@@ -67,5 +74,8 @@ const { isDark, toggleDarkMode } = useTheme()
 .cd-dm-indicator {
   font-size: 11px;
   line-height: 1;
+  display: inline-flex;
+  /* Monochrome icon on the white thumb — neutral slate reads in both modes. */
+  color: #475569;
 }
 </style>

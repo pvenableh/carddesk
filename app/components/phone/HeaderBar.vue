@@ -82,6 +82,10 @@ function onClickOutside(e: MouseEvent) {
             Account
           </button>
           <div class="cd-dd-divider" />
+          <div class="cd-dd-credits">
+            <PhoneCreditMeter />
+          </div>
+          <div class="cd-dd-divider" />
           <div class="cd-dd-appearance">
             <PhoneAppearancePanel />
           </div>
@@ -176,6 +180,9 @@ function onClickOutside(e: MouseEvent) {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 .cd-dd-appearance {
+  padding: 6px 4px;
+}
+.cd-dd-credits {
   padding: 6px 4px;
 }
 .cd-dd-item {

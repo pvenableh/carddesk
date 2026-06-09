@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getValidToken } from "../utils/auth";
 import { fetchUserProfile } from "../utils/profile";
 import { getEarnestContext } from "../utils/earnest-context";
+import { enforceCredits, chargeCredits } from "../utils/ai-credits";
 
 export default defineEventHandler(async (event) => {
   const token = await getValidToken(event);
@@ -10,6 +11,8 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
   if (!config.anthropicApiKey)
     throw createError({ statusCode: 500, message: "Anthropic API key not configured" });
+
+  const account = await enforceCredits(event, "ai-suggestions");
 
   const { contact, activities, profile } = body;
 
@@ -59,6 +62,14 @@ Use relevant emoji icons. Be specific — mention names, companies, industries. 
       max_tokens: 512,
       messages: [{ role: "user", content: prompt }],
     });
+    // Charge on any completed Anthropic response — we paid for the call
+    // regardless of whether the model's output parses cleanly.
+    chargeCredits(account, {
+      model: "claude-sonnet-4-20250514",
+      inputTokens: response.usage?.input_tokens ?? 0,
+      outputTokens: response.usage?.output_tokens ?? 0,
+      contactId: contact?.id ?? null,
+    });
     const text = response.content
       .filter((b) => b.type === "text")
       .map((b) => (b as any).text)
@@ -71,6 +82,8 @@ Use relevant emoji icons. Be specific — mention names, companies, industries. 
     }
   } catch (err: any) {
     if (err.statusCode) throw err;
-    throw createError({ statusCode: 500, message: "AI suggestions failed — try again" });
+    const detail = err?.error?.error?.message || err?.message || "unknown error";
+    console.error("[ai-suggestions] Anthropic error:", err?.status ?? err?.statusCode, detail, err);
+    throw createError({ statusCode: 502, message: `AI suggestions failed: ${detail}` });
   }
 });

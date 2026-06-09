@@ -50,6 +50,8 @@ export const MISSIONS = [
   { key: "followup", icon: "✉️", lucide: "lucide:send", label: "Log a Follow-up", hype: "They'll remember you.", xp: 25 },
   { key: "hot", icon: "🔥", lucide: "lucide:flame", label: "Follow Up a Hot Lead", hype: "Don't leave them hanging.", xp: 50 },
   { key: "response", icon: "✅", lucide: "lucide:check-circle", label: "Log a Response", hype: "They came back. Of course they did.", xp: 100 },
+  { key: "ai_session", icon: "🧠", lucide: "lucide:brain", label: "Run an AI coaching session", hype: "Coached up.", xp: 40 },
+  { key: "ai_ideas", icon: "✨", lucide: "lucide:sparkles", label: "Get AI ideas on a contact", hype: "Smart move.", xp: 40 },
 ] as const
 
 export const BADGES = [
