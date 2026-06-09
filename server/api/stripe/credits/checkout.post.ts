@@ -69,7 +69,7 @@ export default defineEventHandler(async (event) => {
           currency: 'usd',
           product_data: {
             name: `CardDesk Credits — ${pkg.name}`,
-            description: `${pkg.credits} AI credits`,
+            description: `${pkg.credits} Earnest AI credits`,
           },
           unit_amount: pkg.priceInCents,
         },

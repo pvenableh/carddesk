@@ -394,7 +394,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
                 @click="loadSuggestions"
               >
                 <CdIcon emoji="🤖" icon="lucide:sparkles" :size="11" />
-                {{ sugLoading ? 'Thinking...' : suggestions.length ? 'Refresh' : 'Get AI Ideas' }}
+                {{ sugLoading ? 'Thinking...' : suggestions.length ? 'Refresh' : 'Get Earnest AI Ideas' }}
               </button>
             </div>
             <div v-if="sugError" style="font-size: 12px; color: #f87171; margin-bottom: 8px">{{ sugError }}</div>
@@ -420,7 +420,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
 
           <div v-if="aiHistory.length || historyLoading" class="cd-log-sec" style="margin-bottom: 16px">
             <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim); margin-bottom: 8px">
-              AI History
+              Earnest AI History
             </div>
             <div v-if="historyLoading" style="font-size: 12px; color: var(--cd-muted)">Loading…</div>
             <div

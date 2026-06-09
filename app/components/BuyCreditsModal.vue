@@ -51,12 +51,12 @@ onBeforeUnmount(resetCheckout)
 <template>
   <Transition name="cd-buy-fade">
     <div v-if="showBuyModal" class="cd-buy-overlay" @click.self="closeBuyModal">
-      <div class="cd-buy-sheet" role="dialog" aria-label="Buy AI credits">
+      <div class="cd-buy-sheet" role="dialog" aria-label="Buy Earnest AI credits">
         <button class="cd-buy-close" type="button" aria-label="Close" @click="closeBuyModal">
           <CdIcon emoji="✕" icon="lucide:x" />
         </button>
 
-        <h2 class="cd-buy-title">Fuel your AI</h2>
+        <h2 class="cd-buy-title">Fuel your Earnest AI</h2>
         <p class="cd-buy-sub">
           Credits power card scans, coaching, insights, and lead suggestions.
           <span v-if="state.source === 'user'">You have <strong>{{ state.credits }}</strong> left.</span>

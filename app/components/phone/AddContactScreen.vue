@@ -136,7 +136,7 @@ async function doSaveContact() {
           Scan Business Card
         </div>
         <div style="font-size: 11px; color: var(--cd-dim)">
-          AI reads both sides — name, email, phone, company
+          Earnest AI reads both sides — name, email, phone, company
         </div>
         <span class="cd-xpb" style="margin-top: 9px; display: inline-block">+50 XP</span>
       </div>
@@ -167,7 +167,7 @@ async function doSaveContact() {
           Reading card...
         </div>
         <div style="font-size: 11px; color: var(--cd-dim)">
-          Claude AI is extracting the details
+          Earnest AI is extracting the details
         </div>
       </div>
 

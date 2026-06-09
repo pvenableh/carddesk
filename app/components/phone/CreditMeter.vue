@@ -15,7 +15,7 @@ function onGetMore() {
     <!-- Earnest-org users: billed through Earnest, no purchase here -->
     <template v-if="isOrg">
       <div class="cd-cm-row">
-        <span class="cd-cm-label"><CdIcon emoji="⚡" icon="lucide:zap" /> AI usage</span>
+        <span class="cd-cm-label"><CdIcon emoji="⚡" icon="lucide:zap" /> Earnest AI usage</span>
         <span class="cd-cm-value">Team plan</span>
       </div>
       <p class="cd-cm-note">Billed through Earnest</p>
@@ -24,7 +24,7 @@ function onGetMore() {
     <!-- Standalone users: flat credit balance + buy CTA -->
     <template v-else>
       <div class="cd-cm-row">
-        <span class="cd-cm-label"><CdIcon emoji="⚡" icon="lucide:zap" /> AI credits</span>
+        <span class="cd-cm-label"><CdIcon emoji="⚡" icon="lucide:zap" /> Earnest AI credits</span>
         <span class="cd-cm-value" :class="{ 'is-low': lowBalance }">{{ state.credits }}</span>
       </div>
       <button class="cd-cm-buy" :class="{ 'is-low': lowBalance }" type="button" @click="onGetMore">

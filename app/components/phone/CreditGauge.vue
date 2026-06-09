@@ -24,7 +24,7 @@ function onTap() {
 </script>
 
 <template>
-  <button class="cd-gauge" :aria-label="`AI credits: ${centerText}`" @click="onTap">
+  <button class="cd-gauge" :aria-label="`Earnest AI credits: ${centerText}`" @click="onTap">
     <svg class="cd-gauge-ring" viewBox="0 0 36 36">
       <!-- subtle filled background (matches the sibling header buttons) -->
       <circle cx="18" cy="18" r="16.5" fill="var(--cd-bg2)" />

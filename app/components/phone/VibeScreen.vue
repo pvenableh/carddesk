@@ -369,12 +369,12 @@ async function loadLeadSuggestions() {
             @click="loadLeadSuggestions"
           >
             <CdIcon emoji="✨" icon="lucide:sparkles" :size="10" />
-            {{ leadSugLoading ? 'Thinking...' : leadSuggestions.length ? 'Refresh' : 'Get AI Ideas' }}
+            {{ leadSugLoading ? 'Thinking...' : leadSuggestions.length ? 'Refresh' : 'Get Earnest AI Ideas' }}
           </button>
         </div>
         <div v-if="leadSugError" style="font-size: 12px; color: #f87171; margin-bottom: 6px">{{ leadSugError }}</div>
         <div v-if="!leadSuggestions.length && !leadSugLoading && !leadSugError" style="font-size: 11px; color: var(--cd-dim); line-height: 1.5">
-          Tap <strong style="color: #4da6ff">Get AI Ideas</strong> for personalized suggestions on growing your leads.
+          Tap <strong style="color: #4da6ff">Get Earnest AI Ideas</strong> for personalized suggestions on growing your leads.
         </div>
         <div v-if="leadSugLoading" style="text-align: center; padding: 10px 0">
           <div style="font-size: 12px; color: var(--cd-muted); animation: cd-pulse 1.5s ease-in-out infinite">Analyzing your network...</div>

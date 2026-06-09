@@ -319,7 +319,7 @@ export async function enforceCredits(event: H3Event, endpoint: AiEndpoint): Prom
   if (balance < cost) {
     throw createError({
       statusCode: 402,
-      message: 'You’re out of AI credits. Top up to keep using AI features.',
+      message: 'You’re out of Earnest AI credits. Top up to keep using Earnest AI features.',
     })
   }
   return { userId, endpoint, cost, source: 'user', orgId: null, creditAccountId: accountId, unlimited: false }

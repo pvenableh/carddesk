@@ -86,8 +86,8 @@ onMounted(async () => {
     <!-- Scoring cheat-sheet flyout -->
     <PhoneScoreGuide />
 
-    <!-- PWA install prompt -->
-    <CdInstallPrompt />
+    <!-- PWA install prompt — hidden for now -->
+    <!-- <CdInstallPrompt /> -->
   </div>
 </template>
 

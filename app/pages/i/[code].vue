@@ -25,7 +25,7 @@ onMounted(async () => {
   }
   // Not signed in yet — remember the invite and route to sign-up.
   inviteCookie.value = code.value
-  return navigateTo('/register')
+  return navigateTo('/auth/register')
 })
 </script>
 

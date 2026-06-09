@@ -140,7 +140,7 @@ async function suggestGoal() {
               :disabled="goalLoading"
               @click="suggestGoal"
             >
-              {{ goalLoading ? 'Thinking...' : 'AI Suggest' }}
+              {{ goalLoading ? 'Thinking...' : 'Earnest AI Suggest' }}
             </button>
           </div>
           <textarea

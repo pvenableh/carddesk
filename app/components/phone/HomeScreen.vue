@@ -266,7 +266,7 @@ async function doQuickLog() {
         </div>
         <div v-if="insightsError" style="font-size: 12px; color: #f87171; margin-bottom: 6px">{{ insightsError }}</div>
         <div v-if="!insights.length && !insightsLoading && !insightsError" style="font-size: 11px; color: var(--cd-dim); line-height: 1.5">
-          Tap <strong style="color: #b87dff">Analyze My Network</strong> for AI-powered insights on your industries, channels, and connection strategies.
+          Tap <strong style="color: #b87dff">Analyze My Network</strong> for Earnest AI-powered insights on your industries, channels, and connection strategies.
         </div>
         <div v-if="insightsLoading" style="text-align: center; padding: 10px 0">
           <div style="font-size: 12px; color: var(--cd-muted); animation: cd-pulse 1.5s ease-in-out infinite">Crunching your network data...</div>

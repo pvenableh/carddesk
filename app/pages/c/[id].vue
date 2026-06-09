@@ -59,7 +59,7 @@ function addToContacts() {
       <div class="cardpage-qrbox" style="margin-top: 18px"><img v-if="qr" :src="qr" alt="Scan to save contact" width="220" height="220" style="display: block" /></div>
       <div style="font-size: 11px; color: var(--cd-dim); margin: 10px 0 16px">Scan with your camera to save, or tap below.</div>
       <button class="cd-abtn g" @click="addToContacts"><CdIcon emoji="📇" icon="lucide:user-plus" :size="15" /> Add to Contacts</button>
-      <NuxtLink to="/register" class="cardpage-cta">Get your own CardDesk →</NuxtLink>
+      <NuxtLink to="/auth/register" class="cardpage-cta">Get your own CardDesk →</NuxtLink>
     </div>
     <CdBrandFooter />
   </div>
