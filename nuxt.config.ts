@@ -28,7 +28,6 @@ export default defineNuxtConfig({
     '@nuxt/fonts',
     'nuxt-auth-utils',
     '@vueuse/nuxt',
-    'shadcn-nuxt',
     '@vite-pwa/nuxt',
     'nuxt-gtag',
   ],
@@ -110,6 +109,5 @@ export default defineNuxtConfig({
         : (process.env.STRIPE_PUBLIC_KEY_TEST || ''),
     },
   },
-  shadcn: { prefix: '', componentDir: './app/components/ui' },
   typescript: { strict: true },
 })
