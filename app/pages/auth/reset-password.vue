@@ -1,5 +1,12 @@
 <script setup lang="ts">
 definePageMeta({ layout: false })
+
+useSeoMeta({
+  title: 'Set a New Password · CardDesk',
+  description: 'Choose a new password for your CardDesk account.',
+  robots: 'noindex, nofollow',
+})
+
 const router = useRouter()
 const route = useRoute()
 const token = computed(() => (route.query.token as string) || '')

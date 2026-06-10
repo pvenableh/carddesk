@@ -1,8 +1,10 @@
-export type Screen = "vibe" | "session" | "cold" | "home" | "contacts" | "detail" | "add" | "event"
+export type Screen = "vibe" | "session" | "cold" | "home" | "contacts" | "detail" | "add" | "event" | "feed"
 
-const PUSH_SCREENS = new Set<Screen>(["detail", "add", "cold", "event"])
+// `event` and `feed` are now primary bottom-nav tabs, so they animate as tabs
+// (slide by index) rather than as pushed sub-screens.
+const PUSH_SCREENS = new Set<Screen>(["detail", "add", "cold"])
 const TAB_INDEX: Record<string, number> = {
-  vibe: 0, session: 1, home: 2, contacts: 3,
+  vibe: 0, session: 1, event: 2, feed: 3, home: 4, contacts: 5,
 }
 
 export function useNavigation() {

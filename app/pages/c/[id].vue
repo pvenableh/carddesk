@@ -18,7 +18,29 @@ const { data: card, error } = await useFetch<PublicCard>(() => `/api/cards/${id.
 
 const socialLinks = computed(() => (card.value ? SOCIALS.filter((s) => (card.value as any)[s.key]) : []))
 
-useHead(() => ({ title: card.value ? `${card.value.name} · CardDesk` : 'CardDesk Card' }))
+// Public, shareable card page — give it a rich, person-specific title + OG/Twitter
+// preview so a shared link unfurls nicely in messages and social.
+const cardTitle = computed(() =>
+  card.value
+    ? `${card.value.name}${card.value.title || card.value.company ? ` — ${[card.value.title, card.value.company].filter(Boolean).join(' · ')}` : ''} · CardDesk`
+    : 'Digital Card · CardDesk'
+)
+const cardDescription = computed(() =>
+  card.value
+    ? `${card.value.name}’s digital business card on CardDesk${card.value.headline ? ` — ${card.value.headline}` : ''}. Tap to save the contact or connect.`
+    : 'A digital business card on CardDesk. Tap to save the contact or connect.'
+)
+useSeoMeta({
+  title: cardTitle,
+  description: cardDescription,
+  ogType: 'profile',
+  ogTitle: cardTitle,
+  ogDescription: cardDescription,
+  ogImage: () => card.value?.imageUrl || undefined,
+  twitterCard: 'summary',
+  twitterTitle: cardTitle,
+  twitterDescription: cardDescription,
+})
 
 const initials = computed(() => {
   const n = card.value?.name || ''

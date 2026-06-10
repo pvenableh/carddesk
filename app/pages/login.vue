@@ -1,5 +1,11 @@
 <script setup lang="ts">
 definePageMeta({ layout: false })
+
+useSeoMeta({
+  title: 'Log In · CardDesk',
+  description: 'Log in to CardDesk — your gamified networking CRM. Scan cards, earn XP, and turn contacts into relationships.',
+})
+
 const { login, loading, error } = useAuth()
 const email = ref('')
 const password = ref('')

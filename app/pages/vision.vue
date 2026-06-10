@@ -12,7 +12,10 @@
 import confetti from 'canvas-confetti'
 
 definePageMeta({ layout: false })
-useHead({ title: 'CardDesk — Your Vision' })
+useSeoMeta({
+  title: 'Your Vision · CardDesk',
+  description: 'See your personal-advancement vision in CardDesk — levels, ranks, and the milestones that turn networking into momentum.',
+})
 
 const rank = ref({ level: 5, title: 'Connector', next: 'Networker' })
 const xp = ref(2480)

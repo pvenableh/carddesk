@@ -2,7 +2,6 @@
 import { RATINGS, RATING_ORDER, getRating, cEmoji } from '~/composables/useConstants'
 import { PIPELINE_STAGES } from '~/composables/usePipeline'
 import ConnectionsView from './ConnectionsView.vue'
-import FeedView from './FeedView.vue'
 
 const { contacts, followUpStatus } = useContacts()
 const { nav, goDetail } = useNavigation()
@@ -16,8 +15,9 @@ const cSort = ref('recent')
 const viewMode = ref<'rating' | 'pipeline'>('rating')
 
 // Top-level sub-tab for the "Network" screen: your saved contacts vs. your
-// user↔user connections (the orbit lives under Connections).
-const netTab = ref<'contacts' | 'connections' | 'feed'>('contacts')
+// user↔user connections (the orbit lives under Connections). The activity Feed
+// is now its own bottom-nav tab, so it's no longer a sub-tab here.
+const netTab = ref<'contacts' | 'connections'>('contacts')
 const { incoming } = useConnections()
 
 const ratingCounts = computed(() => {
@@ -95,7 +95,6 @@ const wonLost = computed(() => {
         :items="[
           { key: 'contacts', label: 'Contacts', emoji: '🃏', icon: 'lucide:credit-card' },
           { key: 'connections', label: 'Orbit', emoji: '🪐', icon: 'lucide:orbit', count: incoming.length || null },
-          { key: 'feed', label: 'Feed', emoji: '📰', icon: 'lucide:newspaper' },
         ]"
         style="margin-bottom: 10px"
       />
@@ -122,9 +121,6 @@ const wonLost = computed(() => {
 
     <!-- Connections sub-tab -->
     <ConnectionsView v-if="netTab === 'connections'" />
-
-    <!-- Feed sub-tab -->
-    <FeedView v-else-if="netTab === 'feed'" />
 
     <!-- Rating view -->
     <div v-else-if="viewMode === 'rating'" class="cd-scrl" style="padding: 4px 14px 8px">

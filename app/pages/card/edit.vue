@@ -3,6 +3,12 @@ import { SOCIALS, SOCIAL_KEYS } from '~/types/socials'
 
 definePageMeta({ middleware: 'auth', layout: false })
 
+useSeoMeta({
+  title: 'Edit Your Card · CardDesk',
+  description: 'Customize your shareable CardDesk digital business card — photo, title, company, links and QR code.',
+  robots: 'noindex, nofollow',
+})
+
 const router = useRouter()
 const { success, error: showError } = useToast()
 

@@ -1,5 +1,11 @@
 <script setup lang="ts">
 definePageMeta({ layout: false })
+
+useSeoMeta({
+  title: 'Create Your Account · CardDesk',
+  description: 'Sign up free for CardDesk and get 25 Earnest AI tokens. Scan business cards, earn XP, and grow real relationships — no credit card needed.',
+})
+
 const router = useRouter()
 </script>
 

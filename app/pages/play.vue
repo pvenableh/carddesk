@@ -8,7 +8,10 @@
 import type { SortItem, SortBucket } from '~/components/game/SortBoard.vue'
 
 definePageMeta({ layout: false })
-useHead({ title: 'CardDesk — Play (demo)' })
+useSeoMeta({
+  title: 'Play the Network Sort Game · CardDesk',
+  description: 'Try CardDesk’s network sort-board game — drag contacts into the right buckets and see how gamified networking feels. No signup required.',
+})
 
 const buckets: SortBucket[] = [
   { key: 'contacted', label: 'Reached out', icon: ICON.stage.contacted, accent: 'var(--cd-palette-primary, #4da6ff)', xp: 10 },

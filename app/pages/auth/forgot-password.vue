@@ -1,5 +1,12 @@
 <script setup lang="ts">
 definePageMeta({ layout: false })
+
+useSeoMeta({
+  title: 'Reset Your Password · CardDesk',
+  description: 'Forgot your CardDesk password? Enter your email and we’ll send you a reset link.',
+  robots: 'noindex, nofollow',
+})
+
 const router = useRouter()
 </script>
 

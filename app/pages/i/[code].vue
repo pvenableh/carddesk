@@ -5,6 +5,8 @@
  * into the app. Otherwise stash the code in a cookie and send them to register;
  * the app shell redeems it on first authenticated load (see pages/index.vue).
  */
+useSeoMeta({ title: 'Joining CardDesk…', robots: 'noindex, nofollow' })
+
 const route = useRoute()
 const code = computed(() => String(route.params.code || ''))
 const { loggedIn } = useAuth()

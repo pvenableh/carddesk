@@ -4,6 +4,11 @@
 // Only dependency: canvas-confetti (already in your package.json)
 definePageMeta({ layout: false })
 
+useSeoMeta({
+  title: 'CardDesk Preview',
+  robots: 'noindex, nofollow',
+})
+
 import confettiLib from 'canvas-confetti'
 import { ref, computed, onMounted } from 'vue'
 

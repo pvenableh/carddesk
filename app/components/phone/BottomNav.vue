@@ -13,6 +13,8 @@ const emit = defineEmits<{
 const tabs: { key: Screen; icon: string; lucide: string; label: string }[] = [
   { key: 'vibe', icon: '⚡', lucide: 'lucide:zap', label: 'Vibe' },
   { key: 'session', icon: '🎙', lucide: 'lucide:mic', label: 'Session' },
+  { key: 'event', icon: '📡', lucide: 'lucide:radio', label: 'Event' },
+  { key: 'feed', icon: '📰', lucide: 'lucide:newspaper', label: 'Feed' },
   { key: 'home', icon: '📊', lucide: 'lucide:bar-chart-3', label: 'Stats' },
   { key: 'contacts', icon: '👥', lucide: 'lucide:users', label: 'Network' },
 ]
@@ -21,7 +23,7 @@ const tabs: { key: Screen; icon: string; lucide: string; label: string }[] = [
 <template>
   <nav class="cd-bnav">
     <button
-      v-for="t in tabs.slice(0, 2)"
+      v-for="t in tabs.slice(0, 3)"
       :key="t.key"
       class="cd-bn"
       :class="{ on: active === t.key }"
@@ -40,7 +42,7 @@ const tabs: { key: Screen; icon: string; lucide: string; label: string }[] = [
     </button>
 
     <button
-      v-for="t in tabs.slice(2)"
+      v-for="t in tabs.slice(3)"
       :key="t.key"
       class="cd-bn"
       :class="{ on: active === t.key }"
@@ -77,11 +79,13 @@ const tabs: { key: Screen; icon: string; lucide: string; label: string }[] = [
   font-size: 9px;
   font-family: sans-serif;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.4px;
   color: var(--cd-dim);
   transition: color 0.15s;
   font-weight: 700;
   position: relative;
+  white-space: nowrap;
+  min-width: 0;
 }
 .cd-bn.on,
 .cd-bn:hover {

@@ -6,7 +6,10 @@
  */
 definePageMeta({ layout: false })
 
-useHead({ title: 'Help & FAQ · CardDesk' })
+useSeoMeta({
+  title: 'Help & FAQ · CardDesk',
+  description: 'CardDesk help center — quick tutorials on scanning cards, Event Mode, sharing your digital card, and answers to common questions.',
+})
 
 const { loggedIn } = useUserSession()
 
@@ -137,7 +140,12 @@ function toggle(i: number) {
 .help-container { max-width: 720px; margin: 0 auto; }
 
 .help-hero { text-align: center; margin: 16px 0 28px; }
-.help-hero-ico { color: var(--cd-green); line-height: 0; margin-bottom: 10px; }
+.help-hero-ico {
+  width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 14px;
+  display: flex; align-items: center; justify-content: center; color: var(--cd-green);
+  background: color-mix(in srgb, var(--cd-green) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-green) 28%, transparent);
+}
 .help-title { font-family: 'Bebas Neue', sans-serif; font-size: 2.4rem; margin: 0; letter-spacing: 0.01em; }
 .help-sub { font-size: 0.95rem; color: var(--cd-muted); margin: 4px auto 0; max-width: 460px; line-height: 1.5; }
 
@@ -171,7 +179,7 @@ function toggle(i: number) {
 .help-tut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .help-tut { border-radius: 16px; padding: 18px; }
 .help-tut-ico {
-  width: 44px; height: 44px; border-radius: 12px; margin-bottom: 10px;
+  width: 44px; height: 44px; border-radius: 50%; margin-bottom: 10px;
   display: flex; align-items: center; justify-content: center; color: var(--cd-green);
   background: color-mix(in srgb, var(--cd-green) 14%, transparent);
   border: 1px solid color-mix(in srgb, var(--cd-green) 28%, transparent);

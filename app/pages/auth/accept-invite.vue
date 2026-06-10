@@ -1,5 +1,12 @@
 <script setup lang="ts">
 definePageMeta({ layout: false })
+
+useSeoMeta({
+  title: 'Accept Your Invite · CardDesk',
+  description: 'Accept your CardDesk invite and set up your account.',
+  robots: 'noindex, nofollow',
+})
+
 const router = useRouter()
 const route = useRoute()
 const token = computed(() => (route.query.token as string) || '')

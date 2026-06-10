@@ -3,6 +3,12 @@ import { INDUSTRIES } from '~/composables/useConstants'
 
 definePageMeta({ middleware: 'auth' })
 
+useSeoMeta({
+  title: 'Account · CardDesk',
+  description: 'Manage your CardDesk profile, networking goal, digital card, Earnest Score and AI credits.',
+  robots: 'noindex, nofollow',
+})
+
 const { user } = useUserSession()
 const { logout } = useAuth()
 const { success, error: showError } = useToast()
