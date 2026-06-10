@@ -7,6 +7,8 @@ export interface FeedEvent {
   actor: { id: string; name: string }
   reactions: Record<string, number>
   myReactions: string[]
+  /** emoji → names of who reacted (current user shown as "You", listed first). */
+  reactionUsers: Record<string, string[]>
 }
 
 export function useFeed() {
@@ -34,12 +36,28 @@ export function useFeed() {
   }
 
   async function react(id: string, emoji: string) {
-    // optimistic
+    // Optimistic: one reaction per user. Clicking your current emoji clears it;
+    // a different one switches (drop the old, add the new).
     const e = events.value.find((x) => x.id === id)
     if (e) {
-      const has = e.myReactions.includes(emoji)
-      e.myReactions = has ? e.myReactions.filter((x) => x !== emoji) : [...e.myReactions, emoji]
-      e.reactions = { ...e.reactions, [emoji]: Math.max(0, (e.reactions[emoji] ?? 0) + (has ? -1 : 1)) }
+      const prev = e.myReactions[0]
+      const reactions = { ...e.reactions }
+      const who = { ...e.reactionUsers }
+      const drop = (em: string) => {
+        reactions[em] = Math.max(0, (reactions[em] ?? 0) - 1)
+        who[em] = (who[em] ?? []).filter((n) => n !== 'You')
+        if (!reactions[em]) delete reactions[em]
+      }
+      if (prev) drop(prev)
+      if (prev === emoji) {
+        e.myReactions = []
+      } else {
+        reactions[emoji] = (reactions[emoji] ?? 0) + 1
+        who[emoji] = ['You', ...(who[emoji] ?? []).filter((n) => n !== 'You')]
+        e.myReactions = [emoji]
+      }
+      e.reactions = reactions
+      e.reactionUsers = who
     }
     try {
       await $fetch(`/api/feed/${id}/react`, { method: 'POST', body: { emoji } })

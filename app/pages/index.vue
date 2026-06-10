@@ -20,6 +20,7 @@ const { fetchContacts, followUpStatus, contacts } = useContacts()
 const { toast, loadXp, earn } = useXp()
 const { loadProfile } = useProfile()
 const { screen, nav, transitionName } = useNavigation()
+const { isOpen: chatOpen } = useChat()
 const { theme } = useTheme()
 const { load: loadConnections } = useConnections()
 const analytics = useAnalytics()
@@ -122,6 +123,16 @@ onMounted(async () => {
       @nav="nav"
     />
 
+    <!-- Floating Ask Earnest button (context-aware per screen) -->
+    <PhoneAskEarnestFab />
+
+    <!-- Ask Earnest panel — slides up over the page; close slides it back down -->
+    <Transition name="cd-chatsheet">
+      <div v-if="chatOpen" class="cd-chat-sheet">
+        <PhoneChatScreen />
+      </div>
+    </Transition>
+
     <!-- XP Toast -->
     <PhoneXpToast :toast="toast" />
 
@@ -143,6 +154,7 @@ onMounted(async () => {
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
+  position: relative;
   background: var(--cd-bg);
   color: var(--cd-text);
   font-family: 'Barlow', sans-serif;
@@ -151,12 +163,35 @@ onMounted(async () => {
   font-family: "Proxima Nova", sans-serif;
   letter-spacing: 0.01em;
 }
+/* Full-width so the empty space on either side of the centred content column is
+   still part of the scroll surface — on iPad, dragging in the gutter scrolls the
+   screen content instead of rubber-banding the page. Content stays centred via
+   the responsive --cd-gutter padding on .cd-scrl / .cd-shdr / .cd-save-bar. */
 .cd-screens {
   flex: 1;
   overflow: hidden;
   position: relative;
-  max-width: 768px;
-  margin: 0 auto;
   width: 100%;
+}
+/* Ask Earnest panel: a full-height sheet that covers the app shell. It owns the
+   top safe-area inset (it sits above the header bar) and the ChatScreen inside
+   handles the bottom composer inset. */
+.cd-chat-sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  background: var(--cd-bg);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+/* Slide up on enter, slide back down on leave. */
+.cd-chatsheet-enter-active,
+.cd-chatsheet-leave-active {
+  transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.cd-chatsheet-enter-from,
+.cd-chatsheet-leave-to {
+  transform: translateY(100%);
 }
 </style>

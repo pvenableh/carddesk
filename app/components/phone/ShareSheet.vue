@@ -44,7 +44,7 @@ watch([open, tab], ([isOpen, t]) => {
 
 function editCard() {
   hide()
-  navigateTo('/card/edit')
+  navigateTo('/account?tab=card')
 }
 async function shareMyCard() {
   if (!card.value) return

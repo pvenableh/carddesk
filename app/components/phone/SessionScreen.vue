@@ -90,6 +90,7 @@ async function saveCurrentSession() {
 <template>
   <div class="cd-screen on">
     <div class="cd-scrl cd-pad">
+      <div class="cd-foot-fill">
       <div style="text-align: center; padding: 14px 0 16px">
         <div style="font-family: 'Bebas Neue', sans-serif; font-size: 44px; line-height: 1">
           Need a session?
@@ -176,6 +177,10 @@ async function saveCurrentSession() {
           You reaching out is a gift. Own it.
         </div>
       </div>
+
+      </div>
+
+      <CdBrandFooter />
     </div>
   </div>
 </template>

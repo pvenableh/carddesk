@@ -1,11 +1,12 @@
 export type Screen = "vibe" | "session" | "cold" | "home" | "contacts" | "detail" | "add" | "event" | "feed" | "chat"
 
-// `event` and `feed` are now primary bottom-nav tabs, so they animate as tabs
-// (slide by index) rather than as pushed sub-screens. `chat` is a pushed
-// sub-screen opened from contextual AI helpers.
-const PUSH_SCREENS = new Set<Screen>(["detail", "add", "cold", "chat"])
+// Bottom-nav screens animate as tabs (slide by their bar position). `add` (the
+// scan button) sits between `event` and `feed` in the bar, so it's a tab here
+// too — otherwise scan↔feed slid the wrong way. `detail`/`cold` are pushed
+// sub-screens; `chat` is a slide-up overlay handled outside this system.
+const PUSH_SCREENS = new Set<Screen>(["detail", "cold", "chat"])
 const TAB_INDEX: Record<string, number> = {
-  vibe: 0, session: 1, event: 2, feed: 3, home: 4, contacts: 5,
+  vibe: 0, session: 1, event: 2, add: 3, feed: 4, home: 5, contacts: 6,
 }
 
 export function useNavigation() {

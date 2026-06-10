@@ -42,6 +42,22 @@ export function useContacts() {
     return updated
   }
 
+  /** Upload (downscaled) a photo for a contact; updates local state on success. */
+  async function uploadContactImage(id: string, file: File) {
+    const blob = await downscaleImage(file)
+    const fd = new FormData()
+    fd.append('file', blob, file.name || 'photo.jpg')
+    const r = await $fetch<{ image: string; imageUrl: string }>(`/api/contacts/${id}/image`, { method: 'POST', body: fd })
+    contacts.value = contacts.value.map((c) => c.id === id ? { ...c, image: r.image, imageUrl: r.imageUrl } : c)
+    return r
+  }
+
+  /** Clear a contact's photo (unsets the file id; the file itself is left in Directus). */
+  async function removeContactImage(id: string) {
+    await $fetch(`/api/contacts/${id}`, { method: 'PATCH', body: { image: null } })
+    contacts.value = contacts.value.map((c) => c.id === id ? { ...c, image: null, imageUrl: null } : c)
+  }
+
   async function hibernate(id: string) {
     return updateContact(id, { hibernated: true, hibernated_at: new Date().toISOString().slice(0, 10) } as any)
   }
@@ -114,7 +130,7 @@ export function useContacts() {
   }
 
   return {
-    contacts, loading, error, fetchContacts, createContact, updateContact,
+    contacts, loading, error, fetchContacts, createContact, updateContact, uploadContactImage, removeContactImage,
     hibernate, wake, logActivity, markResponded, updateActivity, deleteActivity, lastActivity, daysSince, followUpStatus,
   }
 }

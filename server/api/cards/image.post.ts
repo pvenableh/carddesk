@@ -1,36 +1,17 @@
 import { updateItem } from '@directus/sdk'
 import { getUserClient } from '../../utils/auth'
 import { getOrCreateCard, assetUrl } from '../../utils/cards'
+import { uploadCardDeskFile, readUploadFile } from '../../utils/uploads'
 
 /**
- * Upload a card image. Receives multipart, forwards the file to Directus /files
- * with the static token, then stores the file id on the user's cd_cards row.
+ * Upload a card image. Forwards the file to Directus (filed under the CardDesk
+ * "Card Images" folder), then stores the file id on the user's cd_cards row.
  */
 export default defineEventHandler(async (event) => {
   const { me, directus } = await getUserClient(event)
-  const config = useRuntimeConfig()
 
-  const parts = await readMultipartFormData(event)
-  const file = parts?.find((p) => p.name === 'file' && p.filename)
-  if (!file) throw createError({ statusCode: 400, message: 'No file provided' })
-  if (file.data.length > 5 * 1024 * 1024) throw createError({ statusCode: 413, message: 'Image must be under 5MB' })
-
-  const fd = new FormData()
-  fd.append('file', new Blob([file.data], { type: file.type || 'application/octet-stream' }), file.filename)
-
-  const directusUrl = String(config.public.directusUrl).replace(/\/$/, '')
-  const res = await fetch(`${directusUrl}/files`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${config.directusStaticToken}` },
-    body: fd,
-  })
-  if (!res.ok) {
-    console.error('[cards/image] upload failed', res.status, await res.text().catch(() => ''))
-    throw createError({ statusCode: 502, message: 'Image upload failed' })
-  }
-  const json = (await res.json()) as any
-  const fileId = json?.data?.id
-  if (!fileId) throw createError({ statusCode: 502, message: 'Image upload failed' })
+  const file = await readUploadFile(event)
+  const fileId = await uploadCardDeskFile(file, 'card')
 
   const card = await getOrCreateCard(me, directus)
   await directus.request(updateItem('cd_cards' as any, card.id, { image: fileId } as any))

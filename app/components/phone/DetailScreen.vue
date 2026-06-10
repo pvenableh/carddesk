@@ -6,9 +6,45 @@ import { SOCIALS, SOCIAL_KEYS, socialUrl } from '~/types/socials'
 import type { PipelineStage } from '~/types/directus'
 import confettiLib from 'canvas-confetti'
 
-const { contacts, updateContact, hibernate, logActivity, markResponded, updateActivity, deleteActivity, lastActivity, daysSince, followUpStatus } = useContacts()
+const { contacts, updateContact, uploadContactImage, removeContactImage, hibernate, logActivity, markResponded, updateActivity, deleteActivity, lastActivity, daysSince, followUpStatus } = useContacts()
 const { state: xp, earn, deduct } = useXp()
+const { success, error: showError } = useToast()
 const { selectedId, editing, nav } = useNavigation()
+
+// ── Contact photo upload (downscaled client-side, filed in Contact Photos) ──
+const contactPhotoEl = ref<HTMLInputElement | null>(null)
+const photoUploading = ref(false)
+async function onContactPhoto(e: Event) {
+  const input = e.target as HTMLInputElement
+  const f = input.files?.[0]
+  const c = selContact.value as any
+  if (!f || !c) return
+  photoUploading.value = true
+  try {
+    await uploadContactImage(c.id, f)
+    success('Photo updated')
+  } catch (err: any) {
+    console.error('[DetailScreen] contact photo upload failed:', err?.data?.message ?? err)
+    showError(err?.data?.message || 'Couldn\'t upload that photo — try again.')
+  } finally {
+    photoUploading.value = false
+    input.value = ''
+  }
+}
+async function onRemovePhoto() {
+  const c = selContact.value as any
+  if (!c?.id || photoUploading.value) return
+  photoUploading.value = true
+  try {
+    await removeContactImage(c.id)
+    success('Photo removed')
+  } catch (err: any) {
+    console.error('[DetailScreen] remove contact photo failed:', err?.data?.message ?? err)
+    showError('Couldn\'t remove the photo — try again.')
+  } finally {
+    photoUploading.value = false
+  }
+}
 const { profile } = useProfile()
 const { moveToStage, getStageInfo } = usePipeline()
 
@@ -311,24 +347,36 @@ function contactFocus(): string {
   return `the contact "${c.name}"${c.company ? ` from ${c.company}` : ''} — their CRM profile (rating, pipeline stage, notes, and full activity history)`
 }
 
-function askEarnest() {
+// Shared so the in-page button and the floating Ask Earnest button hand Earnest
+// the exact same rich context (full activity history included).
+function askOptions() {
   const c = selContact.value as any
-  if (!c) return
-  analytics.aiFeatureUse('chat')
-  openChat({
-    scope: 'contact',
+  if (!c) return null
+  return {
+    scope: 'contact' as const,
     title: c.name,
     contactId: c.id,
     context: contactContext(),
     focus: contactFocus(),
     intro: `Let's talk about ${c.name}${c.company ? ` at ${c.company}` : ''}. Want help with your next move, a follow-up message, or moving them through your pipeline?`,
-  })
-  nav('chat')
+  }
 }
+
+function askEarnest() {
+  const opts = askOptions()
+  if (!opts) return
+  analytics.aiFeatureUse('chat')
+  openChat(opts)
+}
+
+// Publish the rich contact context to the floating Ask Earnest button while this
+// screen is alive; it reads selContact live, so it always reflects the open card.
+const { provideContext, clearContext } = useAskEarnest()
+onMounted(() => provideContext('detail', askOptions))
+onUnmounted(() => clearContext('detail'))
 
 function continueChat(s: any) {
   resumeChat(s, contactContext(), 'contact', contactFocus())
-  nav('chat')
 }
 
 // Normalize a saved session's assistant content into displayable lines.
@@ -392,7 +440,17 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
           <button class="cd-back" @click="nav('contacts')"><CdIcon emoji="‹" icon="lucide:chevron-left" :size="14" /> Back</button>
           <div class="cd-det-hero">
             <div style="display: flex; align-items: center; gap: 11px; margin-bottom: 10px">
-              <div class="cd-det-av"><CdIcon :emoji="cEmoji(selContact)" icon="lucide:user" :size="24" /></div>
+              <div class="cd-det-av-wrap">
+                <button class="cd-det-av cd-det-av-btn" type="button" :disabled="photoUploading" :title="(selContact as any).imageUrl ? 'Change photo' : 'Add a photo'" @click="contactPhotoEl?.click()">
+                  <img v-if="(selContact as any).imageUrl" :src="(selContact as any).imageUrl" alt="" />
+                  <CdIcon v-else :emoji="cEmoji(selContact)" icon="lucide:user" :size="24" />
+                  <span class="cd-det-av-cam"><CdIcon :icon="photoUploading ? 'lucide:loader-circle' : 'lucide:camera'" :size="11" /></span>
+                </button>
+                <button v-if="(selContact as any).imageUrl" class="cd-det-av-rm" type="button" :disabled="photoUploading" title="Remove photo" aria-label="Remove photo" @click="onRemovePhoto">
+                  <CdIcon icon="lucide:x" :size="11" />
+                </button>
+              </div>
+              <input ref="contactPhotoEl" type="file" accept="image/*" hidden @change="onContactPhoto" />
               <div>
                 <div style="font-family: 'Bebas Neue', sans-serif; font-size: 26px; line-height: 1; margin-bottom: 3px">{{ selContact.name }}</div>
                 <div style="font-size: 12px; color: var(--cd-muted)">
@@ -447,7 +505,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
 
           <!-- Follow buttons — open the contact's socials in a new tab. -->
           <div v-if="contactSocials(selContact).length" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px">
-            <a v-for="s in contactSocials(selContact)" :key="s.key" :href="socialUrl(s.key, (selContact as any)[s.key])" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 10px; background: var(--cd-bg2); border: 1px solid var(--cd-bdr); color: var(--cd-text); font-size: 12px; font-weight: 700; text-decoration: none">
+            <a v-for="s in contactSocials(selContact)" :key="s.key" :href="socialUrl(s.key, (selContact as any)[s.key])" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 9999px; background: var(--cd-bg2); border: 1px solid var(--cd-bdr); color: var(--cd-text); font-size: 12px; font-weight: 700; text-decoration: none">
               <Icon :name="s.icon" :size="15" /> {{ s.label }}
             </a>
           </div>
@@ -667,7 +725,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             <button
               v-for="s in PIPELINE_STAGES"
               :key="s.key"
-              style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-text); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; text-align: left"
+              style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-text); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; text-align: left"
               :style="selContact?.pipeline_stage === s.key ? 'border-color: var(--cd-accent); background: rgba(0,255,135,0.06)' : ''"
               @click="doMoveStage(s.key)"
             >
@@ -676,7 +734,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
               <span v-if="selContact?.pipeline_stage === s.key" style="margin-left: auto; font-size: 10px; color: var(--cd-accent)">current</span>
             </button>
           </div>
-          <button style="width: 100%; padding: 10px; margin-top: 10px; border-radius: 10px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showStageSheet = false">Cancel</button>
+          <button style="width: 100%; padding: 10px; margin-top: 10px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showStageSheet = false">Cancel</button>
         </div>
       </div>
     </Transition>
@@ -691,7 +749,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             <button
               v-for="reason in LOST_REASONS"
               :key="reason"
-              style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-text); font-size: 13px; font-weight: 600; cursor: pointer; text-align: left"
+              style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-text); font-size: 13px; font-weight: 600; cursor: pointer; text-align: left"
               :style="selectedLostReason === reason ? 'border-color: var(--cd-orange); background: rgba(255,107,53,0.06)' : ''"
               @click="selectedLostReason = reason"
             >
@@ -705,7 +763,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             :disabled="!selectedLostReason"
             @click="doLogLostReason"
           ><CdIcon emoji="📝" icon="lucide:clipboard-check" :size="14" /> Log Lost Reason</button>
-          <button style="width: 100%; padding: 10px; margin-top: 6px; border-radius: 10px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showLostReasonSheet = false; showStageSheet = true">← Back</button>
+          <button style="width: 100%; padding: 10px; margin-top: 6px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showLostReasonSheet = false; showStageSheet = true">← Back</button>
         </div>
       </div>
     </Transition>

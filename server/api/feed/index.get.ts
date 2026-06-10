@@ -1,4 +1,4 @@
-import { readItems } from '@directus/sdk'
+import { readItems, readUsers } from '@directus/sdk'
 import { getDirectus } from '../../utils/directus'
 import { getCurrentUserId } from '../../utils/auth'
 
@@ -48,12 +48,32 @@ export default defineEventHandler(async (event) => {
     }),
   )) as any[]
 
-  const byEvent: Record<string, { counts: Record<string, number>; mine: string[] }> = {}
+  // Resolve reactor names for the who-reacted tooltip (self shows as "You").
+  const reactorIds = Array.from(
+    new Set(reactions.map((r) => (typeof r.user === 'object' ? r.user?.id : r.user)).filter(Boolean)),
+  ).filter((id) => id !== me)
+  const names: Record<string, string> = {}
+  if (reactorIds.length) {
+    const users = (await admin.request(
+      readUsers({ filter: { id: { _in: reactorIds } } as any, fields: ['id', 'first_name', 'last_name'], limit: 1000 }),
+    )) as any[]
+    for (const u of users) names[u.id] = [u.first_name, u.last_name].filter(Boolean).join(' ') || 'CardDesk user'
+  }
+
+  const byEvent: Record<
+    string,
+    { counts: Record<string, number>; mine: string[]; who: Record<string, string[]> }
+  > = {}
   for (const r of reactions) {
     const ev = typeof r.event === 'object' ? r.event?.id : r.event
     const u = typeof r.user === 'object' ? r.user?.id : r.user
-    const slot = (byEvent[ev] ??= { counts: {}, mine: [] })
+    const slot = (byEvent[ev] ??= { counts: {}, mine: [], who: {} })
     slot.counts[r.emoji] = (slot.counts[r.emoji] ?? 0) + 1
+    const label = u === me ? 'You' : names[u] ?? 'CardDesk user'
+    const who = (slot.who[r.emoji] ??= [])
+    // Keep "You" first in the tooltip list.
+    if (u === me) who.unshift(label)
+    else who.push(label)
     if (u === me) slot.mine.push(r.emoji)
   }
 
@@ -69,6 +89,7 @@ export default defineEventHandler(async (event) => {
         actor: { id: a?.id ?? a, name: [a?.first_name, a?.last_name].filter(Boolean).join(' ') || 'CardDesk user' },
         reactions: byEvent[e.id]?.counts ?? {},
         myReactions: byEvent[e.id]?.mine ?? [],
+        reactionUsers: byEvent[e.id]?.who ?? {},
       }
     }),
   }

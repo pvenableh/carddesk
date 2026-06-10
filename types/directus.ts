@@ -134,6 +134,9 @@ export interface CdContact {
   is_client: boolean
   client_at?: string
   notes?: string
+  /** Contact photo: Directus file id (`image`) + resolved URL (`imageUrl`). */
+  image?: string | null
+  imageUrl?: string | null
   activities?: CdActivity[]
   pipeline_stage?: PipelineStage
   earnest_lead_id?: string
@@ -226,6 +229,8 @@ export interface CdUserProfile {
   networking_goal?: string
   location?: string
   discoverable?: boolean
+  /** Resolved URL of the user's Earnest (Directus) avatar, or null. */
+  avatarUrl?: string | null
   organization?: {
     id?: number
     name?: string

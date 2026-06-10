@@ -34,7 +34,7 @@ onMounted(() => {
 
 function goEditCard() {
   closeDropdown()
-  router.push('/card/edit')
+  router.push('/account?tab=card')
 }
 
 onUnmounted(() => {

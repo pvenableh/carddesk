@@ -198,6 +198,7 @@ async function loadLeadSuggestions() {
   <div class="cd-screen on">
     <div class="cd-shdr"><div class="cd-stitle">Your Vibe <CdIcon emoji="⚡" icon="lucide:zap" /></div></div>
     <div class="cd-scrl cd-pad">
+      <div class="cd-foot-fill">
       <!-- Event Mode: focused capture for networking events -->
       <button
         class="cd-abtn g"
@@ -213,7 +214,7 @@ async function loadLeadSuggestions() {
         <button class="cd-abtn ice" style="font-size: 12px; padding: 10px" @click="openShareSheet('card')"><CdIcon emoji="🪪" icon="lucide:contact" :size="14" /> My Card</button>
         <button class="cd-abtn b" style="font-size: 12px; padding: 10px" @click="openShareSheet('invite')"><CdIcon emoji="🔗" icon="lucide:user-plus" :size="14" /> Invite</button>
       </div>
-      <div class="cd-vc" style="border-color: rgba(0,255,135,0.15); padding-bottom: 6px; position: relative">
+      <div class="cd-vc" style="border-color: color-mix(in srgb, var(--cd-accent) 15%, transparent); padding-bottom: 6px; position: relative">
         <button
           aria-label="Scoring guide"
           style="position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-radius: 50%; background: var(--cd-bg2); border: 1px solid var(--cd-bdr); color: var(--cd-dim); font-size: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2"
@@ -224,15 +225,15 @@ async function loadLeadSuggestions() {
             <svg viewBox="0 0 36 36" style="width: 56px; height: 56px; transform: rotate(-90deg)">
               <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--cd-bdr)" stroke-width="3" />
               <circle
-                cx="18" cy="18" r="15.5" fill="none" stroke="#00ff87" stroke-width="3"
+                cx="18" cy="18" r="15.5" fill="none" stroke-width="3"
                 stroke-linecap="round"
                 :stroke-dasharray="97.4"
                 :stroke-dashoffset="97.4 - (97.4 * xpPct / 100)"
-                style="transition: stroke-dashoffset 0.6s ease"
+                style="stroke: var(--cd-accent); transition: stroke-dashoffset 0.6s ease"
               />
             </svg>
             <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column">
-              <div style="font-family: 'Bebas Neue', sans-serif; font-size: 15px; line-height: 1; color: var(--cd-green)">{{ xp.level }}</div>
+              <div style="font-family: 'Bebas Neue', sans-serif; font-size: 15px; line-height: 1; color: var(--cd-accent)">{{ xp.level }}</div>
               <div style="font-size: 7px; color: var(--cd-dim); font-weight: 700; text-transform: uppercase">LVL</div>
             </div>
           </div>
@@ -242,7 +243,7 @@ async function loadLeadSuggestions() {
               {{ (nextLevel.xp - xp.total_xp).toLocaleString() }} XP to {{ nextLevel.title }}
             </div>
             <div style="display: flex; gap: 8px; margin-top: 4px">
-              <span style="font-size: 10px; color: var(--cd-green); font-weight: 700">
+              <span style="font-size: 10px; color: var(--cd-accent); font-weight: 700">
                 <CdIcon emoji="🔥" icon="lucide:flame" :size="10" /> {{ xp.streak }}d streak
               </span>
               <span style="font-size: 10px; color: #4da6ff; font-weight: 700">
@@ -266,7 +267,7 @@ async function loadLeadSuggestions() {
                 style="width: 100%; max-width: 20px; border-radius: 4px 4px 0 0; transition: height 0.4s ease; min-height: 2px"
                 :style="{
                   height: day.count ? Math.max(12, (day.count / maxDayCount) * 100) + '%' : '4%',
-                  background: day.count === 0 ? 'var(--cd-bdr)' : day.count >= 3 ? '#00ff87' : day.count >= 2 ? '#4da6ff' : '#ffe033',
+                  background: day.count === 0 ? 'var(--cd-bdr)' : day.count >= 3 ? 'var(--cd-accent)' : day.count >= 2 ? '#4da6ff' : '#ffe033',
                 }"
               >
                 <div v-if="day.count" style="text-align: center; font-size: 8px; font-weight: 800; color: #0a0e14; padding-top: 1px">
@@ -276,7 +277,7 @@ async function loadLeadSuggestions() {
             </div>
             <div
               style="font-size: 8px; font-weight: 700; margin-top: 3px; text-transform: uppercase"
-              :style="day.date === new Date().toISOString().slice(0, 10) ? 'color: var(--cd-green)' : 'color: var(--cd-dim)'"
+              :style="day.date === new Date().toISOString().slice(0, 10) ? 'color: var(--cd-accent)' : 'color: var(--cd-dim)'"
             >{{ day.label }}</div>
           </div>
         </div>
@@ -299,7 +300,7 @@ async function loadLeadSuggestions() {
           v-else
           style="display: flex; align-items: center; justify-content: center; gap: 7px; padding: 9px; margin-bottom: 8px; border: 1px dashed var(--cd-bdr); border-radius: 9999px; font-size: 11px; color: var(--cd-dim); font-weight: 700"
         >
-          <CdIcon emoji="🔒" icon="lucide:lock" :size="12" /> Do one action today to unlock <span style="color: var(--cd-green)">+20 XP</span>
+          <CdIcon emoji="🔒" icon="lucide:lock" :size="12" /> Do one action today to unlock <span style="color: var(--cd-accent)">+20 XP</span>
         </div>
 
         <template v-if="xpSources.length">
@@ -518,6 +519,10 @@ async function loadLeadSuggestions() {
           <CdIcon emoji="🌐" icon="lucide:external-link" :size="14" /> Learn about Earnest →
         </a>
       </div>
+
+      </div>
+
+      <CdBrandFooter />
     </div>
   </div>
 </template>

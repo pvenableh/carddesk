@@ -32,6 +32,12 @@ const ICON: Record<string, { emoji: string; icon: string }> = {
   intro: { emoji: '🌉', icon: 'lucide:git-merge' },
 }
 
+// Tooltip listing who reacted with an emoji ("You" first). Empty = no tooltip.
+function reactorTooltip(e: FeedEvent, emoji: string): string {
+  const who = e.reactionUsers?.[emoji] ?? []
+  return who.length ? who.join(', ') : ''
+}
+
 function text(e: FeedEvent): string {
   const who = e.mine ? 'You' : e.actor.name
   const p = e.payload || {}
@@ -49,7 +55,8 @@ function text(e: FeedEvent): string {
 </script>
 
 <template>
-  <div class="cd-scrl" style="padding: 4px 14px 12px">
+  <div class="cd-scrl" style="padding: 4px var(--cd-gutter) 12px">
+    <div class="cd-foot-fill">
     <!-- Privacy toggle -->
     <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px; padding: 11px 13px; margin-bottom: 12px">
       <div>
@@ -84,11 +91,15 @@ function text(e: FeedEvent): string {
             :key="emoji"
             class="cd-react"
             :class="{ on: e.myReactions.includes(emoji) }"
+            :title="reactorTooltip(e, emoji)"
             @click="react(e.id, emoji)"
           >{{ emoji }}<span v-if="e.reactions[emoji]" class="cd-react-n">{{ e.reactions[emoji] }}</span></button>
         </div>
       </div>
     </div>
+    </div>
+
+    <CdBrandFooter />
   </div>
 </template>
 
@@ -107,7 +118,7 @@ function text(e: FeedEvent): string {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 255, 135, 0.1);
+  background: color-mix(in srgb, var(--cd-accent) 10%, transparent);
   color: var(--cd-accent);
 }
 .cd-feed-reacts {
@@ -128,7 +139,7 @@ function text(e: FeedEvent): string {
   line-height: 1;
 }
 .cd-react.on {
-  background: rgba(0, 255, 135, 0.12);
+  background: color-mix(in srgb, var(--cd-accent) 12%, transparent);
   border-color: var(--cd-accent);
 }
 .cd-react-n {

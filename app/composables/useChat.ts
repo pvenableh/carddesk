@@ -62,8 +62,14 @@ export function useChat() {
   const sessionId = useState<string | null>('cd-chat-session', () => null)
   const messages = useState<ChatMessage[]>('cd-chat-messages', () => [])
   const loading = useState('cd-chat-loading', () => false)
+  // Whether the chat panel (a slide-up sheet rendered in the app shell) is open.
+  const isOpen = useState('cd-chat-open', () => false)
 
   const suggestions = computed(() => SUGGESTED[scope.value] ?? SUGGESTED.general)
+
+  function close() {
+    isOpen.value = false
+  }
 
   function reset() {
     sessionId.value = null
@@ -73,7 +79,7 @@ export function useChat() {
     loading.value = false
   }
 
-  /** Begin a fresh contextual chat. Does NOT navigate — callers nav('chat'). */
+  /** Begin a fresh contextual chat and open the panel (slides up over the page). */
   function open(opts: OpenChatOptions) {
     scope.value = opts.scope
     title.value = opts.title
@@ -85,6 +91,7 @@ export function useChat() {
     messages.value = opts.intro
       ? [{ role: 'assistant', content: opts.intro, ts: new Date().toISOString() }]
       : []
+    isOpen.value = true
   }
 
   /** Reopen a saved chat session to keep talking. `freshContext` re-grounds it. */
@@ -105,6 +112,7 @@ export function useChat() {
         content: typeof m.content === 'string' ? m.content : String(m.content ?? ''),
         ts: m.ts,
       }))
+    isOpen.value = true
   }
 
   function toStored(): CdSessionMessage[] {
@@ -176,5 +184,5 @@ export function useChat() {
     }
   }
 
-  return { scope, title, contactId, context, sessionId, messages, loading, suggestions, open, resume, send, reset }
+  return { scope, title, contactId, context, sessionId, messages, loading, isOpen, suggestions, open, resume, send, reset, close }
 }

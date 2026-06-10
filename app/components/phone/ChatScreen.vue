@@ -6,21 +6,48 @@
  * replies, and a composer at the bottom. Each send is a metered turn
  * (1 credit). Reached via the contextual helpers (contact / events / score).
  */
-const { scope, title, messages, loading, suggestions, send } = useChat()
-const { nav } = useNavigation()
-const router = useRouter()
+const { scope, title, messages, loading, suggestions, send, context, close } = useChat()
+const { profile } = useProfile()
+
+// Once the user has sent a turn, drop the priming hints.
+const started = computed(() => messages.value.some((m) => m.role === 'user'))
+
+// The awareness primer is collapsed by default — a small, unobtrusive chip the
+// user can expand to see exactly what Earnest is grounded in.
+const awareOpen = ref(false)
+
+// "What Earnest can see" — derived from the active scope + the context that was
+// actually handed to the model, so we never claim awareness Earnest doesn't have.
+interface AwareItem { icon: string; label: string }
+const awareness = computed<AwareItem[]>(() => {
+  const ctx: any = context.value || {}
+  const items: AwareItem[] = []
+  items.push({
+    icon: 'lucide:user-round',
+    label: profile.value.networking_goal?.trim()
+      ? 'Your profile, role & networking goal'
+      : 'Your profile & role',
+  })
+  if (scope.value === 'contact') {
+    items.push({ icon: 'lucide:contact', label: 'This contact — rating, pipeline, notes & your full activity history with them' })
+  } else if (scope.value === 'events') {
+    items.push({ icon: 'lucide:radio', label: 'Your events & who you met at each' })
+  } else if (scope.value === 'score') {
+    items.push({ icon: 'lucide:gauge', label: 'Your Earnest Score & each dimension' })
+  }
+  if (typeof ctx.total_contacts === 'number') {
+    const bits = [`${ctx.total_contacts} contact${ctx.total_contacts === 1 ? '' : 's'}`]
+    if (ctx.clients) bits.push(`${ctx.clients} client${ctx.clients === 1 ? '' : 's'}`)
+    items.push({ icon: 'lucide:users', label: `Your network — ${bits.join(', ')}, ratings & pipeline` })
+  }
+  if (typeof ctx.streak === 'number' || typeof ctx.level === 'number') {
+    items.push({ icon: 'lucide:flame', label: 'Your level, XP & streak' })
+  }
+  return items
+})
 
 const draft = ref('')
 const scrollEl = ref<HTMLElement | null>(null)
-
-function goBack() {
-  switch (scope.value) {
-    case 'contact': nav('detail'); break
-    case 'events': nav('event'); break
-    case 'score': router.push('/account'); break
-    default: nav('session')
-  }
-}
 
 async function submit() {
   const text = draft.value.trim()
@@ -76,11 +103,31 @@ onMounted(scrollToBottom)
 <template>
   <div class="cd-screen on chat-screen">
     <div class="cd-shdr chat-hdr">
-      <button class="cd-back" @click="goBack"><CdIcon emoji="‹" icon="lucide:chevron-left" :size="14" /> Back</button>
+      <button class="cd-back chat-close" type="button" aria-label="Close" @click="close"><CdIcon icon="lucide:x" :size="15" /> Close</button>
       <div class="cd-stitle chat-title"><CdIcon icon="lucide:sparkles" :size="15" /> {{ title }}</div>
     </div>
 
     <div ref="scrollEl" class="cd-scrl chat-body">
+      <!-- Awareness primer: what Earnest can see, until the user's first turn -->
+      <div v-if="!started && awareness.length" class="chat-aware" :class="{ open: awareOpen }">
+        <button type="button" class="chat-aware-hd" :aria-expanded="awareOpen" @click="awareOpen = !awareOpen">
+          <CdIcon icon="lucide:sparkles" :size="11" />
+          <span>What Earnest can see</span>
+          <CdIcon class="chat-aware-chev" icon="lucide:chevron-down" :size="13" />
+        </button>
+        <div v-if="awareOpen" class="chat-aware-body">
+          <div class="chat-aware-list">
+            <div v-for="(a, i) in awareness" :key="i" class="chat-aware-item">
+              <CdIcon :icon="a.icon" :size="12" />
+              <span>{{ a.label }}</span>
+            </div>
+          </div>
+          <div class="chat-aware-note">
+            <CdIcon icon="lucide:lock" :size="10" /> Grounded only in your own CardDesk data — nothing leaves your account.
+          </div>
+        </div>
+      </div>
+
       <!-- Empty thread → suggested prompts -->
       <div v-if="!messages.length" class="chat-empty">
         <div class="chat-empty-ico"><CdIcon icon="lucide:sparkles" :size="34" /></div>
@@ -128,9 +175,11 @@ onMounted(scrollToBottom)
 <style scoped>
 .chat-screen { display: flex; flex-direction: column; height: 100%; }
 .chat-hdr { padding-bottom: 8px; }
-.chat-title { display: inline-flex; align-items: center; gap: 6px; }
+/* Back button sits on its own row above the title (display:flex makes the title
+   a block that wraps below the inline back button). */
+.chat-title { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
 
-.chat-body { flex: 1; padding: 8px 14px 14px; display: flex; flex-direction: column; gap: 12px; }
+.chat-body { flex: 1; padding: 8px var(--cd-gutter) 14px; display: flex; flex-direction: column; gap: 12px; }
 
 /* empty state */
 .chat-empty { margin: auto; text-align: center; max-width: 340px; padding: 24px 8px; }
@@ -150,6 +199,73 @@ onMounted(scrollToBottom)
 }
 .chat-sug:hover { border-color: var(--cd-accent); }
 .chat-sug:active { transform: scale(0.99); }
+
+/* awareness primer — small, collapsible "what Earnest can see" chip */
+.chat-aware {
+  align-self: flex-start;
+  max-width: 100%;
+  border: 1px solid var(--cd-bdr);
+  background: color-mix(in srgb, var(--cd-accent) 5%, var(--cd-bg2));
+  border-radius: 10px;
+}
+.chat-aware.open {
+  align-self: stretch;
+}
+.chat-aware-hd {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  padding: 6px 10px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.64rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--cd-accent);
+}
+.chat-aware-chev {
+  margin-left: auto;
+  transition: transform 0.18s ease;
+  opacity: 0.7;
+}
+.chat-aware.open .chat-aware-chev {
+  transform: rotate(180deg);
+}
+.chat-aware-body {
+  padding: 0 10px 9px;
+}
+.chat-aware-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.chat-aware-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 0.76rem;
+  line-height: 1.3;
+  color: var(--cd-text);
+}
+.chat-aware-item :deep(svg) {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--cd-muted);
+}
+.chat-aware-note {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--cd-bdr);
+  font-size: 0.66rem;
+  color: var(--cd-dim);
+}
 
 /* messages */
 .chat-msg { display: flex; align-items: flex-end; gap: 8px; max-width: 100%; }

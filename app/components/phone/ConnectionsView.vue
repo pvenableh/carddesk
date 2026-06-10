@@ -98,7 +98,8 @@ async function remove(c: NetworkConnection) { await respond(c.id, 'remove') }
 </script>
 
 <template>
-  <div class="cd-scrl" style="padding: 4px 14px 12px">
+  <div class="cd-scrl" style="padding: 4px var(--cd-gutter) 12px">
+    <div class="cd-foot-fill">
     <!-- Actions -->
     <div style="display: flex; gap: 8px; margin-bottom: 12px">
       <button class="cd-abtn g" style="font-size: 13px; padding: 11px" @click="openInvite">
@@ -206,6 +207,10 @@ async function remove(c: NetworkConnection) { await respond(c.id, 'remove') }
         <button class="cd-abtn" style="background: transparent; color: #ff6b35; border-color: rgba(255,107,53,0.4)" @click="removeSelected"><CdIcon emoji="🗑️" icon="lucide:user-minus" :size="14" /> Remove connection</button>
       </div>
     </div>
+
+    </div>
+
+    <CdBrandFooter />
   </div>
 </template>
 

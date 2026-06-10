@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Screen } from '~/composables/useNavigation'
 
-defineProps<{
+const props = defineProps<{
   active: Screen
   alertCount?: number
 }>()
@@ -18,10 +18,24 @@ const tabs: { key: Screen; icon: string; lucide: string; label: string }[] = [
   { key: 'home', icon: '📊', lucide: 'lucide:bar-chart-3', label: 'Stats' },
   { key: 'contacts', icon: '👥', lucide: 'lucide:users', label: 'Network' },
 ]
+
+// Left-to-right order of the seven nav slots (3 tabs, scan, 3 tabs). Drives the
+// sliding top-highlight: its index sets the indicator's horizontal position, and
+// CSS animates `left` so the line glides to the active page on every change.
+const NAV_ORDER: Screen[] = ['vibe', 'session', 'event', 'add', 'feed', 'home', 'contacts']
+const activeIndex = computed(() => NAV_ORDER.indexOf(props.active))
 </script>
 
 <template>
   <nav class="cd-bnav">
+    <!-- Sliding highlight that rides above whichever tab is active. Hidden on the
+         scan slot (index 3), which shows its own glow ring instead. -->
+    <span
+      class="cd-nav-indicator"
+      :class="{ hidden: activeIndex < 0 || activeIndex === 3 }"
+      :style="{ left: `calc(${activeIndex} * (100% / 7))` }"
+    ></span>
+
     <button
       v-for="t in tabs.slice(0, 3)"
       :key="t.key"
@@ -66,6 +80,28 @@ const tabs: { key: Screen; icon: string; lucide: string; label: string }[] = [
   padding-right: env(safe-area-inset-right, 0px);
   flex-shrink: 0;
   z-index: 10;
+  position: relative;
+}
+/* Sliding top-highlight over the active tab. One slot = 1/7 of the bar; the
+   inline `left` sets the slot and the transition glides it on page change. */
+.cd-nav-indicator {
+  position: absolute;
+  top: 0;
+  box-sizing: border-box;
+  width: calc(100% / 7);
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--cd-accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--cd-accent) 60%, transparent);
+  /* inset the visible line within its 1/7 slot so it sits centred over the icon */
+  border-left: 18px solid transparent;
+  border-right: 18px solid transparent;
+  background-clip: padding-box;
+  transition: left 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s;
+  pointer-events: none;
+}
+.cd-nav-indicator.hidden {
+  opacity: 0;
 }
 .cd-bn {
   flex: 1;
@@ -107,18 +143,41 @@ const tabs: { key: Screen; icon: string; lucide: string; label: string }[] = [
   align-items: center;
   justify-content: center;
   margin-top: -22px;
-  box-shadow: 0 2px 12px rgba(0, 255, 135, 0.3);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--cd-accent) 30%, transparent);
   transition: transform 0.15s, box-shadow 0.15s;
   color: #060810;
   font-size: 20px;
 }
-.cd-bn-scan:hover .cd-scan-btn,
-.cd-bn-scan.on .cd-scan-btn {
+.cd-bn-scan:hover .cd-scan-btn {
   transform: scale(1.08);
-  box-shadow: 0 4px 18px rgba(0, 255, 135, 0.4);
+  box-shadow: 0 4px 18px color-mix(in srgb, var(--cd-accent) 40%, transparent);
+}
+/* Active scan page: the circle shrinks a touch so its gap-ring + glow sit inside
+   the button's footprint instead of overlapping the "Scan" label below it. */
+.cd-bn-scan.on .cd-scan-btn {
+  transform: scale(0.82);
+  box-shadow:
+    0 0 0 2px var(--cd-bg),
+    0 0 0 4px var(--cd-accent),
+    0 0 12px 2px color-mix(in srgb, var(--cd-accent) 50%, transparent);
+  animation: cd-scan-pulse 1.8s ease-in-out infinite;
+}
+@keyframes cd-scan-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px var(--cd-bg),
+      0 0 0 4px var(--cd-accent),
+      0 0 11px 2px color-mix(in srgb, var(--cd-accent) 42%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px var(--cd-bg),
+      0 0 0 4px var(--cd-accent),
+      0 0 17px 4px color-mix(in srgb, var(--cd-accent) 65%, transparent);
+  }
 }
 .cd-scan-lbl {
-  margin-top: 1px;
+  margin-top: 3px;
 }
 .cd-nav-dot {
   position: absolute;

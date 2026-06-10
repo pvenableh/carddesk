@@ -124,7 +124,8 @@ const wonLost = computed(() => {
     <ConnectionsView v-if="netTab === 'connections'" />
 
     <!-- Rating view -->
-    <div v-else-if="viewMode === 'rating'" class="cd-scrl" style="padding: 4px 14px 8px">
+    <div v-else-if="viewMode === 'rating'" class="cd-scrl" style="padding: 4px var(--cd-gutter) 8px">
+      <div class="cd-foot-fill">
       <div v-if="!contacts.length" class="cd-empty">
         <div style="font-size: 40px; margin-bottom: 10px"><CdIcon emoji="🃏" icon="lucide:credit-card" :size="40" /></div>
         <div style="font-size: 18px; font-weight: 800; margin-bottom: 12px">No contacts yet</div>
@@ -132,7 +133,10 @@ const wonLost = computed(() => {
       </div>
       <div v-for="c in filteredCs" :key="c.id" class="cd-crd" @click="goDetail(c.id)">
         <div class="cd-cbar" :class="c.rating || 'none'"></div>
-        <div class="cd-cav"><CdIcon :emoji="cEmoji(c)" icon="lucide:user" :size="19" /></div>
+        <div class="cd-cav">
+          <img v-if="(c as any).imageUrl" :src="(c as any).imageUrl" alt="" />
+          <CdIcon v-else :emoji="cEmoji(c)" icon="lucide:user" :size="19" />
+        </div>
         <div style="flex: 1; min-width: 0">
           <div class="cd-cnm">{{ c.name }}</div>
           <div class="cd-csb">{{ [c.title, c.company].filter(Boolean).join(' · ') }}</div>
@@ -145,10 +149,14 @@ const wonLost = computed(() => {
           <span v-else-if="followUpStatus(c) === 'overdue'" style="font-size: 9px; color: #ff6b35; font-weight: 700"><CdIcon emoji="⚡" icon="lucide:alert-triangle" :size="9" /> overdue</span>
         </div>
       </div>
+      </div>
+
+      <CdBrandFooter />
     </div>
 
     <!-- Pipeline view (horizontal scrollable lanes) -->
-    <div v-else class="cd-scrl" style="padding: 4px 0 8px">
+    <div v-else class="cd-scrl" style="padding: 4px max(0px, calc((100% - 740px) / 2)) 8px">
+      <div class="cd-foot-fill">
       <div class="cd-hscroll" style="display: flex; gap: 10px; padding: 0 14px; min-height: 200px">
         <div
           v-for="lane in pipelineGroups"
@@ -195,6 +203,9 @@ const wonLost = computed(() => {
           <div class="cd-eyebrow">Lost</div>
         </div>
       </div>
+      </div>
+
+      <CdBrandFooter />
     </div>
   </div>
 </template>

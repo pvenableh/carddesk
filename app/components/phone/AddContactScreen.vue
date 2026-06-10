@@ -162,15 +162,17 @@ async function doSaveContact() {
 <template>
   <div class="cd-screen on">
     <div class="cd-shdr">
-      <button class="cd-back" @click="nav('contacts')"><CdIcon emoji="‹" icon="lucide:chevron-left" :size="14" /> Back</button>
       <div class="cd-stitle">Add Contact</div>
     </div>
     <div class="cd-scrl cd-pad">
       <!-- Scan Zone: Idle state -->
       <div v-if="scanStep === 'idle' && !scanning" class="cd-scan-zone" @click="doScanFront">
         <div style="font-size: 44px; margin-bottom: 8px"><CdIcon emoji="📷" icon="lucide:camera" :size="44" /></div>
-        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: var(--cd-green); margin-bottom: 4px">
+        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: var(--cd-accent); margin-bottom: 2px">
           Scan Business Card
+        </div>
+        <div style="font-size: 11px; font-weight: 700; color: var(--cd-accent); margin-bottom: 4px">
+          <CdIcon icon="lucide:hand-pointer" :size="11" /> Tap to Scan Business Card
         </div>
         <div style="font-size: 11px; color: var(--cd-dim)">
           Earnest AI reads both sides — name, email, phone, company
@@ -181,7 +183,7 @@ async function doSaveContact() {
       <!-- Scan Zone: Front captured, prompt for back -->
       <div v-else-if="scanStep === 'captured-front'" class="cd-scan-captured">
         <div style="font-size: 36px; margin-bottom: 6px"><CdIcon emoji="✅" icon="lucide:check-circle" :size="36" /></div>
-        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; color: var(--cd-green); margin-bottom: 4px">
+        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; color: var(--cd-accent); margin-bottom: 4px">
           Front Captured
         </div>
         <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 14px">
@@ -200,7 +202,7 @@ async function doSaveContact() {
       <!-- Scan Zone: Processing -->
       <div v-else class="cd-scan-zone" style="pointer-events: none">
         <div class="cd-spin" style="font-size: 44px; line-height: 1"><CdIcon emoji="⏳" icon="lucide:loader-circle" :size="44" /></div>
-        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: var(--cd-green); margin-bottom: 4px">
+        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: var(--cd-accent); margin-bottom: 4px">
           Reading card...
         </div>
         <div style="font-size: 11px; color: var(--cd-dim)">

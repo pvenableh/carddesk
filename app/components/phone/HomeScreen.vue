@@ -154,9 +154,10 @@ async function doQuickLog() {
 <template>
   <div class="cd-screen on">
     <div class="cd-scrl cd-pad">
+      <div class="cd-foot-fill">
       <CdPushPrompt />
       <div class="cd-hero">
-        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 2px; color: var(--cd-green); margin-bottom: 2px">
+        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 2px; color: var(--cd-accent); margin-bottom: 2px">
           <CdIcon emoji="🏆" icon="lucide:trophy" :size="11" /> Rockstar Networker
         </div>
         <div style="font-family: 'Bebas Neue', sans-serif; font-size: 40px; line-height: 1">
@@ -169,7 +170,7 @@ async function doQuickLog() {
           <div class="cd-xp-fill" :style="'width:' + xpPct + '%'"></div>
         </div>
         <div style="display: flex; gap: 7px; margin-top: 10px">
-          <span style="background: rgba(0,255,135,0.1); border: 1px solid rgba(0,255,135,0.25); border-radius: 8px; padding: 4px 11px; font-size: 13px; font-weight: 800; color: var(--cd-green)">
+          <span style="background: color-mix(in srgb, var(--cd-accent) 10%, transparent); border: 1px solid color-mix(in srgb, var(--cd-accent) 25%, transparent); border-radius: 8px; padding: 4px 11px; font-size: 13px; font-weight: 800; color: var(--cd-accent)">
             LVL {{ xp.level }}
           </span>
           <span v-if="nextLevel" style="background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.25); border-radius: 8px; padding: 4px 11px; font-size: 13px; font-weight: 800; color: var(--cd-gold)">
@@ -180,7 +181,7 @@ async function doQuickLog() {
 
       <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 11px">
         <div class="cd-stat">
-          <div class="cd-stat-n" style="color: var(--cd-green)">{{ contacts.length }}</div>
+          <div class="cd-stat-n" style="color: var(--cd-accent)">{{ contacts.length }}</div>
           <div class="cd-stat-l">Contacts</div>
         </div>
         <div class="cd-stat">
@@ -210,7 +211,7 @@ async function doQuickLog() {
             <div style="height: 4px; background: var(--cd-bdr); border-radius: 2px; overflow: hidden">
               <div
                 style="height: 100%; border-radius: 2px; transition: width 0.3s"
-                :style="'width:' + Math.round((ind.count / contacts.length) * 100) + '%;background:' + (ind.hot ? '#ff6b35' : ind.clients ? '#00ff87' : '#4da6ff')"
+                :style="'width:' + Math.round((ind.count / contacts.length) * 100) + '%;background:' + (ind.hot ? '#ff6b35' : ind.clients ? 'var(--cd-accent)' : '#4da6ff')"
               ></div>
             </div>
           </div>
@@ -218,7 +219,7 @@ async function doQuickLog() {
             <span v-if="ind.hot" style="font-size: 9px; background: rgba(255,107,53,0.12); color: #ff6b35; padding: 1px 5px; border-radius: 4px; font-weight: 700">
               <CdIcon emoji="🔥" icon="lucide:flame" :size="8" />{{ ind.hot }}
             </span>
-            <span v-if="ind.clients" style="font-size: 9px; background: rgba(0,255,135,0.1); color: var(--cd-green); padding: 1px 5px; border-radius: 4px; font-weight: 700">
+            <span v-if="ind.clients" style="font-size: 9px; background: color-mix(in srgb, var(--cd-accent) 10%, transparent); color: var(--cd-accent); padding: 1px 5px; border-radius: 4px; font-weight: 700">
               <CdIcon emoji="💰" icon="lucide:badge-check" :size="8" />{{ ind.clients }}
             </span>
           </div>
@@ -240,11 +241,11 @@ async function doQuickLog() {
           <span style="font-size: 11px; color: var(--cd-muted); width: 24px; text-align: right; flex-shrink: 0">{{ ch.count }}</span>
           <span
             style="font-size: 9px; padding: 1px 5px; border-radius: 4px; font-weight: 700; width: 36px; text-align: center; flex-shrink: 0"
-            :style="ch.rate >= 30 ? 'background:rgba(0,255,135,0.1);color:var(--cd-green)' : ch.rate > 0 ? 'background:rgba(255,224,51,0.1);color:var(--cd-gold)' : 'background:rgba(62,79,104,0.2);color:var(--cd-dim)'"
+            :style="ch.rate >= 30 ? 'background:color-mix(in srgb, var(--cd-accent) 10%, transparent);color:var(--cd-accent)' : ch.rate > 0 ? 'background:rgba(255,224,51,0.1);color:var(--cd-gold)' : 'background:rgba(62,79,104,0.2);color:var(--cd-dim)'"
           >{{ ch.rate }}%</span>
         </div>
         <div style="font-size: 10px; color: var(--cd-dim); margin-top: 4px; text-align: right">
-          Overall response rate: <strong :style="responseRate >= 30 ? 'color:var(--cd-green)' : 'color:var(--cd-gold)'">{{ responseRate }}%</strong>
+          Overall response rate: <strong :style="responseRate >= 30 ? 'color:var(--cd-accent)' : 'color:var(--cd-gold)'">{{ responseRate }}%</strong>
         </div>
       </div>
 
@@ -293,7 +294,7 @@ async function doQuickLog() {
         </div>
       </div>
 
-      <div class="cd-vc" style="border-color: rgba(0,255,135,0.15); margin-bottom: 11px">
+      <div class="cd-vc" style="border-color: color-mix(in srgb, var(--cd-accent) 15%, transparent); margin-bottom: 11px">
         <div
           style="display: flex; align-items: center; justify-content: space-between; cursor: pointer"
           @click="logOpen = !logOpen"
@@ -375,6 +376,10 @@ async function doQuickLog() {
           >{{ b.label }}</div>
         </div>
       </div>
+
+      </div>
+
+      <CdBrandFooter />
     </div>
   </div>
 </template>

@@ -30,7 +30,6 @@ function analyzeEvents() {
     focus: 'their networking event history — the events they\'ve worked and the people they met at each',
     intro: `You've worked ${events.length} ${events.length === 1 ? 'event' : 'events'}. Want me to find who to follow up with first, or spot patterns across them?`,
   })
-  nav('chat')
 }
 
 const draftName = ref('')
@@ -75,16 +74,14 @@ function eventCount(s: any): number {
 <template>
   <div class="cd-screen on">
     <div class="cd-shdr">
-      <button v-if="!active" class="cd-back" @click="nav('vibe')">
-        <CdIcon icon="lucide:chevron-left" :size="14" /> Back
-      </button>
-      <button v-else class="cd-back" @click="endEvent">
+      <button v-if="active" class="cd-back" @click="endEvent">
         <CdIcon icon="lucide:flag" :size="13" /> End event
       </button>
       <div class="cd-stitle">Event Mode <CdIcon icon="lucide:radio" :size="16" /></div>
     </div>
 
     <div class="cd-scrl cd-pad">
+      <div class="cd-foot-fill">
       <!-- ── Start screen ── -->
       <template v-if="!active">
         <div class="em-start glass-surface">
@@ -186,6 +183,9 @@ function eventCount(s: any): number {
           <p class="em-summary-saved"><CdIcon icon="lucide:bookmark" :size="11" /> Saved to your event history</p>
         </div>
       </template>
+      </div>
+
+      <CdBrandFooter />
     </div>
   </div>
 </template>
@@ -213,7 +213,7 @@ function eventCount(s: any): number {
 
 /* start */
 .em-start { border-radius: 20px; padding: 26px 20px; text-align: center; }
-.em-start-ico { color: var(--cd-green); line-height: 0; margin-bottom: 12px; }
+.em-start-ico { color: var(--cd-accent); line-height: 0; margin-bottom: 12px; }
 .em-start-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.7rem; color: var(--cd-text); }
 .em-start-sub { font-size: 0.9rem; line-height: 1.5; color: var(--cd-muted); margin: 6px 0 16px; }
 .em-start .cd-lbl { text-align: left; }
@@ -226,8 +226,8 @@ function eventCount(s: any): number {
   font-size: 0.85rem; color: var(--cd-muted);
 }
 .em-hero-count {
-  font-family: 'Bebas Neue', sans-serif; font-size: 4.6rem; line-height: 0.95; color: var(--cd-green);
-  text-shadow: 0 6px 30px color-mix(in srgb, var(--cd-green) 40%, transparent);
+  font-family: 'Bebas Neue', sans-serif; font-size: 4.6rem; line-height: 0.95; color: var(--cd-accent);
+  text-shadow: 0 6px 30px color-mix(in srgb, var(--cd-accent) 40%, transparent);
 }
 .em-hero-unit { font-size: 0.95rem; color: var(--cd-text); font-weight: 700; margin-top: 2px; }
 .em-hero-streak { font-size: 0.78rem; color: var(--cd-orange); font-weight: 700; margin-top: 8px; }
@@ -243,9 +243,9 @@ function eventCount(s: any): number {
 .em-scan-ico {
   width: 52px; height: 52px; flex-shrink: 0; border-radius: 14px;
   display: flex; align-items: center; justify-content: center;
-  color: var(--cd-green);
-  background: color-mix(in srgb, var(--cd-green) 16%, transparent);
-  border: 1px solid color-mix(in srgb, var(--cd-green) 34%, transparent);
+  color: var(--cd-accent);
+  background: color-mix(in srgb, var(--cd-accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-accent) 34%, transparent);
 }
 .em-scan-copy { flex: 1; display: flex; flex-direction: column; }
 .em-scan-title { font-weight: 800; font-size: 1.05rem; }
@@ -277,7 +277,7 @@ function eventCount(s: any): number {
 /* summary */
 .em-summary { border-radius: 22px; padding: 30px 22px; text-align: center; }
 .em-summary-ico { color: var(--cd-gold, #ffd700); line-height: 0; margin-bottom: 6px; }
-.em-summary-count { font-family: 'Bebas Neue', sans-serif; font-size: 5rem; line-height: 0.95; color: var(--cd-green); }
+.em-summary-count { font-family: 'Bebas Neue', sans-serif; font-size: 5rem; line-height: 0.95; color: var(--cd-accent); }
 .em-summary-title { font-size: 1.05rem; font-weight: 800; color: var(--cd-text); }
 .em-summary-sub { font-size: 0.9rem; line-height: 1.5; color: var(--cd-muted); margin: 10px 0 4px; }
 .em-summary-saved {
@@ -305,9 +305,9 @@ function eventCount(s: any): number {
 /* past-events count pill */
 .em-past-count {
   flex-shrink: 0; min-width: 26px; text-align: center;
-  font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--cd-green);
+  font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--cd-accent);
   padding: 2px 8px; border-radius: 999px;
-  background: color-mix(in srgb, var(--cd-green) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--cd-green) 28%, transparent);
+  background: color-mix(in srgb, var(--cd-accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-accent) 28%, transparent);
 }
 </style>

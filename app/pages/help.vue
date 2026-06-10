@@ -74,7 +74,7 @@ function toggle(i: number) {
   <div class="help-page">
     <div class="help-container">
       <NuxtLink :to="loggedIn ? '/' : '/login'" class="cd-back">
-        <CdIcon emoji="‹" icon="lucide:chevron-left" :size="14" /> {{ loggedIn ? 'Back to app' : 'Back' }}
+        <CdIcon :emoji="loggedIn ? '✕' : '‹'" :icon="loggedIn ? 'lucide:x' : 'lucide:chevron-left'" :size="14" /> {{ loggedIn ? 'Close' : 'Back' }}
       </NuxtLink>
 
       <header class="help-hero">

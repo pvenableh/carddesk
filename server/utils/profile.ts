@@ -1,5 +1,6 @@
 import { readMe } from "@directus/sdk"
 import { getUserDirectus } from "./directus"
+import { assetUrl } from "./cards"
 
 /**
  * Fetches the current user's profile from Directus /users/me,
@@ -10,7 +11,7 @@ export async function fetchUserProfile(token: string) {
   const me = await directus.request(
     readMe({
       fields: [
-        "first_name", "last_name", "title", "industry", "networking_goal", "location",
+        "first_name", "last_name", "title", "industry", "networking_goal", "location", "avatar",
         { organizations: [{ organizations_id: ["id", "name", "industry", "logo", "address"] }] },
       ],
     }),
@@ -32,5 +33,6 @@ export async function fetchUserProfile(token: string) {
     networking_goal: me.networking_goal ?? "",
     location: me.location ?? "",
     organization: org,
+    avatarUrl: assetUrl(me.avatar ?? null),
   }
 }

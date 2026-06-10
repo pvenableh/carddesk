@@ -121,9 +121,11 @@ html[data-theme="glass"] .cd-stitle {
   text-transform: none;
   font-size: 30px;
 }
+/* Stats callouts stay on the thick condensed display face (Bebas Neue) even on
+   the glass theme — the Proxima Nova Thin fallback read as too light. */
 html[data-theme="glass"] .cd-stat-n {
-  font-family: "Proxima Nova", sans-serif;
-  font-weight: 100;
+  font-family: 'Bebas Neue', sans-serif;
+  font-weight: 400;
 }
 html[data-theme="glass"] .cd-vch,
 html[data-theme="glass"] .cd-se-ttl,
@@ -144,8 +146,8 @@ html[data-theme="glass"] .cd-lbl {
 }
 
 /* ── Glass theme: iOS spacing + pill shapes ── */
-html[data-theme="glass"] .cd-pad { padding: 16px 20px; }
-html[data-theme="glass"] .cd-shdr { padding: 16px 20px 12px; }
+html[data-theme="glass"] .cd-pad { padding-top: 16px; padding-bottom: 16px; }
+html[data-theme="glass"] .cd-shdr { padding: 16px var(--cd-gutter) 12px; }
 html[data-theme="glass"] .cd-vc { border-radius: 16px; padding: 16px; margin-bottom: 12px; }
 html[data-theme="glass"] .cd-sess-entry { border-radius: 16px; padding: 16px; margin-bottom: 12px; }
 html[data-theme="glass"] .cd-scard { border-radius: 16px; padding: 18px; margin-bottom: 12px; }
@@ -289,18 +291,49 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 .cd-screen.on {
   display: flex;
 }
+/* Horizontal gutter that centres a ~740px content column inside a full-width
+   container. Collapses to 14px on phones. The scroll/header/save surfaces span
+   the full viewport (so iPad gutter drags scroll the content) while the visible
+   content stays centred. */
+:root {
+  --cd-gutter: max(14px, calc((100% - 740px) / 2));
+}
 .cd-scrl {
   flex: 1;
   overflow-y: auto;
+  padding-left: var(--cd-gutter);
+  padding-right: var(--cd-gutter);
 }
 .cd-scrl::-webkit-scrollbar {
   display: none;
 }
+/* When a scroll area ends in the brand footer, lay it out as a column and let
+   the footer take up the slack — on short pages it sinks to the bottom of the
+   viewport instead of floating directly under the content. */
+.cd-scrl:has(> .cd-brand-footer) {
+  display: flex;
+  flex-direction: column;
+}
+/* Keep content at its natural height — without this, flex children shrink to
+   fit the column and compress (e.g. contact cards collapse into thin pills). */
+.cd-scrl:has(> .cd-brand-footer) > * {
+  flex-shrink: 0;
+}
+.cd-scrl > .cd-brand-footer {
+  margin-top: auto;
+}
+/* Screens that wrap their content in .cd-foot-fill keep the footer fully below
+   the fold on short pages: the content region fills at least the viewport, so
+   the footer starts just past it (scroll to reveal) instead of floating. */
+.cd-scrl > .cd-foot-fill {
+  min-height: 100%;
+}
 .cd-pad {
-  padding: 10px 14px;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 .cd-shdr {
-  padding: 12px 14px 8px;
+  padding: 12px var(--cd-gutter) 8px;
   flex-shrink: 0;
 }
 .cd-stitle {
@@ -357,8 +390,8 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
 
 /* ── XP badge ── */
 .cd-xpb {
-  background: rgba(0, 255, 135, 0.1);
-  border: 1px solid rgba(0, 255, 135, 0.2);
+  background: color-mix(in srgb, var(--cd-accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-accent) 22%, transparent);
   border-radius: 6px;
   padding: 3px 8px;
   font-family: monospace;
@@ -407,10 +440,7 @@ select.cd-inp {
    small screens instead of scrolling off below the fold / behind the home bar. */
 .cd-save-bar {
   flex-shrink: 0;
-  padding: 10px 14px max(10px, env(safe-area-inset-bottom));
-  border-top: 1px solid var(--cd-bdr);
-  background: color-mix(in srgb, var(--cd-bg) 86%, transparent);
-  backdrop-filter: blur(10px);
+  padding: 10px var(--cd-gutter) max(10px, env(safe-area-inset-bottom));
 }
 /* iOS zooms the page when a focused input's font-size is < 16px. Bump inputs to
    16px on touch screens only, so the compact desktop/mockup look is preserved. */
@@ -1112,6 +1142,12 @@ select.cd-inp {
   background: var(--cd-bg);
   border: 1px solid var(--cd-bdr);
   flex-shrink: 0;
+  overflow: hidden;
+}
+.cd-cav img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .cd-cnm {
   font-size: 15px;
@@ -1173,6 +1209,67 @@ select.cd-inp {
   background: var(--cd-bg2);
   border: 1px solid var(--cd-bdr);
   flex-shrink: 0;
+}
+/* Tappable photo avatar (contact detail) with camera + remove badges. */
+.cd-det-av-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.cd-det-av-btn {
+  position: relative;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  transition: border-color 0.15s;
+}
+.cd-det-av-rm {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--cd-bg2);
+  color: var(--cd-muted);
+  border: 2px solid var(--cd-bg);
+  cursor: pointer;
+  z-index: 1;
+  transition: color 0.15s, background 0.15s;
+}
+.cd-det-av-rm:hover {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.12);
+}
+.cd-det-av-btn:hover:not(:disabled) {
+  border-color: var(--cd-accent);
+}
+.cd-det-av-btn:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+.cd-det-av-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+}
+.cd-det-av-cam {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cd-accent);
+  color: var(--cd-bg);
+  border: 2px solid var(--cd-bg);
 }
 .cd-tag-ind {
   font-size: 10px;
@@ -1334,8 +1431,8 @@ select.cd-inp {
 
 /* ── Scan zone ── */
 .cd-scan-zone {
-  background: linear-gradient(135deg, #04130d, #050e0a);
-  border: 2px dashed rgba(0, 255, 135, 0.25);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--cd-accent) 8%, var(--cd-bg)), var(--cd-bg2));
+  border: 2px dashed color-mix(in srgb, var(--cd-accent) 28%, transparent);
   border-radius: 18px;
   padding: 26px 20px;
   text-align: center;
@@ -1344,11 +1441,11 @@ select.cd-inp {
   margin-bottom: 4px;
 }
 .cd-scan-zone:hover {
-  border-color: rgba(0, 255, 135, 0.6);
+  border-color: color-mix(in srgb, var(--cd-accent) 60%, transparent);
 }
 .cd-scan-captured {
-  background: linear-gradient(135deg, #04130d, #050e0a);
-  border: 2px solid rgba(0, 255, 135, 0.4);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--cd-accent) 8%, var(--cd-bg)), var(--cd-bg2));
+  border: 2px solid color-mix(in srgb, var(--cd-accent) 40%, transparent);
   border-radius: 18px;
   padding: 26px 20px;
   text-align: center;
