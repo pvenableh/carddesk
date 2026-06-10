@@ -65,7 +65,7 @@ onMounted(() => {
   const ctaBtn = cta?.querySelector<HTMLElement>('.lp-btn')
   const hero = heroRef.value
   const ghosts = motionOK
-    ? Array.from(document.querySelectorAll<HTMLElement>('.lp-ghost[data-parallax]'))
+    ? Array.from(document.querySelectorAll<HTMLElement>('[data-parallax]'))
     : []
   const update = () => {
     parallaxRaf = 0
@@ -93,14 +93,19 @@ onMounted(() => {
       const p = Math.min(Math.max((vh - r.top) / (vh * 0.62), 0), 1)
       cta.style.setProperty('--lp-cta-shift', `${((0.5 - p) * 260).toFixed(1)}px`)
     }
-    // Section keyword watermarks: a gentle drift keyed to how far each ghost's
-    // host (its callout) sits from viewport centre — it rises as you scroll down.
+    // Section keyword watermarks: a gentle drift mapped across each ghost host's
+    // FULL travel through the viewport — from just before it enters (host top at
+    // the viewport bottom) to just after it exits (host bottom at the top). The
+    // progress is deliberately left unclamped so the motion starts before the
+    // watermark scrolls in and keeps easing after it's gone — no snap at either
+    // edge. Amplitude (px of total travel) comes from data-parallax (default 260).
     for (const g of ghosts) {
       const host = g.parentElement
       if (!host) continue
       const r = host.getBoundingClientRect()
-      const t = (r.top + r.height / 2 - vh / 2) / vh
-      g.style.setProperty('--lp-shift', `${(t * 230).toFixed(1)}px`)
+      const range = Number(g.dataset.parallax) || 260
+      const p = (vh - r.top) / (vh + r.height)
+      g.style.setProperty('--lp-shift', `${((0.5 - p) * range).toFixed(1)}px`)
     }
   }
   onParallax = () => { if (!parallaxRaf) parallaxRaf = requestAnimationFrame(update) }
@@ -191,7 +196,7 @@ onUnmounted(() => {
     <!-- ═══ Why it's different — a rhythm of featured callouts ═══ -->
     <section class="lp-section">
       <div class="lp-section-head lp-section-head--quote">
-        <div class="lp-head-ghost" aria-hidden="true">Why it’s different</div>
+        <div class="lp-head-ghost" data-parallax="150" aria-hidden="true">Why it’s different</div>
         <h2 class="lp-h2 lp-h2-script">“Everything about meeting people, made fun.”</h2>
       </div>
 
@@ -765,7 +770,9 @@ html[data-theme="glass"] .lp-chip {
   position: absolute;
   left: 50%;
   top: 46%;
-  transform: translate(-50%, -50%);
+  /* X stays centred; Y carries the parallax shift (see the rAF handler). */
+  transform: translate(-50%, calc(-50% + var(--lp-shift, 0px)));
+  will-change: transform;
   z-index: 0;
   font-family: 'Bebas Neue', sans-serif;
   font-size: clamp(2rem, 8vw, 5.6rem);

@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url'
+
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   future: { compatibilityVersion: 4 },
@@ -43,7 +45,13 @@ export default defineNuxtConfig({
     // runtime via useStorage('assets:emails'). It is NOT bundled/transformed —
     // MJML's HTML breaks the server bundle's esbuild transform, so it must stay
     // an asset. See server/utils/emails/README.md.
-    serverAssets: [{ baseName: 'emails', dir: './server/assets/emails' }],
+    // Absolute path on purpose: Nitro resolves a relative `dir` differently in
+    // dev (relative to server/) vs the prod build (relative to the project root),
+    // which silently empties the mount in one of them. fileURLToPath pins it to
+    // the real folder in both. See server/utils/emails/README.md.
+    serverAssets: [
+      { baseName: 'emails', dir: fileURLToPath(new URL('./server/assets/emails', import.meta.url)) },
+    ],
   },
   pwa: {
     // injectManifest so we own the SW source — needed for Web Push push +
