@@ -8,6 +8,13 @@ const { state: xp, earn } = useXp()
 const { scanning, scanStep, error: scanError, captureFront, captureBackAndScan, scanFrontOnly, reset: resetScan } = useCardScan()
 const { nav, goDetail } = useNavigation()
 const { error: showError } = useToast()
+const eventMode = useEventMode()
+
+// In Event Mode, pre-fill "Where We Met" with the event name so the user sees
+// the auto-tag (the save also enforces it regardless of the field).
+onMounted(() => {
+  if (eventMode.active.value && !addForm.value.metAt) addForm.value.metAt = eventMode.name.value
+})
 
 const addForm = ref<Record<string, any>>({
   firstName: '', lastName: '', title: '', company: '',
@@ -86,7 +93,7 @@ async function doSaveContact() {
     phone: addForm.value.phone || undefined,
     industry: addForm.value.industry || undefined,
     ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, addForm.value[k] || undefined])),
-    met_at: addForm.value.metAt || undefined,
+    met_at: (eventMode.active.value ? eventMode.name.value : addForm.value.metAt) || undefined,
     rating: (addForm.value.rating as any) || undefined,
     notes: addForm.value.notes || undefined,
   })
@@ -122,7 +129,13 @@ async function doSaveContact() {
   }
   wasScanned.value = false
   resetScan()
-  goDetail(contact.id)
+  // In Event Mode, loop straight back for the next card; otherwise open the detail.
+  if (eventMode.active.value) {
+    addForm.value.metAt = eventMode.name.value
+    nav('event')
+  } else {
+    goDetail(contact.id)
+  }
 }
 </script>
 

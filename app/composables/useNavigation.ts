@@ -1,6 +1,6 @@
-export type Screen = "vibe" | "session" | "cold" | "home" | "contacts" | "detail" | "add"
+export type Screen = "vibe" | "session" | "cold" | "home" | "contacts" | "detail" | "add" | "event"
 
-const PUSH_SCREENS = new Set<Screen>(["detail", "add", "cold"])
+const PUSH_SCREENS = new Set<Screen>(["detail", "add", "cold", "event"])
 const TAB_INDEX: Record<string, number> = {
   vibe: 0, session: 1, home: 2, contacts: 3,
 }

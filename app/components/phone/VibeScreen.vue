@@ -10,6 +10,7 @@ const { show: openShareSheet } = useShareSheet()
 const { show: openScoreGuide } = useScoreGuide()
 const { profile } = useProfile()
 const { getPipelineStats } = usePipeline()
+const eventMode = useEventMode()
 
 const pipelineStats = computed(() => getPipelineStats())
 
@@ -197,6 +198,16 @@ async function loadLeadSuggestions() {
   <div class="cd-screen on">
     <div class="cd-shdr"><div class="cd-stitle">Your Vibe <CdIcon emoji="⚡" icon="lucide:zap" /></div></div>
     <div class="cd-scrl cd-pad">
+      <!-- Event Mode: focused capture for networking events -->
+      <button
+        class="cd-abtn g"
+        style="width: 100%; display: flex; align-items: center; gap: 8px; justify-content: center; font-size: 14px; padding: 12px; margin-bottom: 8px"
+        @click="nav('event')"
+      >
+        <CdIcon icon="lucide:radio" :size="16" />
+        <span>{{ eventMode.active.value ? `Event Mode · ${eventMode.count.value} met` : 'Event Mode' }}</span>
+        <CdIcon icon="lucide:arrow-right" :size="14" />
+      </button>
       <!-- Grow your network: share your card or invite -->
       <div style="display: flex; gap: 8px; margin-bottom: 12px">
         <button class="cd-abtn ice" style="font-size: 12px; padding: 10px" @click="openShareSheet('card')"><CdIcon emoji="🪪" icon="lucide:contact" :size="14" /> My Card</button>
