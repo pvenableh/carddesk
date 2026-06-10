@@ -178,6 +178,17 @@ onUnmounted(() => { if (heroTimer) clearInterval(heroTimer) })
       </div>
     </section>
 
+    <!-- ═══ Your Orbit (live, interactive showcase) ═══ -->
+    <section class="lp-section">
+      <div class="lp-section-head">
+        <div class="lp-eyebrow">See it live</div>
+        <h2 class="lp-h2">Your whole network, orbiting <span class="lp-grad">you</span></h2>
+      </div>
+      <ClientOnly>
+        <OrbitShowcase />
+      </ClientOnly>
+    </section>
+
     <!-- ═══ Compete with friends ═══ -->
     <section class="lp-section lp-versus">
       <div class="lp-versus-copy">

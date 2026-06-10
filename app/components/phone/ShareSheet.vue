@@ -59,6 +59,7 @@ async function shareInvite() {
 </script>
 
 <template>
+  <Transition name="cd-sheet">
   <div v-if="open" class="cd-sheet-ov" @click.self="hide">
     <div class="cd-sheet-card">
       <button class="cd-sheet-x" @click="hide"><CdIcon emoji="×" icon="lucide:x" :size="18" /></button>
@@ -97,6 +98,7 @@ async function shareInvite() {
       </template>
     </div>
   </div>
+  </Transition>
 </template>
 
 <style scoped>
@@ -110,6 +112,24 @@ async function shareInvite() {
   justify-content: center;
   padding: 24px;
   z-index: 200;
+}
+/* Smooth open/close: fade the scrim, slide + scale the card up. */
+.cd-sheet-enter-active,
+.cd-sheet-leave-active {
+  transition: opacity 0.2s ease;
+}
+.cd-sheet-enter-active .cd-sheet-card,
+.cd-sheet-leave-active .cd-sheet-card {
+  transition: transform 0.26s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.26s ease;
+}
+.cd-sheet-enter-from,
+.cd-sheet-leave-to {
+  opacity: 0;
+}
+.cd-sheet-enter-from .cd-sheet-card,
+.cd-sheet-leave-to .cd-sheet-card {
+  transform: translateY(18px) scale(0.96);
+  opacity: 0;
 }
 .cd-sheet-card {
   position: relative;

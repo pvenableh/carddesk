@@ -7,50 +7,12 @@
  * isn't available — e.g. desktop Chrome — it falls back to a clipboard copy or
  * a file download so nothing is a dead end.
  */
-import { SOCIALS, socialUrl } from '~/types/socials'
-
-export interface ShareableContact {
-  name?: string | null
-  first_name?: string | null
-  last_name?: string | null
-  title?: string | null
-  company?: string | null
-  email?: string | null
-  phone?: string | null
-  website?: string | null
-  notes?: string | null
-  /** Social handles (linkedin, instagram, twitter, …) read dynamically via SOCIALS. */
-  [key: string]: any
-}
-
-function vcardEscape(v: string): string {
-  return v.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n')
-}
-
-/** Build a vCard 3.0 (.vcf) string from a contact. */
-export function buildVCard(c: ShareableContact): string {
-  const first = c.first_name ?? ''
-  const last = c.last_name ?? ''
-  const full = (c.name || [first, last].filter(Boolean).join(' ')).trim() || 'Contact'
-  const lines = [
-    'BEGIN:VCARD',
-    'VERSION:3.0',
-    `N:${vcardEscape(last)};${vcardEscape(first)};;;`,
-    `FN:${vcardEscape(full)}`,
-  ]
-  if (c.title) lines.push(`TITLE:${vcardEscape(c.title)}`)
-  if (c.company) lines.push(`ORG:${vcardEscape(c.company)}`)
-  if (c.email) lines.push(`EMAIL;TYPE=INTERNET:${vcardEscape(c.email)}`)
-  if (c.phone) lines.push(`TEL;TYPE=CELL:${vcardEscape(c.phone)}`)
-  if (c.website) lines.push(`URL:${vcardEscape(c.website)}`)
-  for (const def of SOCIALS) {
-    const v = c[def.key]
-    if (v) lines.push(`URL;TYPE=${def.label}:${vcardEscape(socialUrl(def.key, v))}`)
-  }
-  if (c.notes) lines.push(`NOTE:${vcardEscape(c.notes)}`)
-  lines.push('END:VCARD')
-  return lines.join('\r\n')
-}
+// vCard builders live in ~/types/vcard so the Nitro server (batch export) can
+// share them. Re-exported here so existing callers (DetailScreen, c/[id].vue)
+// keep importing { buildVCard } from this composable unchanged.
+import { buildVCard, fullName, type ShareableContact } from '~/types/vcard'
+export { buildVCard }
+export type { ShareableContact }
 
 export function useShare() {
   const analytics = useAnalytics()
@@ -83,7 +45,7 @@ export function useShare() {
    */
   async function shareContact(c: ShareableContact): Promise<'shared' | 'downloaded' | 'cancelled'> {
     const vcf = buildVCard(c)
-    const full = (c.name || [c.first_name, c.last_name].filter(Boolean).join(' ')).trim() || 'contact'
+    const full = fullName(c)
     const filename = `${full.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.vcf`
 
     if (import.meta.client && navigator.canShare) {
@@ -101,6 +63,30 @@ export function useShare() {
     }
     downloadFile(filename, vcf, 'text/vcard')
     analytics.share('contact', 'download')
+    return 'downloaded'
+  }
+
+  /**
+   * Share a prebuilt .vcf payload (e.g. a batch export of many contacts) through
+   * the share sheet → iPhone "Add to Contacts"; falls back to a file download.
+   * Returns 'shared' | 'downloaded' | 'cancelled'.
+   */
+  async function shareVcf(filename: string, vcf: string): Promise<'shared' | 'downloaded' | 'cancelled'> {
+    if (import.meta.client && navigator.canShare) {
+      try {
+        const file = new File([vcf], filename, { type: 'text/vcard' })
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file] })
+          analytics.share('contacts-batch', 'native')
+          return 'shared'
+        }
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return 'cancelled'
+        // fall through to download
+      }
+    }
+    downloadFile(filename, vcf, 'text/vcard')
+    analytics.share('contacts-batch', 'download')
     return 'downloaded'
   }
 
@@ -123,5 +109,5 @@ export function useShare() {
     return ok ? 'copied' : 'cancelled'
   }
 
-  return { supported, shareContact, shareUrl, buildVCard }
+  return { supported, shareContact, shareVcf, shareUrl, buildVCard }
 }

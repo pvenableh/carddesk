@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import type { NetworkConnection } from '~/composables/useConnections'
+import { SOCIAL_KEYS } from '~/types/socials'
+import { industryColor } from '~/composables/useConstants'
 import NetworkOrbit from './NetworkOrbit.vue'
 import Leaderboard from './Leaderboard.vue'
 
-const { accepted, incoming, outgoing, loading, load, connect, respond } = useConnections()
+const { accepted, incoming, outgoing, loading, load, connect, respond, meAvatarUrl } = useConnections()
 const { show: openShareSheet } = useShareSheet()
 const { success, error: showError } = useToast()
 const { state: xp, earn } = useXp()
 const { profile } = useProfile()
+const { shareContact, shareUrl } = useShare()
+const { contacts, fetchContacts } = useContacts()
 
 const meCenter = computed(() => ({
   name: [profile.value.first_name, profile.value.last_name].filter(Boolean).join(' ') || 'You',
@@ -20,6 +24,47 @@ async function removeSelected() {
   if (!selected.value) return
   await respond(selected.value.id, 'remove')
   selected.value = null
+}
+
+// Pull the tapped connection's shared card (email/phone/socials) for quick actions.
+const selectedCard = ref<any>(null)
+watch(selected, async (s) => {
+  selectedCard.value = null
+  if (!s) return
+  try { selectedCard.value = await $fetch(`/api/cards/${s.user.id}`) } catch { /* silent */ }
+})
+// Is this connection already saved in your contacts (rolodex)? Matched by email.
+const contactExists = computed(() => {
+  const e = selectedCard.value?.email?.toLowerCase()
+  return !!e && contacts.value.some((c) => c.email?.toLowerCase() === e)
+})
+function cardShareable() {
+  const c = selectedCard.value || {}
+  const name = c.name || selected.value?.user.name || 'Contact'
+  const [first, ...rest] = name.split(' ')
+  return {
+    name, first_name: first, last_name: rest.join(' '),
+    title: c.title ?? selected.value?.user.title ?? null,
+    company: c.company ?? null, email: c.email ?? null, phone: c.phone ?? null, website: c.website ?? null,
+    ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, c[k] ?? null])),
+  }
+}
+// Save their card to YOUR phone (vCard → iPhone "Add to Contacts").
+async function saveVcard() { await shareContact(cardShareable()) }
+// Send their card link to someone else.
+async function shareConnection() {
+  await shareUrl({ url: `${location.origin}/c/${selected.value?.user.id}`, title: `${selected.value?.user.name} · CardDesk` })
+}
+// Save them into your CardDesk contacts/CRM — the bridge from connection → contact.
+const savingContact = ref(false)
+async function addToContacts() {
+  if (savingContact.value || !selected.value) return
+  savingContact.value = true
+  try {
+    await $fetch('/api/contacts', { method: 'POST', body: cardShareable() })
+    await fetchContacts()
+    success(`${selected.value.user.name} added to your contacts`)
+  } catch { showError('Could not add to contacts') } finally { savingContact.value = false }
 }
 
 // Introduce the selected connection to another of your connections.
@@ -111,7 +156,8 @@ async function remove(c: NetworkConnection) { await respond(c.id, 'remove') }
     </div>
 
     <!-- Search panel -->
-    <div v-if="showSearch" style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px; padding: 12px; margin-bottom: 14px">
+    <Transition name="cd-reveal">
+    <div v-if="showSearch" class="cd-reveal-panel" style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px; padding: 12px; margin-bottom: 14px">
       <input v-model="q" class="cd-inp" placeholder="Search by name or email…" style="margin-bottom: 8px" />
       <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px">
         <span style="font-size: 11px; color: var(--cd-dim)">Let others find you by name/email</span>
@@ -136,6 +182,7 @@ async function remove(c: NetworkConnection) { await respond(c.id, 'remove') }
         <button class="cd-abtn g" style="width: auto; font-size: 11px; padding: 6px 12px; flex-shrink: 0" @click="connectTo(u)">Connect</button>
       </div>
     </div>
+    </Transition>
 
     <!-- Incoming requests -->
     <template v-if="incoming.length">
@@ -156,7 +203,7 @@ async function remove(c: NetworkConnection) { await respond(c.id, 'remove') }
     <!-- Accepted connections — the orbit + leaderboard -->
     <template v-if="accepted.length">
       <div class="cd-eyebrow" style="color: var(--cd-muted); margin: 14px 2px 0">Your orbit · {{ accepted.length }}</div>
-      <NetworkOrbit :connections="accepted" :me="meCenter" @select="selected = $event" />
+      <NetworkOrbit :connections="accepted" :me="meCenter" :me-avatar-url="meAvatarUrl" @select="selected = $event" />
       <Leaderboard />
     </template>
 
@@ -192,7 +239,35 @@ async function remove(c: NetworkConnection) { await respond(c.id, 'remove') }
           <CdIcon v-else emoji="🤝" icon="lucide:user-check" :size="24" />
         </div>
         <div style="font-size: 18px; font-weight: 800; margin-bottom: 2px">{{ selected.user.name }}</div>
-        <div style="font-size: 12px; color: var(--cd-dim); margin-bottom: 16px">{{ selected.user.title || 'Connected on CardDesk' }}</div>
+        <div style="font-size: 12px; color: var(--cd-dim); margin-bottom: 10px">{{ selected.user.title || 'Connected on CardDesk' }}</div>
+        <div
+          v-if="industryColor(selected.user.industry)"
+          style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; margin-bottom: 14px"
+          :style="{ color: industryColor(selected.user.industry)!, background: industryColor(selected.user.industry)! + '22', border: '1px solid ' + industryColor(selected.user.industry)! + '66' }"
+        >
+          <span style="width: 7px; height: 7px; border-radius: 50%" :style="{ background: industryColor(selected.user.industry)! }"></span>
+          {{ selected.user.industry }}
+        </div>
+
+        <!-- Quick actions from their shared card -->
+        <div class="cd-qa-row">
+          <a v-if="selectedCard?.email" class="cd-qa" :href="`mailto:${selectedCard.email}`"><CdIcon emoji="✉️" icon="lucide:mail" :size="18" /><span>Email</span></a>
+          <a v-if="selectedCard?.phone" class="cd-qa" :href="`tel:${selectedCard.phone}`"><CdIcon emoji="📞" icon="lucide:phone" :size="18" /><span>Call</span></a>
+          <button class="cd-qa" @click="saveVcard"><CdIcon emoji="📇" icon="lucide:contact" :size="18" /><span>Save</span></button>
+          <button class="cd-qa" @click="shareConnection"><CdIcon emoji="📤" icon="lucide:share-2" :size="18" /><span>Share</span></button>
+        </div>
+
+        <!-- Connection → contact bridge -->
+        <button
+          v-if="!contactExists"
+          class="cd-abtn"
+          style="margin-bottom: 10px; background: transparent; color: var(--cd-accent); border-color: rgba(0,255,135,0.4)"
+          :disabled="savingContact"
+          @click="addToContacts"
+        ><CdIcon emoji="➕" icon="lucide:user-plus" :size="14" /> {{ savingContact ? 'Adding…' : 'Add to my contacts' }}</button>
+        <div v-else style="display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;color:var(--cd-green);font-weight:700;margin-bottom:10px">
+          <CdIcon emoji="✓" icon="lucide:check" :size="13" /> In your contacts
+        </div>
 
         <template v-if="introTargets.length">
           <div class="cd-eyebrow" style="color: var(--cd-muted); text-align: left; margin-bottom: 6px"><CdIcon emoji="🌉" icon="lucide:git-merge" :size="11" /> Introduce to · +50 XP</div>
@@ -258,5 +333,51 @@ async function remove(c: NetworkConnection) { await respond(c.id, 'remove') }
   border: none;
   color: var(--cd-dim);
   cursor: pointer;
+}
+
+/* Connection quick actions */
+.cd-qa-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.cd-qa {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px;
+  background: var(--cd-bg2);
+  border: 1px solid var(--cd-bdr);
+  border-radius: 12px;
+  color: var(--cd-text);
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+.cd-qa:hover { border-color: var(--cd-accent); color: var(--cd-accent); }
+.cd-qa:active { transform: scale(0.96); }
+
+/* Smooth reveal for the Find People search panel */
+.cd-reveal-enter-active,
+.cd-reveal-leave-active {
+  transition: max-height 0.28s ease, opacity 0.22s ease, margin-bottom 0.28s ease, padding-top 0.28s ease, padding-bottom 0.28s ease;
+  overflow: hidden;
+}
+.cd-reveal-enter-from,
+.cd-reveal-leave-to {
+  max-height: 0;
+  opacity: 0;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+.cd-reveal-enter-to,
+.cd-reveal-leave-from {
+  max-height: 420px;
+  opacity: 1;
 }
 </style>

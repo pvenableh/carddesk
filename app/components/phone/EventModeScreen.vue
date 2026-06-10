@@ -213,7 +213,7 @@ function eventCount(s: any): number {
 
 /* start */
 .em-start { border-radius: 20px; padding: 26px 20px; text-align: center; }
-.em-start-ico { color: var(--cd-accent); line-height: 0; margin-bottom: 12px; }
+.em-start-ico { color: var(--cd-green); line-height: 0; margin-bottom: 12px; }
 .em-start-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.7rem; color: var(--cd-text); }
 .em-start-sub { font-size: 0.9rem; line-height: 1.5; color: var(--cd-muted); margin: 6px 0 16px; }
 .em-start .cd-lbl { text-align: left; }

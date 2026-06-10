@@ -5,7 +5,21 @@ export interface NetworkConnection {
   status: ConnectionStatus
   direction: 'incoming' | 'outgoing' | null
   since: string
-  user: { id: string; name: string; title: string | null; avatarUrl: string | null }
+  /** When the connection last changed — recency signal for the orbit. */
+  updated?: string
+  user: {
+    id: string
+    name: string
+    title: string | null
+    avatarUrl: string | null
+    /** Free-text industry (one of INDUSTRIES) — color-codes the orbit. */
+    industry?: string | null
+    /** The connected user's CardDesk activity — ranks the orbit (front = active). */
+    level?: number
+    totalXp?: number
+    weekXp?: number
+    lastActivityDate?: string | null
+  }
 }
 
 /**
@@ -15,6 +29,7 @@ export interface NetworkConnection {
  */
 export function useConnections() {
   const connections = useState<NetworkConnection[]>('cd-connections', () => [])
+  const meAvatarUrl = useState<string | null>('cd-connections-me-avatar', () => null)
   const loaded = useState('cd-connections-loaded', () => false)
   const loading = useState('cd-connections-loading', () => false)
 
@@ -22,8 +37,9 @@ export function useConnections() {
     if (loading.value || (loaded.value && !force)) return
     loading.value = true
     try {
-      const { connections: list } = await $fetch<{ connections: NetworkConnection[] }>('/api/connections')
+      const { connections: list, me } = await $fetch<{ connections: NetworkConnection[]; me?: { avatarUrl: string | null } }>('/api/connections')
       connections.value = list ?? []
+      meAvatarUrl.value = me?.avatarUrl ?? null
       loaded.value = true
     } catch (err) {
       console.error('[useConnections] load failed:', err)
@@ -55,5 +71,5 @@ export function useConnections() {
     }
   }
 
-  return { connections, accepted, incoming, outgoing, loading, loaded, load, connect, respond }
+  return { connections, meAvatarUrl, accepted, incoming, outgoing, loading, loaded, load, connect, respond }
 }

@@ -9,9 +9,12 @@
   --cd-muted: #8898b0;
   --cd-dim: #3e4f68;
   --cd-accent: #00ff87;
-  /* Brand green as a readable text/icon colour per theme (the neon #00ff87
-   * is unreadable on light surfaces). Sweeps replace inline color:#00ff87. */
-  --cd-green: #00ff87;
+  /* CardDesk brand green — the mint that matches the logo "CARD" word and the
+   * .cd-abtn.g buttons (chrome accent @ 72% L). Darkened on light themes for
+   * legibility. The original neon green is archived as --cd-green-neon for
+   * potential future use. */
+  --cd-green: hsl(163 100% 72%);
+  --cd-green-neon: #00ff87;
   --cd-gold: #ffd700;
   --cd-blue: #4da6ff;
   --cd-orange: #ff6b35;
@@ -33,7 +36,7 @@ html[data-theme="sleeper"][data-mode="light"] {
   --cd-muted: #5c6478;
   --cd-dim: #9aa0b0;
   --cd-accent: #00c268;
-  --cd-green: #00a85a;
+  --cd-green: hsl(163 82% 33%);
   --cd-gold: #c79a00;
   --cd-blue: #3d8fd6;
   --cd-orange: #e85d2f;
@@ -50,7 +53,7 @@ html[data-theme="glass"][data-mode="light"] {
   --cd-muted: #666666;
   --cd-dim: #999999;
   --cd-accent: #1f1f1f;
-  --cd-green: #0a8f4f;
+  --cd-green: hsl(163 82% 33%);
   --cd-gold: #b8860b;
   --cd-blue: #1f1f1f;
   --cd-orange: #ff6b35;
@@ -67,7 +70,7 @@ html[data-theme="glass"][data-mode="dark"] {
   --cd-muted: #8c8c8c;
   --cd-dim: #555555;
   --cd-accent: #ededed;
-  --cd-green: #00ff87;
+  --cd-green: hsl(163 100% 72%);
   --cd-gold: #ffd700;
   --cd-blue: #ededed;
   --cd-orange: #ff6b35;

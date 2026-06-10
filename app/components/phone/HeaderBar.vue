@@ -79,11 +79,11 @@ function onClickOutside(e: MouseEvent) {
     <div class="cd-sbar-left">
       <span class="cd-sbar-time">{{ time }}</span>
       <!-- Share moves here on small screens (time is hidden — phones show the OS clock). -->
-      <button class="cd-sbar-share cd-sbar-share--m" type="button" aria-label="Share card or invite" @click="openShareSheet('card')"><CdIcon emoji="📤" icon="lucide:share" :size="15" /></button>
+      <button class="cd-sbar-share cd-sbar-share--m" type="button" aria-label="Share card or invite" @click="openShareSheet('card')"><CdCardMark :size="17" :gradient="false" /></button>
     </div>
     <button class="cd-sbar-logo" type="button" aria-label="Home" @click="goHome"><span class="cd-sbar-logo-brand">CARD</span><span class="cd-sbar-logo-accent">DESK</span></button>
     <div class="cd-sbar-right">
-      <button class="cd-sbar-share cd-sbar-share--d" type="button" aria-label="Share card or invite" @click="openShareSheet('card')"><CdIcon emoji="📤" icon="lucide:share" :size="15" /></button>
+      <button class="cd-sbar-share cd-sbar-share--d" type="button" aria-label="Share card or invite" @click="openShareSheet('card')"><CdCardMark :size="17" :gradient="false" /></button>
       <PhoneCreditGauge />
     <div ref="dropdownRef" class="cd-avatar-wrap">
       <button class="cd-avatar" @click="toggleDropdown">{{ initials }}</button>

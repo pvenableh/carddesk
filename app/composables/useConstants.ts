@@ -40,6 +40,24 @@ export const INDUSTRIES = [
   "Other",
 ] as const
 
+/** Distinct, dark-theme-friendly hue per industry — used to color-code the
+ *  orbit (connection lines + node borders) and industry chips. */
+export const INDUSTRY_COLORS: Record<string, string> = {
+  Technology: "#38bdf8",      // sky
+  Finance: "#34d399",         // emerald
+  Healthcare: "#f43f5e",      // rose
+  "Real Estate": "#f59e0b",   // amber
+  Legal: "#a78bfa",           // violet
+  Marketing: "#e879f9",       // fuchsia
+  "Venture Capital": "#2dd4bf", // teal
+  Other: "#94a3b8",           // slate
+}
+
+/** Industry → color, or null when unknown (caller falls back to a name hash). */
+export function industryColor(industry?: string | null): string | null {
+  return industry ? (INDUSTRY_COLORS[industry] ?? null) : null
+}
+
 export const EMOJIS = [
   "🐯", "🦁", "🦊", "🐺", "🦋", "🐬",
   "🦉", "🦝", "🐠", "🦌", "🦅", "🌊",

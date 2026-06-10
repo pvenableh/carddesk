@@ -80,6 +80,58 @@ const wonLost = computed(() => {
     lost: byStage.lost ?? [],
   }
 })
+
+// ── Batch vCard export ─────────────────────────────────────────────────────
+const { shareVcf } = useShare()
+const { success, error: showError } = useToast()
+
+const selectMode = ref(false)
+const selectedIds = ref<Set<string>>(new Set())
+const showExport = ref(false)
+const includePhotos = ref(false)
+const exporting = ref(false)
+
+function toggleSelect(id: string) {
+  const next = new Set(selectedIds.value)
+  next.has(id) ? next.delete(id) : next.add(id)
+  selectedIds.value = next
+}
+function toggleSelectMode() {
+  selectMode.value = !selectMode.value
+  if (!selectMode.value) selectedIds.value = new Set()
+}
+// Export targets the explicit selection if any, otherwise everything visible
+// under the current rating/search filter.
+const exportTargets = computed(() =>
+  selectedIds.value.size
+    ? filteredCs.value.filter((c) => selectedIds.value.has(c.id))
+    : filteredCs.value
+)
+function openExport() {
+  if (!exportTargets.value.length) { showError('No contacts to export'); return }
+  showExport.value = true
+}
+async function runExport() {
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    const ids = exportTargets.value.map((c) => c.id)
+    const vcf = await $fetch<string>('/api/contacts/export', {
+      method: 'POST',
+      body: { ids, includePhotos: includePhotos.value },
+      responseType: 'text',
+    })
+    const result = await shareVcf('carddesk-contacts.vcf', vcf)
+    if (result !== 'cancelled') success(`Exported ${ids.length} contact${ids.length === 1 ? '' : 's'}`)
+    showExport.value = false
+    selectMode.value = false
+    selectedIds.value = new Set()
+  } catch (err: any) {
+    showError(err?.data?.message ?? 'Export failed')
+  } finally {
+    exporting.value = false
+  }
+}
 </script>
 
 <template>
@@ -87,7 +139,26 @@ const wonLost = computed(() => {
     <div class="cd-shdr" style="padding-bottom: 8px">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
         <div class="cd-stitle">My Network</div>
-        <CdButton v-if="netTab === 'contacts'" tier="primary" size="sm" @click="nav('add')">+ Add</CdButton>
+        <div v-if="netTab === 'contacts'" style="display: flex; gap: 6px; align-items: center">
+          <CdButton
+            v-if="contacts.length"
+            tier="utility" size="sm" icon-only
+            :class="selectMode ? 'cd-sel-on' : ''"
+            aria-label="Select contacts"
+            @click="toggleSelectMode"
+          >
+            <CdIcon emoji="☑️" icon="lucide:list-checks" :size="16" />
+          </CdButton>
+          <CdButton
+            v-if="contacts.length"
+            tier="utility" size="sm" icon-only
+            aria-label="Export contacts"
+            @click="openExport"
+          >
+            <CdIcon emoji="📤" icon="lucide:download" :size="16" />
+          </CdButton>
+          <CdButton tier="primary" size="sm" @click="nav('add')">+ Add</CdButton>
+        </div>
       </div>
 
       <!-- Sub-tabs: Contacts (rolodex) | Connections (user↔user orbit) -->
@@ -131,8 +202,17 @@ const wonLost = computed(() => {
         <div style="font-size: 18px; font-weight: 800; margin-bottom: 12px">No contacts yet</div>
         <CdButton tier="primary" @click="nav('add')"><CdIcon emoji="📷" icon="lucide:camera" :size="14" /> Scan First Card</CdButton>
       </div>
-      <div v-for="c in filteredCs" :key="c.id" class="cd-crd" @click="goDetail(c.id)">
+      <div
+        v-for="c in filteredCs"
+        :key="c.id"
+        class="cd-crd"
+        :class="{ 'cd-row-sel': selectMode && selectedIds.has(c.id) }"
+        @click="selectMode ? toggleSelect(c.id) : goDetail(c.id)"
+      >
         <div class="cd-cbar" :class="c.rating || 'none'"></div>
+        <div v-if="selectMode" class="cd-selck" :class="{ on: selectedIds.has(c.id) }">
+          <CdIcon v-if="selectedIds.has(c.id)" emoji="✓" icon="lucide:check" :size="13" />
+        </div>
         <div class="cd-cav">
           <img v-if="(c as any).imageUrl" :src="(c as any).imageUrl" alt="" />
           <CdIcon v-else :emoji="cEmoji(c)" icon="lucide:user" :size="19" />
@@ -207,5 +287,109 @@ const wonLost = computed(() => {
 
       <CdBrandFooter />
     </div>
+
+    <!-- Batch export sheet -->
+    <div v-if="showExport" class="cd-exp-ov" @click.self="showExport = false">
+      <div class="cd-exp-card">
+        <button class="cd-exp-x" @click="showExport = false"><CdIcon emoji="×" icon="lucide:x" :size="18" /></button>
+        <div style="font-size: 18px; font-weight: 800; margin-bottom: 4px">Export contacts</div>
+        <div style="font-size: 12px; color: var(--cd-dim); margin-bottom: 16px">
+          {{ exportTargets.length }} contact{{ exportTargets.length === 1 ? '' : 's' }} → a .vcf you can add to your Contacts app.
+        </div>
+        <button class="cd-exp-toggle" @click="includePhotos = !includePhotos">
+          <div>
+            <div style="font-size: 13px; font-weight: 700">Include photos</div>
+            <div style="font-size: 11px; color: var(--cd-dim)">Larger file; embeds each contact's image.</div>
+          </div>
+          <div class="cd-sw" :class="{ on: includePhotos }"><div class="cd-sw-dot"></div></div>
+        </button>
+        <CdButton tier="primary" block :disabled="exporting || !exportTargets.length" @click="runExport">
+          <CdIcon emoji="📤" icon="lucide:download" :size="14" /> {{ exporting ? 'Exporting…' : `Export ${exportTargets.length}` }}
+        </CdButton>
+      </div>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.cd-sel-on { color: var(--cd-accent); border-color: var(--cd-accent); }
+.cd-row-sel { outline: 1.5px solid var(--cd-accent); outline-offset: -1.5px; }
+.cd-selck {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--cd-bdr);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #06101a;
+  margin-right: 2px;
+}
+.cd-selck.on { background: var(--cd-accent); border-color: var(--cd-accent); }
+.cd-exp-ov {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 50;
+}
+.cd-exp-card {
+  position: relative;
+  background: var(--cd-bg);
+  border: 1px solid var(--cd-bdr);
+  border-radius: 20px;
+  padding: 24px;
+  max-width: 320px;
+  width: 100%;
+}
+.cd-exp-x {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--cd-dim);
+  cursor: pointer;
+}
+.cd-exp-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  margin-bottom: 14px;
+  background: var(--cd-bg2);
+  border: 1px solid var(--cd-bdr);
+  border-radius: 12px;
+  color: var(--cd-text);
+  cursor: pointer;
+}
+.cd-sw {
+  flex-shrink: 0;
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--cd-bdr);
+  transition: background 0.15s;
+  position: relative;
+}
+.cd-sw.on { background: var(--cd-accent); }
+.cd-sw-dot {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+}
+.cd-sw.on .cd-sw-dot { transform: translateX(18px); }
+</style>
