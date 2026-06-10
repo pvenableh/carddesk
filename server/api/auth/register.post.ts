@@ -72,7 +72,7 @@ export default defineEventHandler(async (event) => {
     // Welcome / confirm-email message. Fire-and-forget — a mail outage must not
     // break signup (the account is already created + the user is logged in).
     try {
-      const { subject, html, text } = welcomeEmail({
+      const { subject, html, text } = await welcomeEmail({
         firstName: first_name || profile.first_name || null,
         appUrl: config.public.appUrl,
       })

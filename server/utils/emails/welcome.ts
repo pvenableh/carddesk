@@ -1,6 +1,5 @@
 // server/utils/emails/welcome.ts
-import { renderEmail, type RenderedEmail } from './shell'
-import { welcomeHtml } from './compiled'
+import { renderEmail, loadEmailHtml, type RenderedEmail } from './shell'
 
 interface WelcomeEmailArgs {
   firstName?: string | null
@@ -25,8 +24,8 @@ This is an automated message from CardDesk — your gamified networking sidekick
 
 /**
  * Signup welcome / "confirm your email" message. The visual design is in
- * mjml/welcome.mjml (compiled into ./compiled.ts via `npm run build:emails`);
- * edit that source and regenerate to change the look. Keep the args in and
+ * mjml/welcome.mjml — edit it in the MJML desktop app, export the HTML, and paste
+ * it into ./compiled.ts (see ./README.md). Keep the args in and
  * { subject, html, text } out — callers don't change.
  *
  * Note: with the current signup flow the account is created ACTIVE and the user
@@ -35,8 +34,9 @@ This is an automated message from CardDesk — your gamified networking sidekick
  * see the token pattern in /api/auth/password-request.post.ts — the same
  * password_reset_tokens collection / approach works for a verify token.
  */
-export function welcomeEmail(args: WelcomeEmailArgs): { subject: string } & RenderedEmail {
+export async function welcomeEmail(args: WelcomeEmailArgs): Promise<{ subject: string } & RenderedEmail> {
   const subject = 'Welcome to CardDesk 🎴'
+  const welcomeHtml = await loadEmailHtml('welcome')
   const rendered = renderEmail(welcomeHtml, WELCOME_TEXT, {
     firstName: args.firstName || null,
     appUrl: args.appUrl,

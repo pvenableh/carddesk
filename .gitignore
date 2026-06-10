@@ -37,3 +37,7 @@ coverage
 
 # Node compile cache
 node-compile-cache
+
+# MJML email design sources — local-only (edited in the MJML desktop app).
+# The committed artifact is the compiled HTML in server/assets/emails/*.html.
+server/utils/emails/mjml/

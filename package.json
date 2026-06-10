@@ -9,7 +9,6 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "generate-icons": "node scripts/generate-icons.js",
-    "build:emails": "node scripts/build-emails.mjs",
     "generate:types": "dotenv -- sh -c 'npx directus-sdk-typegen -u $DIRECTUS_URL -t $DIRECTUS_SERVER_TOKEN -o ./types/directus.ts'"
   },
   "dependencies": {
@@ -29,7 +28,6 @@
     "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "handlebars": "^4.7.9",
     "lucide-vue-next": "^0.486.0",
     "nuxt": "^4.2.1",
     "nuxt-auth-utils": "^0.5.25",
@@ -60,7 +58,6 @@
     "@types/web-push": "^3.6.4",
     "directus-sdk-typegen": "^0.2.1",
     "dotenv-cli": "^11.0.0",
-    "mjml": "^5.3.0",
     "nuxt-gtag": "^4.1.0",
     "postcss": "^8.5.3",
     "prettier": "^3.5.3",

@@ -58,7 +58,7 @@ export default defineEventHandler(async (event) => {
     )
 
     const resetUrl = `${config.public.appUrl}/auth/reset-password?token=${encodeURIComponent(token)}`
-    const { subject, html, text } = passwordResetEmail({
+    const { subject, html, text } = await passwordResetEmail({
       firstName: user.first_name,
       resetUrl,
     })

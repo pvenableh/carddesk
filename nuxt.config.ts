@@ -38,6 +38,13 @@ export default defineNuxtConfig({
     id: process.env.NUXT_PUBLIC_GTAG_ID || 'G-RE0F0ZCCV9',
     enabled: process.env.NODE_ENV === 'production',
   },
+  nitro: {
+    // Compiled MJML email HTML lives here as static assets and is read at
+    // runtime via useStorage('assets:emails'). It is NOT bundled/transformed —
+    // MJML's HTML breaks the server bundle's esbuild transform, so it must stay
+    // an asset. See server/utils/emails/README.md.
+    serverAssets: [{ baseName: 'emails', dir: './server/assets/emails' }],
+  },
   pwa: {
     // injectManifest so we own the SW source — needed for Web Push push +
     // notificationclick handlers (generateSW can't host custom listeners).

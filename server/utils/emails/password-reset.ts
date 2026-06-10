@@ -1,6 +1,5 @@
 // server/utils/emails/password-reset.ts
-import { renderEmail, type RenderedEmail } from './shell'
-import { passwordResetHtml } from './compiled'
+import { renderEmail, loadEmailHtml, type RenderedEmail } from './shell'
 
 interface PasswordResetEmailArgs {
   firstName?: string | null
@@ -23,14 +22,15 @@ If you didn't request this, you can safely ignore this email — your password s
 This is an automated message from CardDesk — your gamified networking sidekick.`
 
 /**
- * Password-reset email. The visual design is in mjml/password-reset.mjml
- * (compiled into ./compiled.ts via `npm run build:emails`); edit that source and
- * regenerate to change the look. Keep the args in and { subject, html, text }
- * out — callers don't change.
+ * Password-reset email. The visual design is in mjml/password-reset.mjml — edit
+ * it in the MJML desktop app, export the HTML, and paste it into ./compiled.ts
+ * (see ./README.md). Keep the args in and { subject, html, text } out — callers
+ * don't change.
  */
-export function passwordResetEmail(args: PasswordResetEmailArgs): { subject: string } & RenderedEmail {
+export async function passwordResetEmail(args: PasswordResetEmailArgs): Promise<{ subject: string } & RenderedEmail> {
   const expiresIn = args.expiresIn || '1 hour'
   const subject = 'Reset your CardDesk password'
+  const passwordResetHtml = await loadEmailHtml('password-reset')
   const rendered = renderEmail(passwordResetHtml, PASSWORD_RESET_TEXT, {
     firstName: args.firstName || null,
     resetUrl: args.resetUrl,
