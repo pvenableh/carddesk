@@ -84,21 +84,13 @@ onMounted(() => {
 
     if (!motionOK) return
 
-    // CTA hero title: the card is the last block on the page (little runway
-    // below), so complete the travel over the first ~62% of a viewport-height of
-    // entry — it fully emerges while the card is comfortably in view rather than
-    // needing the card to scroll off the top, which never happens here.
-    if (cta) {
-      const r = cta.getBoundingClientRect()
-      const p = Math.min(Math.max((vh - r.top) / (vh * 0.62), 0), 1)
-      cta.style.setProperty('--lp-cta-shift', `${((0.5 - p) * 260).toFixed(1)}px`)
-    }
-    // Section keyword watermarks: a gentle drift mapped across each ghost host's
-    // FULL travel through the viewport — from just before it enters (host top at
-    // the viewport bottom) to just after it exits (host bottom at the top). The
-    // progress is deliberately left unclamped so the motion starts before the
-    // watermark scrolls in and keeps easing after it's gone — no snap at either
-    // edge. Amplitude (px of total travel) comes from data-parallax (default 260).
+    // Section keyword watermarks (incl. the closing "LET'S PLAY" title): a gentle
+    // drift mapped across each ghost host's FULL travel through the viewport —
+    // from just before it enters (host top at the viewport bottom) to just after
+    // it exits (host bottom at the top). The progress is deliberately left
+    // unclamped so the motion starts before the watermark scrolls in and keeps
+    // easing after it's gone — no snap or freeze at either edge. Amplitude (px of
+    // total travel) comes from data-parallax (default 260).
     for (const g of ghosts) {
       const host = g.parentElement
       if (!host) continue
@@ -412,13 +404,13 @@ onUnmounted(() => {
 
     <!-- ═══ Closing CTA — giant ghost title parallaxes up from behind the card ═══ -->
     <div ref="ctaWrap" class="lp-cta-wrap">
-      <div class="lp-cta-ghost" aria-hidden="true">LET’S PLAY</div>
+      <div class="lp-cta-ghost" data-parallax="380" aria-hidden="true">LET’S PLAY</div>
       <section class="lp-cta-band lp-glass">
       <p class="lp-hand lp-cta-hand">go on — your network’s waiting</p>
       <h2 class="lp-cta-title">Networking, but&nbsp;make&nbsp;it a&nbsp;<span class="lp-grad">game</span>.</h2>
       <p class="lp-cta-sub">Start free with 25 Earnest AI tokens on us. Build your card, scan your first contact, and watch the XP roll in.</p>
       <NuxtLink to="/auth/register" class="lp-btn lp-btn-lg">
-        Create your CardDesk <CdIcon emoji="→" icon="lucide:arrow-right" :size="17" />
+        Start your CardDesk game <CdIcon emoji="→" icon="lucide:arrow-right" :size="17" />
       </NuxtLink>
       </section>
     </div>
@@ -431,7 +423,7 @@ onUnmounted(() => {
          bottom. State (hidden / shown / docked) is set by the scroll handler. -->
     <div class="lp-float-cta" :class="`is-${floatCta}`">
       <NuxtLink to="/auth/register" class="lp-btn lp-btn-lg">
-        Create your CardDesk <CdIcon emoji="→" icon="lucide:arrow-right" :size="17" />
+        Start your CardDesk game <CdIcon emoji="→" icon="lucide:arrow-right" :size="17" />
       </NuxtLink>
     </div>
   </div>
@@ -740,8 +732,11 @@ html[data-theme="glass"] .lp-chip {
 }
 
 /* ═══ Sections ═══ */
-.lp-section { max-width: 1080px; margin: 0 auto; padding: 104px 24px; }
-.lp-section-head { text-align: center; margin-bottom: 64px; }
+/* Vertical rhythm scales with the viewport (clamp) so each section has room to
+ * breathe and the keyword watermarks have empty space to parallax through —
+ * generous on desktop, still ample but tighter on phones. */
+.lp-section { max-width: 1080px; margin: 0 auto; padding: clamp(88px, 13vw, 168px) 24px; }
+.lp-section-head { text-align: center; margin-bottom: clamp(56px, 10vw, 112px); }
 .lp-h2 {
   font-family: 'Bebas Neue', sans-serif;
   font-size: clamp(1.9rem, 4vw, 2.9rem);
@@ -793,9 +788,12 @@ html[data-theme="glass"] .lp-chip {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 60px;
   align-items: center;
-  margin-top: 130px;
+  margin-top: clamp(140px, 20vw, 248px);
 }
-.lp-callout:first-of-type { margin-top: 56px; }
+/* First callout sits closer to the section head (which already has its own
+ * margin-bottom). Targeted via the adjacent head — `.lp-callout:first-of-type`
+ * never matches here because the section head is the first div of its type. */
+.lp-section-head + .lp-callout { margin-top: clamp(48px, 7vw, 88px); }
 /* Copy + visual ride above the keyword watermark. */
 .lp-callout-copy,
 .lp-callout-art { position: relative; z-index: 1; }
@@ -1134,19 +1132,22 @@ html[data-theme="glass"] .lp-gchip {
 
 /* ═══ Closing CTA (with parallax ghost title behind it) ═══ */
 /* The wrap clips the giant title so it reads as rising up from behind the card;
- * the title's own travel is driven by --lp-cta-shift (set per-frame in JS). */
+ * the title's own travel is driven by --lp-shift (the shared parallax handler,
+ * keyed off this wrap as its host). */
 .lp-cta-wrap {
   position: relative;
   overflow: hidden;
-  padding-top: 110px;
-  margin-bottom: 160px;
+  /* Extra runway above so the "LET'S PLAY" watermark has room to rise, and a tall
+   * gap below so the closing card isn't crowded by the footer. */
+  padding-top: clamp(104px, 17vw, 210px);
+  margin-bottom: clamp(112px, 15vw, 190px);
 }
 .lp-cta-ghost {
   position: absolute;
   left: 50%;
   top: 50%;
   z-index: 0;
-  transform: translate(-50%, calc(-50% + var(--lp-cta-shift, 0px)));
+  transform: translate(-50%, calc(-50% + var(--lp-shift, 0px)));
   font-family: 'Bebas Neue', sans-serif;
   font-size: clamp(3.5rem, 15vw, 12rem);
   line-height: 0.84;
@@ -1231,15 +1232,16 @@ html[data-theme="glass"] .lp-gchip {
 @media (max-width: 860px) {
   .lp-hero { grid-template-columns: 1fr; gap: 8px; padding-bottom: 40px; }
   .lp-hero-art { order: -1; min-height: 280px; margin-bottom: 8px; }
-  .lp-section { padding: 72px 20px; }
+  /* Tighter side gutters on phones; vertical rhythm stays driven by the fluid
+   * clamp() values on the base rules so the parallax keeps its breathing room. */
+  .lp-section { padding-left: 20px; padding-right: 20px; }
   /* Callouts stack; copy always leads, visual follows (drop the zig-zag). */
   .lp-callout,
-  .lp-callout--orbit { grid-template-columns: 1fr; gap: 32px; margin-top: 96px; }
+  .lp-callout--orbit { grid-template-columns: 1fr; gap: 32px; }
   .lp-callout-rev .lp-callout-art { order: 0; }
   /* Single stacked column — both align flush-left with the copy. */
   .lp-ghost,
   .lp-callout-rev .lp-ghost { left: 0; right: auto; }
-  .lp-cta-wrap { margin-bottom: 112px; }
 }
 @media (max-width: 480px) {
   .lp-cta-row { flex-direction: column; align-items: stretch; }

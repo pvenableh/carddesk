@@ -65,7 +65,7 @@ const connections: NetworkConnection[] = PEOPLE.map((p, i) => ({
 }))
 
 const me = { name: 'You', level: 8 }
-const meAvatarUrl = AVATAR('men/86')
+const meAvatarUrl = AVATAR('women/79')
 
 // Legend: the industries actually present, in first-appearance order.
 const legend = [...new Set(PEOPLE.map((p) => p.industry))].map((name) => ({
@@ -87,6 +87,7 @@ const selectedName = ref<string | null>(null)
       :connections="connections"
       :me="me"
       :me-avatar-url="meAvatarUrl"
+      avatar-dots
       @select="selectedName = $event.user.name"
     />
 

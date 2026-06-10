@@ -6,6 +6,11 @@ const props = defineProps<{
   connections: NetworkConnection[]
   me: { name: string; level: number }
   meAvatarUrl?: string | null
+  // When true, every connection that has a photo gets a full upright avatar
+  // (routed through the "solo" path so it stays upright + hover-pauses), instead
+  // of collapsing the small/back ones into faded colour dots. Used by the
+  // marketing showcase; the in-app orbit leaves this off to keep its depth dots.
+  avatarDots?: boolean
 }>()
 
 const emit = defineEmits<{ select: [c: NetworkConnection] }>()
@@ -105,12 +110,20 @@ const nodes = computed(() => {
 
 const spinFor = (ring: number) => ({ duration: SPIN_BASE + ring * SPIN_STEP, reverse: ring % 2 === 1 })
 
-// The few large, front nodes each orbit on their OWN layer (with a symmetric
-// anchor so the spin pivots on (0,0)) — so hovering one pauses just that single
-// connection. They share their ring's speed/direction, so they stay in step.
+// A node renders as an upright "solo" avatar when it's a front/labeled node — or,
+// in avatarDots mode, whenever it carries a photo (so even tiny back nodes show a
+// face that stays upright rather than tumbling with the ring spin).
+function isSolo(n: (typeof nodes.value)[number]) {
+  return n.labeled || (!!props.avatarDots && !!n.c.user.avatarUrl)
+}
+
+// The large front nodes (plus, in avatarDots mode, every photo node) each orbit on
+// their OWN layer with a symmetric anchor so the spin pivots on (0,0) — so hovering
+// one pauses just that connection. They share their ring's speed/direction, so they
+// stay in step.
 const soloNodes = computed(() =>
   nodes.value
-    .filter((n) => n.labeled)
+    .filter(isSolo)
     .map((n) => ({ ...n, anchor: Math.hypot(n.x, n.y) + n.size, ...spinFor(n.ring) }))
     .sort((a, b) => a.size - b.size),
 )
@@ -121,7 +134,7 @@ const soloNodes = computed(() =>
 const dotRings = computed(() => {
   const byRing = new Map<number, typeof nodes.value>()
   for (const n of nodes.value) {
-    if (n.labeled) continue
+    if (isSolo(n)) continue
     if (!byRing.has(n.ring)) byRing.set(n.ring, [] as any)
     byRing.get(n.ring)!.push(n)
   }
@@ -194,10 +207,11 @@ const meInitials = computed(() => initials(props.me.name || 'You'))
       >
         <!-- Symmetric anchor → this node's spin pivots on (0,0). -->
         <circle :r="n.anchor" fill="none" stroke="none" />
-        <line x1="0" y1="0" :x2="n.x" :y2="n.y" :stroke="n.color" stroke-width="1.5" :stroke-opacity="n.opacity * 0.45" />
+        <line v-if="n.hasLine" x1="0" y1="0" :x2="n.x" :y2="n.y" :stroke="n.color" stroke-width="1.5" :stroke-opacity="n.opacity * 0.45" />
         <g
           :transform="`translate(${n.x} ${n.y})`"
           class="orbit-node"
+          :opacity="avatarDots ? n.opacity : null"
           @click="emit('select', n.c)"
           @pointerenter="hovered = n.c.id"
           @pointerleave="hovered = null"
