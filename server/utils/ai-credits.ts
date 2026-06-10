@@ -32,6 +32,11 @@ export const CREDIT_COSTS = {
   'ai-insights': 2,
   'ai-sayings': 2,
   'ai-goal': 1,
+  // Conversational Earnest AI (one user turn + reply). Margin is protected by a
+  // sliding context window + output cap server-side (see ai-chat.post.ts), so a
+  // flat 1 credit stays profitable even on long threads — worst-case ~2.5¢/turn
+  // vs. a credit worth 3.3–5¢ depending on the pack.
+  'ai-chat': 1,
 } as const
 
 export type AiEndpoint = keyof typeof CREDIT_COSTS

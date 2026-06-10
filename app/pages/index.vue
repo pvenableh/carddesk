@@ -9,6 +9,7 @@ import PhoneDetailScreen from '~/components/phone/DetailScreen.vue'
 import PhoneAddContactScreen from '~/components/phone/AddContactScreen.vue'
 import PhoneEventModeScreen from '~/components/phone/EventModeScreen.vue'
 import PhoneFeedScreen from '~/components/phone/FeedScreen.vue'
+import PhoneChatScreen from '~/components/phone/ChatScreen.vue'
 
 // No auth middleware here: logged-out visitors get the marketing landing at the
 // bare domain instead of a redirect to /login. The app shell only renders when a
@@ -70,6 +71,7 @@ const screenComponents: Record<Screen, Component> = {
   add: PhoneAddContactScreen,
   event: PhoneEventModeScreen,
   feed: PhoneFeedScreen,
+  chat: PhoneChatScreen,
 }
 
 const currentScreen = computed(() => screenComponents[screen.value])

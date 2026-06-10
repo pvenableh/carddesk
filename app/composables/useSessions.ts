@@ -39,6 +39,13 @@ export function useSessions() {
     return await $fetch<CdSession[]>('/api/sessions', { query })
   }
 
+  async function updateSession(
+    id: string,
+    patch: { messages?: CdSessionMessage[]; summary?: string; title?: string; is_pinned?: boolean },
+  ) {
+    return await $fetch<CdSession>(`/api/sessions/${id}`, { method: 'PATCH', body: patch })
+  }
+
   async function deleteSession(id: string) {
     return await $fetch(`/api/sessions/${id}`, { method: 'DELETE' })
   }
@@ -47,5 +54,5 @@ export function useSessions() {
     return await $fetch('/api/feedback', { method: 'POST', body: input })
   }
 
-  return { saving, saveSession, listSessions, deleteSession, sendFeedback }
+  return { saving, saveSession, listSessions, updateSession, deleteSession, sendFeedback }
 }

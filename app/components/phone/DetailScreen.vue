@@ -288,9 +288,53 @@ async function removeSession(s: any) {
   aiHistory.value = aiHistory.value.filter((x) => x.id !== s.id)
 }
 
+// ── Earnest AI chat (continuable, contextual) ──
+const { open: openChat, resume: resumeChat } = useChat()
+
+function contactContext() {
+  const c = selContact.value as any
+  if (!c) return null
+  return {
+    name: c.name, title: c.title, company: c.company, industry: c.industry,
+    rating: c.rating, pipeline_stage: c.pipeline_stage, estimated_value: c.estimated_value,
+    met_at: c.met_at, is_client: c.is_client, notes: c.notes,
+    days_since_last_activity: daysSince(c),
+    recent_activities: sortedActs.value.slice(0, 8).map((a: any) => ({
+      date: a.date, label: a.label, note: a.note, is_response: a.is_response,
+    })),
+  }
+}
+
+function askEarnest() {
+  const c = selContact.value as any
+  if (!c) return
+  analytics.aiFeatureUse('chat')
+  openChat({
+    scope: 'contact',
+    title: c.name,
+    contactId: c.id,
+    context: contactContext(),
+    intro: `Let's talk about ${c.name}${c.company ? ` at ${c.company}` : ''}. Want help with your next move, a follow-up message, or moving them through your pipeline?`,
+  })
+  nav('chat')
+}
+
+function continueChat(s: any) {
+  resumeChat(s, contactContext(), 'contact')
+  nav('chat')
+}
+
 // Normalize a saved session's assistant content into displayable lines.
 function sessionLines(s: any): Array<{ title: string; body: string }> {
   const msgs = s.messages || []
+  if (s.type === 'chat') {
+    return msgs
+      .filter((m: any) => m.role === 'user' || m.role === 'assistant')
+      .map((m: any) => ({
+        title: m.role === 'user' ? 'You' : 'Earnest',
+        body: typeof m.content === 'string' ? m.content : '',
+      }))
+  }
   const msg = msgs.find((m: any) => m.role === 'assistant') || msgs[0]
   const content = msg?.content
   if (!content) return []
@@ -435,6 +479,15 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
               <CdIcon :emoji="sugSaved ? '✅' : '💾'" :icon="sugSaved ? 'lucide:check' : 'lucide:bookmark'" :size="11" />
               {{ sugSaved ? 'Saved to history' : 'Save these to history' }}
             </button>
+
+            <!-- Open-ended chat about this contact (continuable, 1 credit/turn) -->
+            <button
+              class="cd-abtn"
+              style="width: 100%; margin-top: 8px; padding: 11px; font-size: 13px; background: color-mix(in srgb, var(--cd-accent) 12%, transparent); border-color: color-mix(in srgb, var(--cd-accent) 30%, transparent); color: var(--cd-accent)"
+              @click="askEarnest"
+            >
+              <CdIcon emoji="💬" icon="lucide:sparkles" :size="13" /> Chat with Earnest about {{ selContact.name }}
+            </button>
           </div>
 
           <div v-if="aiHistory.length || historyLoading" class="cd-log-sec" style="margin-bottom: 16px">
@@ -456,6 +509,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
                   <div style="font-size: 10px; color: var(--cd-dim); font-family: monospace">{{ fmtFull(s.date_created) }} · {{ s.type }}</div>
                 </button>
                 <div style="display: flex; align-items: center; gap: 4px">
+                  <button v-if="s.type === 'chat'" style="background:none;border:none;cursor:pointer;padding:3px;color:var(--cd-accent)" title="Continue chat" @click="continueChat(s)"><CdIcon emoji="💬" icon="lucide:message-circle" :size="13" /></button>
                   <button :style="`background:none;border:none;cursor:pointer;padding:3px;opacity:${s._rated === 'up' ? 1 : 0.4}`" title="Helpful" @click="rateSession(s, 'up')"><CdIcon emoji="👍" icon="lucide:thumbs-up" :size="13" /></button>
                   <button :style="`background:none;border:none;cursor:pointer;padding:3px;opacity:${s._rated === 'down' ? 1 : 0.4}`" title="Not helpful" @click="rateSession(s, 'down')"><CdIcon emoji="👎" icon="lucide:thumbs-down" :size="13" /></button>
                   <button style="background: none; border: none; cursor: pointer; padding: 3px; color: var(--cd-dim)" title="Delete" @click="removeSession(s)"><CdIcon emoji="🗑" icon="lucide:trash-2" :size="11" /></button>

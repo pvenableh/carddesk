@@ -94,6 +94,29 @@ function doSaveProfile() {
   saveProfile(profileForm.value)
 }
 
+// Earnest AI score coach. account.vue is a standalone route, so we seed the
+// shared chat state then navigate into the app shell's chat screen.
+const { open: openChat } = useChat()
+const { nav } = useNavigation()
+function improveScore() {
+  if (!earnestScore.value) return
+  analytics.aiFeatureUse('chat')
+  openChat({
+    scope: 'score',
+    title: 'Improving your score',
+    context: {
+      current_score: earnestScore.value.current_score,
+      label: scoreLabel(earnestScore.value.current_score),
+      dimension_scores: earnestScore.value.dimension_scores,
+      contacts: contacts.value.length,
+      clients: contacts.value.filter((c: any) => c.is_client).length,
+    },
+    intro: `Your Earnest Score is ${earnestScore.value.current_score} (${scoreLabel(earnestScore.value.current_score)}). Want a prioritized plan to raise it, or should I break down what's holding each area back?`,
+  })
+  nav('chat')
+  router.push('/')
+}
+
 const goalLoading = ref(false)
 async function suggestGoal() {
   goalLoading.value = true
@@ -216,6 +239,9 @@ async function suggestGoal() {
               <span style="font-size: 10px; font-weight: 700; color: var(--cd-muted); width: 24px; text-align: right">{{ value }}</span>
             </div>
           </div>
+          <button class="acct-card-btn" style="margin-top: 12px; width: 100%; justify-content: center; color: var(--cd-accent); border-color: color-mix(in srgb, var(--cd-accent) 30%, transparent)" @click="improveScore">
+            <CdIcon icon="lucide:sparkles" :size="14" /> How do I improve my score?
+          </button>
         </div>
       </div>
 

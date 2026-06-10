@@ -7,7 +7,30 @@
  */
 const { active, name, captured, count, pastEvents, start, saveAndEnd, loadPastEvents } = useEventMode()
 const { nav, goDetail } = useNavigation()
+const { open: openChat } = useChat()
 const { state: xp } = useXp()
+
+// Hand the past-event snapshots to Earnest AI as a continuable analysis chat.
+function analyzeEvents() {
+  const events = pastEvents.value.map((ev: any) => {
+    const c = ev.messages?.[0]?.content || {}
+    return {
+      name: ev.title,
+      date: ev.date_created,
+      count: typeof c.count === 'number' ? c.count : 0,
+      contacts: Array.isArray(c.contacts)
+        ? c.contacts.slice(0, 12).map((p: any) => ({ name: p.name, company: p.company, title: p.title }))
+        : [],
+    }
+  })
+  openChat({
+    scope: 'events',
+    title: 'Your events',
+    context: { events },
+    intro: `You've worked ${events.length} ${events.length === 1 ? 'event' : 'events'}. Want me to find who to follow up with first, or spot patterns across them?`,
+  })
+  nav('chat')
+}
 
 const draftName = ref('')
 const summary = ref(false)
@@ -87,6 +110,14 @@ function eventCount(s: any): number {
           <div class="em-sec-lbl" style="margin-top: 22px">
             <CdIcon icon="lucide:history" :size="12" /> Your past events
           </div>
+          <button class="em-analyze glass-thin" @click="analyzeEvents">
+            <span class="em-analyze-ico"><CdIcon icon="lucide:sparkles" :size="18" /></span>
+            <span class="em-analyze-copy">
+              <span class="em-analyze-title">Analyze my past events</span>
+              <span class="em-analyze-sub">Ask Earnest who to follow up with — and spot patterns</span>
+            </span>
+            <CdIcon icon="lucide:arrow-right" :size="16" />
+          </button>
           <div class="em-list">
             <div v-for="ev in pastEvents" :key="ev.id" class="em-row glass-thin" style="cursor: default">
               <span class="em-av"><CdIcon icon="lucide:calendar-check" :size="16" /></span>
@@ -252,6 +283,23 @@ function eventCount(s: any): number {
   display: flex; align-items: center; justify-content: center; gap: 5px;
   font-size: 0.72rem; color: var(--cd-dim); margin-top: 12px;
 }
+
+/* analyze-events CTA */
+.em-analyze {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  border-radius: 14px; padding: 13px; margin-bottom: 10px; cursor: pointer;
+  color: var(--cd-text); text-align: left; transition: transform 0.1s ease, border-color 0.15s;
+}
+.em-analyze:active { transform: scale(0.99); }
+.em-analyze-ico {
+  width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; color: var(--cd-accent);
+  background: color-mix(in srgb, var(--cd-accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-accent) 32%, transparent);
+}
+.em-analyze-copy { flex: 1; display: flex; flex-direction: column; }
+.em-analyze-title { font-weight: 800; font-size: 0.95rem; }
+.em-analyze-sub { font-size: 0.75rem; color: var(--cd-muted); }
 
 /* past-events count pill */
 .em-past-count {

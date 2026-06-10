@@ -1,8 +1,9 @@
-export type Screen = "vibe" | "session" | "cold" | "home" | "contacts" | "detail" | "add" | "event" | "feed"
+export type Screen = "vibe" | "session" | "cold" | "home" | "contacts" | "detail" | "add" | "event" | "feed" | "chat"
 
 // `event` and `feed` are now primary bottom-nav tabs, so they animate as tabs
-// (slide by index) rather than as pushed sub-screens.
-const PUSH_SCREENS = new Set<Screen>(["detail", "add", "cold"])
+// (slide by index) rather than as pushed sub-screens. `chat` is a pushed
+// sub-screen opened from contextual AI helpers.
+const PUSH_SCREENS = new Set<Screen>(["detail", "add", "cold", "chat"])
 const TAB_INDEX: Record<string, number> = {
   vibe: 0, session: 1, event: 2, feed: 3, home: 4, contacts: 5,
 }
