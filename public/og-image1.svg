@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <radialGradient id="oA"><stop offset="0%" stop-color="hsl(163 100% 36%)" stop-opacity="0.5"/><stop offset="70%" stop-color="hsl(163 100% 36%)" stop-opacity="0"/></radialGradient>
+    <radialGradient id="oB"><stop offset="0%" stop-color="hsl(213 70% 46%)" stop-opacity="0.55"/><stop offset="70%" stop-color="hsl(213 70% 46%)" stop-opacity="0"/></radialGradient>
+    <radialGradient id="oC"><stop offset="0%" stop-color="hsl(278 100% 40%)" stop-opacity="0.5"/><stop offset="70%" stop-color="hsl(278 100% 40%)" stop-opacity="0"/></radialGradient>
+    <radialGradient id="oD"><stop offset="0%" stop-color="hsl(190 90% 48%)" stop-opacity="0.32"/><stop offset="70%" stop-color="hsl(190 90% 48%)" stop-opacity="0"/></radialGradient>
+    <linearGradient id="oGreen" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#34f5a0"/><stop offset="100%" stop-color="#00d873"/>
+    </linearGradient>
+    <filter id="oSoft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="90"/></filter>
+    <filter id="oSh" x="-60%" y="-60%" width="220%" height="220%">
+      <feDropShadow dx="0" dy="14" stdDeviation="26" flood-color="#000" flood-opacity="0.7"/>
+    </filter>
+  </defs>
+
+  <!-- aurora background -->
+  <rect width="1200" height="630" fill="#060810"/>
+  <g filter="url(#oSoft)">
+    <ellipse cx="180" cy="90" rx="620" ry="520" fill="url(#oA)"/>
+    <ellipse cx="560" cy="320" rx="700" ry="620" fill="url(#oB)"/>
+    <ellipse cx="980" cy="560" rx="680" ry="560" fill="url(#oC)"/>
+    <ellipse cx="1080" cy="120" rx="520" ry="480" fill="url(#oD)"/>
+  </g>
+
+  <!-- logo lockup -->
+  <g transform="translate(96 92)">
+    <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="0" y="2" width="78" height="52" rx="11" stroke-width="5.5"/>
+      <line x1="13" y1="20" x2="58" y2="20" stroke-width="5.5"/>
+      <line x1="13" y1="37" x2="40" y2="37" stroke-width="4.5" opacity="0.7"/>
+    </g>
+    <text x="98" y="44" font-family="'Helvetica Neue', Arial, sans-serif" font-size="40" font-weight="800" fill="#ffffff" letter-spacing="-0.5">CardDesk</text>
+  </g>
+
+  <!-- headline -->
+  <g font-family="'Helvetica Neue', Arial, sans-serif" font-weight="800" letter-spacing="-1.2">
+    <text x="96" y="300" font-size="58" fill="#ffffff">Networking, but make</text>
+    <text x="96" y="368" font-size="58" fill="#ffffff">it a <tspan fill="url(#oGreen)">game</tspan>.</text>
+  </g>
+
+  <!-- subhead -->
+  <text x="98" y="430" font-family="'Helvetica Neue', Arial, sans-serif" font-size="25" font-weight="500" fill="#aeb9ca">Turn pocket clutter into XP, streaks &amp; real relationships.</text>
+
+  <!-- free-tokens pill -->
+  <g transform="translate(98 470)">
+    <rect x="0" y="0" width="476" height="52" rx="26" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.22" stroke-width="1.5"/>
+    <circle cx="28" cy="26" r="6.5" fill="url(#oGreen)"/>
+    <text x="46" y="34" font-family="'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="600" fill="#e8eef6">25 Earnest AI tokens free when you start</text>
+  </g>
+
+  <!-- card deck visual, right margin -->
+  <g transform="translate(1032 312) scale(0.7)" filter="url(#oSh)" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(-18 -40) rotate(-9)" opacity="0.4">
+      <rect x="-150" y="-100" width="300" height="200" rx="30" stroke-width="8"/>
+    </g>
+    <rect x="-150" y="-100" width="300" height="200" rx="30" stroke-width="10"/>
+    <line x1="-112" y1="-50" x2="70" y2="-50" stroke-width="10"/>
+    <line x1="-112" y1="-8" x2="14" y2="-8" stroke-width="9" opacity="0.7"/>
+    <line x1="-112" y1="32" x2="44" y2="32" stroke-width="9" opacity="0.55"/>
+  </g>
+</svg>

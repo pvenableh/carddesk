@@ -521,7 +521,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
                 :disabled="sugLoading"
                 @click="loadSuggestions"
               >
-                <CdIcon emoji="🤖" icon="lucide:sparkles" :size="11" />
+                <CdEarnestMark :size="12" />
                 {{ sugLoading ? 'Thinking...' : suggestions.length ? 'Refresh' : 'Get Earnest AI Ideas' }}
               </button>
             </div>
@@ -551,7 +551,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
               style="width: 100%; margin-top: 8px; padding: 11px; font-size: 13px; background: color-mix(in srgb, var(--cd-accent) 12%, transparent); border-color: color-mix(in srgb, var(--cd-accent) 30%, transparent); color: var(--cd-accent)"
               @click="askEarnest"
             >
-              <CdIcon emoji="💬" icon="lucide:sparkles" :size="13" /> Chat with Earnest about {{ selContact.name }}
+              <CdEarnestMark :size="14" /> Chat with Earnest about {{ selContact.name }}
             </button>
           </div>
 

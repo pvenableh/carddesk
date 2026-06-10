@@ -109,7 +109,7 @@ function eventCount(s: any): number {
             <CdIcon icon="lucide:history" :size="12" /> Your past events
           </div>
           <button class="em-analyze glass-thin" @click="analyzeEvents">
-            <span class="em-analyze-ico"><CdIcon icon="lucide:sparkles" :size="18" /></span>
+            <span class="em-analyze-ico"><CdEarnestMark :size="18" /></span>
             <span class="em-analyze-copy">
               <span class="em-analyze-title">Analyze my past events</span>
               <span class="em-analyze-sub">Ask Earnest who to follow up with — and spot patterns</span>

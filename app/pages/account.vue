@@ -362,7 +362,7 @@ async function suggestGoal() {
               </div>
             </div>
             <button class="acct-card-btn" style="margin-top: 12px; width: 100%; justify-content: center; color: var(--cd-accent); border-color: color-mix(in srgb, var(--cd-accent) 30%, transparent)" @click="improveScore">
-              <CdIcon icon="lucide:sparkles" :size="14" /> How do I improve my score?
+              <CdEarnestMark :size="14" /> How do I improve my score?
             </button>
           </div>
         </div>

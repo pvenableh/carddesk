@@ -16,7 +16,7 @@ const { visible, ask } = useAskEarnest()
       title="Ask Earnest"
       @click="ask"
     >
-      <CdIcon icon="lucide:sparkles" :size="17" />
+      <CdEarnestMark :size="19" mono />
       <span class="cd-ask-fab-tip">Ask Earnest</span>
     </button>
   </Transition>

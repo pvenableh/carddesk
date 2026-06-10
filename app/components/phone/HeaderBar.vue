@@ -94,7 +94,7 @@ function onClickOutside(e: MouseEvent) {
             Account
           </button>
           <button class="cd-dd-item" @click="goEditCard">
-            <span class="cd-dd-icon"><CdIcon emoji="🪪" icon="lucide:contact" /></span>
+            <span class="cd-dd-icon"><CdCardMark :size="17" :gradient="false" /></span>
             Edit My Card
           </button>
           <button class="cd-dd-item" @click="closeDropdown(); openFeedback()">

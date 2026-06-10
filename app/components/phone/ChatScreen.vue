@@ -104,14 +104,14 @@ onMounted(scrollToBottom)
   <div class="cd-screen on chat-screen">
     <div class="cd-shdr chat-hdr">
       <button class="cd-back chat-close" type="button" aria-label="Close" @click="close"><CdIcon icon="lucide:x" :size="15" /> Close</button>
-      <div class="cd-stitle chat-title"><CdIcon icon="lucide:sparkles" :size="15" /> {{ title }}</div>
+      <div class="cd-stitle chat-title"><CdEarnestMark :size="15" /> {{ title }}</div>
     </div>
 
     <div ref="scrollEl" class="cd-scrl chat-body">
       <!-- Awareness primer: what Earnest can see, until the user's first turn -->
       <div v-if="!started && awareness.length" class="chat-aware" :class="{ open: awareOpen }">
         <button type="button" class="chat-aware-hd" :aria-expanded="awareOpen" @click="awareOpen = !awareOpen">
-          <CdIcon icon="lucide:sparkles" :size="11" />
+          <CdEarnestMark :size="12" />
           <span>What Earnest can see</span>
           <CdIcon class="chat-aware-chev" icon="lucide:chevron-down" :size="13" />
         </button>
@@ -130,7 +130,7 @@ onMounted(scrollToBottom)
 
       <!-- Empty thread → suggested prompts -->
       <div v-if="!messages.length" class="chat-empty">
-        <div class="chat-empty-ico"><CdIcon icon="lucide:sparkles" :size="34" /></div>
+        <div class="chat-empty-ico"><CdEarnestMark :size="32" /></div>
         <div class="chat-empty-title">Ask Earnest</div>
         <div class="chat-empty-sub">Your networking coach — grounded in your own data. Pick a starter or type your own.</div>
         <div class="chat-sugs">
@@ -146,11 +146,11 @@ onMounted(scrollToBottom)
           class="chat-msg"
           :class="m.role === 'user' ? 'is-user' : 'is-ai'"
         >
-          <div v-if="m.role === 'assistant'" class="chat-ai-badge"><CdIcon icon="lucide:sparkles" :size="12" /></div>
+          <div v-if="m.role === 'assistant'" class="chat-ai-badge"><CdEarnestMark :size="13" /></div>
           <div class="chat-bubble" v-html="render(m.content)" />
         </div>
         <div v-if="loading" class="chat-msg is-ai">
-          <div class="chat-ai-badge"><CdIcon icon="lucide:sparkles" :size="12" /></div>
+          <div class="chat-ai-badge"><CdEarnestMark :size="13" /></div>
           <div class="chat-bubble chat-typing"><span></span><span></span><span></span></div>
         </div>
       </template>

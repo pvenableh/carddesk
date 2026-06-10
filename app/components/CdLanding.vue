@@ -9,55 +9,12 @@
  * Titles use Bebas Neue; Gaegu is used only for playful encouragement microcopy.
  * Rendered by pages/index.vue when there's no session.
  */
-const pillars = [
-  {
-    icon: 'lucide:gamepad-2',
-    emoji: '🎮',
-    color: 'var(--cd-green)',
-    title: 'Networking, gamified',
-    body: 'Earn XP for every card you scan and contact you save. Level up, keep your streak alive, and watch the confetti fly. Follow-ups become a game you actually want to win.',
-  },
-  {
-    icon: 'lucide:trophy',
-    emoji: '🏆',
-    color: 'var(--cd-gold)',
-    title: 'Compete with your circle',
-    body: 'Networking’s better with rivals. Connect with friends and colleagues, then climb your network’s leaderboard — compare XP, streaks, and who’s really working the room.',
-  },
-  {
-    icon: 'lucide:sparkles',
-    emoji: '🧠',
-    color: 'var(--cd-palette-primary, #4da6ff)',
-    title: 'Earnest AI in your corner',
-    body: 'Earnest AI reads both sides of a card, drafts your follow-ups, surfaces conversation starters, and spots the connections worth nurturing — so you always know your next move.',
-  },
-  {
-    icon: 'lucide:messages-square',
-    emoji: '💬',
-    color: 'var(--cd-ice)',
-    title: 'Coaching sessions with Earnest AI',
-    body: 'Low on momentum? Run a session with Earnest AI for fresh outreach ideas and a hit of motivation — hype yourself up or take a tough-love nudge to actually follow through.',
-  },
-  {
-    icon: 'lucide:orbit',
-    emoji: '🪐',
-    color: 'var(--cd-palette-primary, #4da6ff)',
-    title: 'Your own Orbit',
-    body: 'Everyone you meet pulls into your personal Orbit — a living map of your network. See who’s close, who’s drifting, and who deserves a check-in.',
-  },
-  {
-    icon: 'lucide:id-card',
-    emoji: '🎴',
-    color: 'var(--cd-orange)',
-    title: 'A card that’s all you',
-    body: 'Build a personalized digital business card and share it with a tap or a QR scan. No app required on their end — just a link that makes you look sharp.',
-  },
-]
-
-const steps = [
-  { n: '1', emoji: '📷', icon: 'lucide:scan-line', title: 'Scan a card', body: 'Snap a business card — front and back.' },
-  { n: '2', emoji: '✨', icon: 'lucide:wand-sparkles', title: 'Earnest AI fills it in', body: 'Name, company, details — extracted instantly. +50 XP.' },
-  { n: '3', emoji: '🪐', icon: 'lucide:orbit', title: 'Your Orbit grows', body: 'They join your network. Earnest AI tees up the follow-up.' },
+// Contextual-awareness chips shown inside the Earnest AI callout visual — they
+// demonstrate that the AI reads both sides of a card and remembers the context.
+const aiChips = [
+  { icon: 'lucide:map-pin', emoji: '📍', label: 'Met at SaaStr ’26' },
+  { icon: 'lucide:briefcase', emoji: '💼', label: 'VP Product · Lumen' },
+  { icon: 'lucide:sparkles', emoji: '🌱', label: 'Worth nurturing' },
 ]
 
 // Sample friends leaderboard for the "compete with friends" spotlight. You sit
@@ -88,6 +45,76 @@ onMounted(() => {
   }, 4200)
 })
 onUnmounted(() => { if (heroTimer) clearInterval(heroTimer) })
+
+// Scroll-driven UI:
+//  • giant faint keyword watermarks drift behind each callout,
+//  • the closing-CTA title rises up from behind its frosted card,
+//  • a floating CTA pill fades in once you scroll past the hero and hands off
+//    to the real CTA button as it comes into view at the bottom.
+// All driven from one rAF-throttled scroll handler. The watermark / title drift
+// is transform-only (compositor-cheap) and skipped for reduced-motion; the
+// floating CTA still works for everyone (it just fades rather than slides).
+const ctaWrap = ref<HTMLElement | null>(null)
+const heroRef = ref<HTMLElement | null>(null)
+const floatCta = ref<'hidden' | 'shown' | 'docked'>('hidden')
+let parallaxRaf = 0
+let onParallax: (() => void) | undefined
+onMounted(() => {
+  const motionOK = !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  const cta = ctaWrap.value
+  const ctaBtn = cta?.querySelector<HTMLElement>('.lp-btn')
+  const hero = heroRef.value
+  const ghosts = motionOK
+    ? Array.from(document.querySelectorAll<HTMLElement>('.lp-ghost[data-parallax]'))
+    : []
+  const update = () => {
+    parallaxRaf = 0
+    const vh = window.innerHeight || 1
+
+    // Floating CTA state: hidden over the hero, shown once it's mostly scrolled
+    // off, then docked (handed off) the moment the real CTA button enters from
+    // the bottom — so it reads as merging into it rather than vanishing early.
+    if (hero) {
+      const heroR = hero.getBoundingClientRect()
+      const btnTop = ctaBtn?.getBoundingClientRect().top ?? Infinity
+      floatCta.value = btnTop < vh * 0.92 ? 'docked'
+        : heroR.bottom < vh * 0.5 ? 'shown'
+        : 'hidden'
+    }
+
+    if (!motionOK) return
+
+    // CTA hero title: the card is the last block on the page (little runway
+    // below), so complete the travel over the first ~62% of a viewport-height of
+    // entry — it fully emerges while the card is comfortably in view rather than
+    // needing the card to scroll off the top, which never happens here.
+    if (cta) {
+      const r = cta.getBoundingClientRect()
+      const p = Math.min(Math.max((vh - r.top) / (vh * 0.62), 0), 1)
+      cta.style.setProperty('--lp-cta-shift', `${((0.5 - p) * 260).toFixed(1)}px`)
+    }
+    // Section keyword watermarks: a gentle drift keyed to how far each ghost's
+    // host (its callout) sits from viewport centre — it rises as you scroll down.
+    for (const g of ghosts) {
+      const host = g.parentElement
+      if (!host) continue
+      const r = host.getBoundingClientRect()
+      const t = (r.top + r.height / 2 - vh / 2) / vh
+      g.style.setProperty('--lp-shift', `${(t * 230).toFixed(1)}px`)
+    }
+  }
+  onParallax = () => { if (!parallaxRaf) parallaxRaf = requestAnimationFrame(update) }
+  window.addEventListener('scroll', onParallax, { passive: true })
+  window.addEventListener('resize', onParallax, { passive: true })
+  update()
+})
+onUnmounted(() => {
+  if (onParallax) {
+    window.removeEventListener('scroll', onParallax)
+    window.removeEventListener('resize', onParallax)
+  }
+  if (parallaxRaf) cancelAnimationFrame(parallaxRaf)
+})
 </script>
 
 <template>
@@ -102,7 +129,7 @@ onUnmounted(() => { if (heroTimer) clearInterval(heroTimer) })
     </header>
 
     <!-- ═══ Hero ═══ -->
-    <section class="lp-hero">
+    <section ref="heroRef" class="lp-hero">
       <div class="lp-hero-copy">
         <div class="lp-eyebrow">Your network. Gamified.</div>
         <h1 class="lp-h1">Networking, but&nbsp;make&nbsp;it a&nbsp;<span class="lp-grad">game</span>.</h1>
@@ -161,99 +188,247 @@ onUnmounted(() => { if (heroTimer) clearInterval(heroTimer) })
       </div>
     </section>
 
-    <!-- ═══ Pillars ═══ -->
+    <!-- ═══ Why it's different — a rhythm of featured callouts ═══ -->
     <section class="lp-section">
-      <div class="lp-section-head">
-        <div class="lp-eyebrow">Why it’s different</div>
-        <h2 class="lp-h2">Everything about meeting people, made fun</h2>
+      <div class="lp-section-head lp-section-head--quote">
+        <div class="lp-head-ghost" aria-hidden="true">Why it’s different</div>
+        <h2 class="lp-h2 lp-h2-script">“Everything about meeting people, made fun.”</h2>
       </div>
-      <div class="lp-grid">
-        <article v-for="p in pillars" :key="p.title" class="lp-feature lp-glass">
-          <div class="lp-feature-icon" :style="{ color: p.color }">
-            <CdIcon :emoji="p.emoji" :icon="p.icon" :size="24" />
-          </div>
-          <h3 class="lp-feature-title">{{ p.title }}</h3>
-          <p class="lp-feature-body">{{ p.body }}</p>
-        </article>
-      </div>
-    </section>
 
-    <!-- ═══ Your Orbit (live, interactive showcase) ═══ -->
-    <section class="lp-section">
-      <div class="lp-section-head">
-        <div class="lp-eyebrow">See it live</div>
-        <h2 class="lp-h2">Your whole network, orbiting <span class="lp-grad">you</span></h2>
-      </div>
-      <ClientOnly>
-        <OrbitShowcase />
-      </ClientOnly>
-    </section>
-
-    <!-- ═══ Compete with friends ═══ -->
-    <section class="lp-section lp-versus">
-      <div class="lp-versus-copy">
-        <div class="lp-eyebrow">The fun part</div>
-        <h2 class="lp-h2 lp-versus-h2">Climb the board. Earn the <span class="lp-grad">bragging rights</span>.</h2>
-        <p class="lp-versus-body">
-          Add the friends and colleagues you actually network with and you’ll all share a
-          leaderboard. Watch the XP race update in real time, defend your streak, and let a
-          little healthy rivalry push everyone to keep in touch. Nothing makes you send the
-          follow-up quite like watching a friend pass you.
-        </p>
-        <p class="lp-hand">Maya’s only 160 XP ahead 👀</p>
-        <div class="lp-cta-row lp-versus-cta">
-          <NuxtLink to="/auth/register" class="lp-btn lp-btn-lg">
-            Start climbing <CdIcon emoji="→" icon="lucide:arrow-right" :size="17" />
-          </NuxtLink>
+      <!-- Callout 1 · Gamify — copy left, reward visual right -->
+      <div class="lp-callout">
+        <div class="lp-ghost" data-parallax aria-hidden="true">FUN</div>
+        <div class="lp-callout-copy">
+          <div class="lp-eyebrow">Networking, gamified</div>
+          <h3 class="lp-callout-h">Every scan throws <span class="lp-grad">confetti</span>.</h3>
+          <p class="lp-callout-body">
+            Earn XP for every card you scan and contact you save. Level up, keep your streak
+            alive, and watch the reward land the second you do it — follow-ups become a game
+            you actually want to win.
+          </p>
+          <p class="lp-hand">+50 XP, just like that 🎉</p>
         </div>
-      </div>
 
-      <div class="lp-board lp-glass" aria-hidden="true">
-        <div class="lp-board-head">
-          <span class="lp-board-title"><CdIcon emoji="🏆" icon="lucide:trophy" :size="16" /> Friends · this week</span>
-          <span class="lp-board-tag">XP</span>
-        </div>
-        <div class="lp-board-rows">
-          <div v-for="r in leaderboard" :key="r.name" class="lp-row" :class="{ 'lp-row-you': r.you }">
-            <span class="lp-rank" :class="`lp-rank-${r.rank}`">{{ r.rank }}</span>
-            <span class="lp-ava" :style="{ background: `color-mix(in srgb, ${r.tint} 20%, transparent)`, color: r.tint }">{{ r.name[0] }}</span>
-            <span class="lp-row-name">{{ r.name }}<span v-if="r.you" class="lp-you-tag">you</span></span>
-            <span class="lp-row-streak"><CdIcon emoji="🔥" icon="lucide:flame" :size="13" /> {{ r.streak }}</span>
-            <span class="lp-row-xp">{{ r.xp.toLocaleString() }}</span>
+        <div class="lp-callout-art" aria-hidden="true">
+          <div class="lp-gamify lp-glass">
+            <svg class="lp-confetti" viewBox="0 0 320 80" preserveAspectRatio="none">
+              <rect class="lp-cf" x="30" y="10" width="8" height="8" rx="1.5" fill="var(--cd-green)" />
+              <circle class="lp-cf" cx="80" cy="16" r="4" fill="var(--cd-gold)" />
+              <rect class="lp-cf" x="130" y="8" width="7" height="7" rx="1.5" fill="var(--cd-palette-primary, #4da6ff)" />
+              <circle class="lp-cf" cx="185" cy="18" r="4" fill="var(--cd-orange)" />
+              <rect class="lp-cf" x="225" y="10" width="8" height="8" rx="1.5" fill="var(--cd-ice)" />
+              <circle class="lp-cf" cx="280" cy="14" r="4" fill="var(--cd-green)" />
+              <rect class="lp-cf" x="55" y="30" width="6" height="6" rx="1.5" fill="var(--cd-orange)" />
+              <circle class="lp-cf" cx="160" cy="32" r="3.5" fill="var(--cd-gold)" />
+              <rect class="lp-cf" x="250" y="30" width="6" height="6" rx="1.5" fill="var(--cd-palette-primary, #4da6ff)" />
+            </svg>
+
+            <div class="lp-gamify-xp">+50 XP</div>
+
+            <div class="lp-gamify-bar">
+              <div class="lp-gamify-bar-head"><span>Level 7</span><span>820 / 1000 XP</span></div>
+              <div class="lp-gamify-track"><div class="lp-gamify-fill" /></div>
+            </div>
+
+            <div class="lp-gamify-chips">
+              <span class="lp-gchip lp-gchip-streak"><CdIcon emoji="🔥" icon="lucide:flame" :size="13" /> 7-day streak</span>
+              <span class="lp-gchip lp-gchip-orbit"><CdIcon emoji="🪐" icon="lucide:orbit" :size="13" /> +1 to Orbit</span>
+            </div>
           </div>
         </div>
       </div>
-    </section>
 
-    <!-- ═══ How it works ═══ -->
-    <section class="lp-section">
-      <div class="lp-section-head">
-        <div class="lp-eyebrow">How it works</div>
-        <h2 class="lp-h2">From pocket clutter to power network in three taps</h2>
+      <!-- Callout 2 · Earnest AI — visual left, copy right -->
+      <div class="lp-callout lp-callout-rev">
+        <div class="lp-ghost" data-parallax aria-hidden="true">MOVE</div>
+        <div class="lp-callout-copy">
+          <div class="lp-eyebrow">Earnest AI in your corner</div>
+          <h3 class="lp-callout-h">It already knows your <span class="lp-grad">next move</span>.</h3>
+          <p class="lp-callout-body">
+            Earnest AI reads both sides of every card, remembers where you met and what you
+            talked about, then drafts the follow-up and surfaces the connections worth
+            nurturing — so the right move is always one tap away.
+          </p>
+          <p class="lp-hand">context in, follow-up out ✨</p>
+        </div>
+
+        <div class="lp-callout-art" aria-hidden="true">
+          <div class="lp-ai lp-glass">
+            <div class="lp-ai-head">
+              <span class="lp-ai-badge"><CdIcon emoji="🧠" icon="lucide:sparkles" :size="15" /> Earnest AI</span>
+              <span class="lp-ai-reading"><CdIcon emoji="🔍" icon="lucide:scan-line" :size="12" /> read front + back</span>
+            </div>
+
+            <div class="lp-ai-context">
+              <span v-for="c in aiChips" :key="c.label" class="lp-ai-chip">
+                <CdIcon :emoji="c.emoji" :icon="c.icon" :size="12" /> {{ c.label }}
+              </span>
+            </div>
+
+            <div class="lp-ai-draft">
+              <div class="lp-ai-draft-label">Suggested follow-up</div>
+              <p class="lp-ai-draft-body">
+                Hi Maya — loved your take on onboarding flows. Want to grab coffee before you
+                fly out Thursday?
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="lp-steps">
-        <div v-for="s in steps" :key="s.n" class="lp-step lp-glass">
-          <div class="lp-step-num">{{ s.n }}</div>
-          <div class="lp-step-icon"><CdIcon :emoji="s.emoji" :icon="s.icon" :size="22" /></div>
-          <h3 class="lp-step-title">{{ s.title }}</h3>
-          <p class="lp-step-body">{{ s.body }}</p>
+
+      <!-- Callout 3 · Orbit — copy left, live showcase right -->
+      <div class="lp-callout lp-callout--orbit">
+        <div class="lp-ghost" data-parallax aria-hidden="true">ORBIT</div>
+        <div class="lp-callout-copy">
+          <div class="lp-eyebrow">Your own Orbit</div>
+          <h3 class="lp-callout-h">Your whole network, orbiting <span class="lp-grad">you</span>.</h3>
+          <p class="lp-callout-body">
+            Everyone you meet pulls into your personal Orbit — a living map of your network.
+            See who’s close, who’s drifting, and who deserves a check-in. Color shows their
+            industry; size shows how active they are.
+          </p>
+          <p class="lp-hand">hover a planet — it’s live 👇</p>
+        </div>
+
+        <div class="lp-callout-art">
+          <ClientOnly>
+            <OrbitShowcase />
+          </ClientOnly>
+        </div>
+      </div>
+
+      <!-- Callout 4 · Compete — leaderboard left, copy right -->
+      <div class="lp-callout lp-callout-rev">
+        <div class="lp-ghost" data-parallax aria-hidden="true">COMPETE</div>
+        <div class="lp-callout-copy">
+          <div class="lp-eyebrow">Compete with your circle</div>
+          <h3 class="lp-callout-h">Climb the board. Earn the <span class="lp-grad">bragging rights</span>.</h3>
+          <p class="lp-callout-body">
+            Networking’s better with rivals. Add the friends and colleagues you actually
+            network with and you’ll all share a leaderboard — compare XP, streaks, and who’s
+            really working the room. Nothing makes you send the follow-up quite like watching
+            a friend pass you.
+          </p>
+          <p class="lp-hand">Maya’s only 160 XP ahead 👀</p>
+          <div class="lp-cta-row lp-callout-cta">
+            <NuxtLink to="/auth/register" class="lp-btn lp-btn-lg">
+              Start climbing <CdIcon emoji="→" icon="lucide:arrow-right" :size="17" />
+            </NuxtLink>
+          </div>
+        </div>
+
+        <div class="lp-callout-art" aria-hidden="true">
+          <div class="lp-board lp-glass">
+            <div class="lp-board-head">
+              <span class="lp-board-title"><CdIcon emoji="🏆" icon="lucide:trophy" :size="16" /> Friends · this week</span>
+              <span class="lp-board-tag">XP</span>
+            </div>
+            <div class="lp-board-rows">
+              <div v-for="r in leaderboard" :key="r.name" class="lp-row" :class="{ 'lp-row-you': r.you }">
+                <span class="lp-rank" :class="`lp-rank-${r.rank}`">{{ r.rank }}</span>
+                <span class="lp-ava" :style="{ background: `color-mix(in srgb, ${r.tint} 20%, transparent)`, color: r.tint }">{{ r.name[0] }}</span>
+                <span class="lp-row-name">{{ r.name }}<span v-if="r.you" class="lp-you-tag">you</span></span>
+                <span class="lp-row-streak"><CdIcon emoji="🔥" icon="lucide:flame" :size="13" /> {{ r.streak }}</span>
+                <span class="lp-row-xp">{{ r.xp.toLocaleString() }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Callout 5 · Your card — copy left, card visual right -->
+      <div class="lp-callout">
+        <div class="lp-ghost" data-parallax aria-hidden="true">SHARE</div>
+        <div class="lp-callout-copy">
+          <div class="lp-eyebrow">A card that’s all you</div>
+          <h3 class="lp-callout-h">Share yourself in <span class="lp-grad">one tap</span>.</h3>
+          <p class="lp-callout-body">
+            Build a personalized digital business card and share it with a tap or a QR scan.
+            No app required on their end — just a link that makes you look sharp.
+          </p>
+          <p class="lp-hand">no app on their end ✨</p>
+        </div>
+
+        <div class="lp-callout-art" aria-hidden="true">
+          <div class="lp-cardviz lp-glass">
+            <div class="lp-cardviz-top">
+              <div class="lp-cardviz-avatar"><CdIcon emoji="🙂" icon="lucide:user-round" :size="24" /></div>
+              <div>
+                <div class="lp-cardviz-name">Jordan Lee</div>
+                <div class="lp-cardviz-role">Founder · Studio North</div>
+              </div>
+            </div>
+            <div class="lp-cardviz-rows">
+              <div class="lp-cardviz-line"><CdIcon emoji="✉️" icon="lucide:mail" :size="13" /> jordan@studionorth.co</div>
+              <div class="lp-cardviz-line"><CdIcon emoji="🔗" icon="lucide:link" :size="13" /> studionorth.co</div>
+            </div>
+            <div class="lp-cardviz-foot">
+              <div class="lp-cardviz-qr"><CdIcon emoji="🔳" icon="lucide:qr-code" :size="40" /></div>
+              <span class="lp-cardviz-tap"><CdIcon emoji="👆" icon="lucide:smartphone-nfc" :size="14" /> tap to share</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Callout 6 · Coaching — coaching chat left, copy right -->
+      <div class="lp-callout lp-callout-rev">
+        <div class="lp-ghost" data-parallax aria-hidden="true">HYPE</div>
+        <div class="lp-callout-copy">
+          <div class="lp-eyebrow">Coaching sessions with Earnest AI</div>
+          <h3 class="lp-callout-h">A coach in your <span class="lp-grad">corner</span>.</h3>
+          <p class="lp-callout-body">
+            Low on momentum? Run a session with Earnest AI for fresh outreach ideas and a hit
+            of motivation — hype yourself up, or take a tough-love nudge to actually follow
+            through.
+          </p>
+          <p class="lp-hand">hype or tough love — your call 💪</p>
+        </div>
+
+        <div class="lp-callout-art" aria-hidden="true">
+          <div class="lp-coach lp-glass">
+            <div class="lp-coach-head">
+              <span class="lp-coach-badge"><CdIcon emoji="🧠" icon="lucide:sparkles" :size="15" /> Earnest AI · coaching</span>
+              <span class="lp-coach-tag">session</span>
+            </div>
+            <div class="lp-coach-bubble">
+              You’ve got 3 follow-ups sitting cold. Let’s knock out two before lunch — I’ll draft them, you hit send. 💪
+            </div>
+            <div class="lp-coach-bubble lp-coach-tough">
+              No more “tomorrow.” Maya replied four days ago — send it now. 🙂
+            </div>
+            <div class="lp-coach-actions">
+              <span class="lp-coach-pill lp-coach-pill-hype">Hype me up</span>
+              <span class="lp-coach-pill">Tough love</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ═══ Closing CTA ═══ -->
-    <section class="lp-cta-band lp-glass">
+    <!-- ═══ Closing CTA — giant ghost title parallaxes up from behind the card ═══ -->
+    <div ref="ctaWrap" class="lp-cta-wrap">
+      <div class="lp-cta-ghost" aria-hidden="true">LET’S PLAY</div>
+      <section class="lp-cta-band lp-glass">
       <p class="lp-hand lp-cta-hand">go on — your network’s waiting</p>
-      <h2 class="lp-cta-title">Start free — <span class="lp-grad">25 Earnest AI tokens</span> on us</h2>
-      <p class="lp-cta-sub">Build your card, scan your first contact, and watch the XP roll in.</p>
+      <h2 class="lp-cta-title">Networking, but&nbsp;make&nbsp;it a&nbsp;<span class="lp-grad">game</span>.</h2>
+      <p class="lp-cta-sub">Start free with 25 Earnest AI tokens on us. Build your card, scan your first contact, and watch the XP roll in.</p>
       <NuxtLink to="/auth/register" class="lp-btn lp-btn-lg">
         Create your CardDesk <CdIcon emoji="→" icon="lucide:arrow-right" :size="17" />
       </NuxtLink>
-    </section>
+      </section>
+    </div>
 
     <!-- ═══ Footer (shared hue footer carries the Powered-by-Earnest line) ═══ -->
     <CdBrandFooter />
     <div class="lp-footer-pad" />
+
+    <!-- Floating CTA — appears past the hero, hands off to the real CTA at the
+         bottom. State (hidden / shown / docked) is set by the scroll handler. -->
+    <div class="lp-float-cta" :class="`is-${floatCta}`">
+      <NuxtLink to="/auth/register" class="lp-btn lp-btn-lg">
+        Create your CardDesk <CdIcon emoji="→" icon="lucide:arrow-right" :size="17" />
+      </NuxtLink>
+    </div>
   </div>
 </template>
 
@@ -560,8 +735,8 @@ html[data-theme="glass"] .lp-chip {
 }
 
 /* ═══ Sections ═══ */
-.lp-section { max-width: 1080px; margin: 0 auto; padding: 56px 24px; }
-.lp-section-head { text-align: center; margin-bottom: 40px; }
+.lp-section { max-width: 1080px; margin: 0 auto; padding: 104px 24px; }
+.lp-section-head { text-align: center; margin-bottom: 64px; }
 .lp-h2 {
   font-family: 'Bebas Neue', sans-serif;
   font-size: clamp(1.9rem, 4vw, 2.9rem);
@@ -571,63 +746,330 @@ html[data-theme="glass"] .lp-chip {
   margin: 6px auto 0;
   max-width: 16em;
 }
+/* Script variant — turns the "why it's different" line into a handwritten
+ * statement, like a testimonial pulled-quote rather than a display header. */
+.lp-h2-script {
+  font-family: 'Gaegu', 'Proxima Nova', cursive;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: clamp(2.1rem, 4.6vw, 3.3rem);
+  line-height: 1.18;
+  max-width: 14em;
+  color: color-mix(in srgb, var(--cd-text) 72%, var(--cd-palette-primary, #4da6ff));
+}
+/* Section eyebrow promoted to a giant faint watermark sitting behind the script
+ * statement — the quote reads as the foreground, the label as the backdrop. */
+.lp-section-head--quote { position: relative; }
+.lp-head-ghost {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(2rem, 8vw, 5.6rem);
+  letter-spacing: 0.05em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--cd-text) 9%, transparent);
+  pointer-events: none;
+  user-select: none;
+}
+.lp-section-head--quote .lp-h2-script { position: relative; z-index: 1; }
 
-/* Pillars grid */
-.lp-grid {
+/* ═══ Featured callout rhythm (Gamify · AI · Orbit · Compete) ═══ */
+.lp-callout {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 60px;
+  align-items: center;
+  margin-top: 130px;
 }
-.lp-feature {
-  border-radius: 18px;
-  padding: 26px;
-  transition: transform 0.18s ease;
+.lp-callout:first-of-type { margin-top: 56px; }
+/* Copy + visual ride above the keyword watermark. */
+.lp-callout-copy,
+.lp-callout-art { position: relative; z-index: 1; }
+
+/* ── Section keyword watermark — giant faint word that parallaxes behind the
+ *    callout. Biased toward the visual side so it stays clear of the body copy
+ *    (and the glass visual frosts the part that sits behind it). ── */
+.lp-ghost {
+  position: absolute;
+  top: 40%;
+  left: 0;
+  z-index: 0;
+  transform: translateY(calc(-50% + var(--lp-shift, 0px)));
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(2.6rem, 12vw, 9.5rem);
+  line-height: 0.82;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--cd-text) 10%, transparent);
+  pointer-events: none;
+  user-select: none;
+  will-change: transform;
 }
-.lp-feature:hover { transform: translateY(-3px); }
-.lp-feature-icon {
+/* Anchor each watermark to its copy block's outer edge — left-aligned on the
+ * left rows, right-aligned on the right rows — so it reads as oversized type
+ * set flush to the text it sits behind, alternating side per row. */
+.lp-callout-rev .lp-ghost { left: auto; right: 0; }
+/* Reversed rows place the visual on the left for an alternating zig-zag. */
+.lp-callout-rev .lp-callout-art { order: -1; }
+/* Orbit's live showcase wants a touch more room than its copy. */
+.lp-callout--orbit { grid-template-columns: 0.86fr 1.14fr; }
+.lp-callout-copy .lp-eyebrow { margin-bottom: 10px; }
+.lp-callout-h {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(1.7rem, 3.2vw, 2.5rem);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+  margin: 0;
+  max-width: 12em;
+}
+.lp-callout-body {
+  font-size: 1.02rem;
+  line-height: 1.6;
+  color: var(--cd-muted);
+  margin: 14px 0 0;
+  max-width: 33em;
+}
+.lp-callout-cta { margin-top: 18px; }
+.lp-callout-art { display: flex; justify-content: center; min-width: 0; }
+
+/* ── Gamify visual — confetti + XP pop + level bar + reward chips ── */
+.lp-gamify {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  border-radius: 22px;
+  padding: 30px 26px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  overflow: hidden;
+}
+.lp-confetti { position: absolute; top: 0; left: 0; width: 100%; height: 80px; pointer-events: none; }
+.lp-gamify-xp {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 3.4rem;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--cd-green);
+  margin-top: 16px;
+}
+.lp-gamify-bar { width: 100%; max-width: 240px; }
+.lp-gamify-bar-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--cd-muted);
+  margin-bottom: 6px;
+}
+.lp-gamify-track {
+  height: 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cd-text) 8%, transparent);
+  overflow: hidden;
+}
+.lp-gamify-fill {
+  height: 100%;
+  width: 82%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--cd-green), var(--cd-palette-primary, #4da6ff));
+}
+.lp-gamify-chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.lp-gchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--cd-bg2);
+  border: 1px solid var(--cd-bdr);
+}
+html[data-theme="glass"] .lp-gchip {
+  background: var(--cd-chrome-fill, rgba(255, 255, 255, 0.09));
+  backdrop-filter: blur(14px) saturate(1.6);
+  -webkit-backdrop-filter: blur(14px) saturate(1.6);
+  border: 1px solid hsl(var(--glass-h) 40% 78% / 0.28);
+}
+.lp-gchip-streak { color: var(--cd-orange); }
+.lp-gchip-orbit { color: var(--cd-blue); }
+/* Motion: confetti drifts down + XP gives a little pop. Held still for
+ * reduced-motion users — the layout reads fine static. */
+@media (prefers-reduced-motion: no-preference) {
+  .lp-cf { animation: lp-cf-fall 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  .lp-cf:nth-child(2n) { animation-duration: 3.8s; }
+  .lp-cf:nth-child(3n) { animation-duration: 2.6s; }
+  .lp-cf:nth-child(1) { animation-delay: 0s; }
+  .lp-cf:nth-child(2) { animation-delay: 0.3s; }
+  .lp-cf:nth-child(3) { animation-delay: 0.6s; }
+  .lp-cf:nth-child(4) { animation-delay: 0.15s; }
+  .lp-cf:nth-child(5) { animation-delay: 0.5s; }
+  .lp-cf:nth-child(6) { animation-delay: 0.8s; }
+  .lp-cf:nth-child(7) { animation-delay: 0.35s; }
+  .lp-cf:nth-child(8) { animation-delay: 0.65s; }
+  .lp-cf:nth-child(9) { animation-delay: 0.9s; }
+  .lp-gamify-xp { animation: lp-xp-pop 3.2s ease-in-out infinite; }
+}
+@keyframes lp-cf-fall {
+  0% { transform: translateY(-8px) rotate(0deg); opacity: 0; }
+  18% { opacity: 1; }
+  100% { transform: translateY(48px) rotate(190deg); opacity: 0; }
+}
+@keyframes lp-xp-pop {
+  0%, 72%, 100% { transform: scale(1); }
+  8% { transform: scale(1.12); }
+}
+
+/* ── Earnest AI visual — context chips + a drafted follow-up ── */
+.lp-ai {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 22px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.lp-ai-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.lp-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 0.92rem;
+  color: var(--cd-palette-primary, #4da6ff);
+}
+.lp-ai-reading {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--cd-dim);
+}
+.lp-ai-context { display: flex; flex-wrap: wrap; gap: 7px; }
+.lp-ai-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--cd-muted);
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cd-text) 5%, transparent);
+  border: 1px solid var(--cd-bdr);
+}
+.lp-ai-draft {
+  border-radius: 14px;
+  padding: 13px 15px;
+  background: color-mix(in srgb, var(--cd-palette-primary, #4da6ff) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-palette-primary, #4da6ff) 28%, transparent);
+}
+.lp-ai-draft-label {
+  font-size: 0.64rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--cd-palette-primary, #4da6ff);
+  margin-bottom: 6px;
+}
+.lp-ai-draft-body { font-size: 0.92rem; line-height: 1.5; color: var(--cd-text); margin: 0; }
+
+/* ── Digital-card visual (Card callout) — a shareable contact card + QR ── */
+.lp-cardviz {
+  width: 100%;
+  max-width: 360px;
+  border-radius: 22px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.lp-cardviz-top { display: flex; align-items: center; gap: 12px; }
+.lp-cardviz-avatar {
   width: 46px; height: 46px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  background: color-mix(in srgb, currentColor 14%, transparent);
-  margin-bottom: 16px;
+  background: color-mix(in srgb, var(--cd-orange) 18%, transparent);
+  color: var(--cd-orange);
 }
-.lp-feature-title { font-size: 1.18rem; font-weight: 800; margin: 0 0 8px; }
-.lp-feature-body { font-size: 0.95rem; line-height: 1.55; color: var(--cd-muted); margin: 0; }
+.lp-cardviz-name { font-weight: 800; font-size: 1.05rem; }
+.lp-cardviz-role { font-size: 0.8rem; color: var(--cd-muted); }
+.lp-cardviz-rows { display: flex; flex-direction: column; gap: 7px; }
+.lp-cardviz-line { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--cd-muted); }
+.lp-cardviz-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 14px; border-top: 1px solid var(--cd-bdr);
+}
+.lp-cardviz-qr { color: var(--cd-text); display: flex; }
+.lp-cardviz-tap {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.8rem; font-weight: 800; color: var(--cd-orange);
+  padding: 7px 13px; border-radius: 999px;
+  background: color-mix(in srgb, var(--cd-orange) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-orange) 32%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lp-cardviz-tap { animation: lp-tap-pulse 2.6s ease-in-out infinite; }
+}
+@keyframes lp-tap-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--cd-orange) 32%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--cd-orange) 0%, transparent); }
+}
 
-/* Steps */
-.lp-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-.lp-step {
-  position: relative;
-  text-align: center;
-  padding: 30px 22px;
-  border-radius: 18px;
+/* ── Coaching-session visual (Coaching callout) — chat bubbles + tone pills ── */
+.lp-coach {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 22px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
-.lp-step-num {
-  position: absolute; top: 14px; right: 16px;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.5rem; color: var(--cd-dim); line-height: 1;
+.lp-coach-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.lp-coach-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-weight: 800; font-size: 0.9rem; color: var(--cd-ice);
 }
-.lp-step-icon {
-  width: 52px; height: 52px; margin: 0 auto 14px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  background: color-mix(in srgb, var(--cd-accent) 14%, transparent);
-  color: var(--cd-accent);
+.lp-coach-tag {
+  font-size: 0.66rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--cd-muted);
+  background: color-mix(in srgb, var(--cd-muted) 14%, transparent);
+  padding: 3px 9px; border-radius: 999px;
 }
-.lp-step-title { font-size: 1.1rem; font-weight: 800; margin: 0 0 6px; }
-.lp-step-body { font-size: 0.92rem; line-height: 1.5; color: var(--cd-muted); margin: 0; }
+.lp-coach-bubble {
+  font-size: 0.92rem; line-height: 1.5; color: var(--cd-text);
+  padding: 11px 14px; border-radius: 14px; border-top-left-radius: 5px;
+  background: color-mix(in srgb, var(--cd-ice) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-ice) 26%, transparent);
+}
+.lp-coach-tough {
+  background: color-mix(in srgb, var(--cd-orange) 11%, transparent);
+  border-color: color-mix(in srgb, var(--cd-orange) 26%, transparent);
+}
+.lp-coach-actions { display: flex; gap: 8px; margin-top: 2px; }
+.lp-coach-pill {
+  font-size: 0.8rem; font-weight: 800; color: var(--cd-muted);
+  padding: 7px 13px; border-radius: 999px;
+  background: color-mix(in srgb, var(--cd-text) 5%, transparent);
+  border: 1px solid var(--cd-bdr);
+}
+.lp-coach-pill-hype { color: var(--cd-ice); border-color: color-mix(in srgb, var(--cd-ice) 38%, transparent); }
 
-/* ═══ Compete with friends ═══ */
-.lp-versus {
-  display: grid;
-  grid-template-columns: 0.92fr 1.08fr;
-  gap: 48px;
-  align-items: center;
-}
-.lp-versus-h2 { text-align: left; margin: 6px 0 0; max-width: 12em; }
-.lp-versus-body { font-size: 1.02rem; line-height: 1.6; color: var(--cd-muted); margin: 16px 0 0; max-width: 32em; }
-.lp-versus-cta { margin-top: 18px; }
-
-.lp-board { border-radius: 22px; padding: 18px 18px 14px; }
+/* ═══ Compete leaderboard card (used inside the Compete callout) ═══ */
+.lp-board { width: 100%; max-width: 420px; border-radius: 22px; padding: 18px 18px 14px; }
 .lp-board-head {
   display: flex; align-items: center; justify-content: space-between;
   padding: 2px 8px 12px;
@@ -683,12 +1125,39 @@ html[data-theme="glass"] .lp-chip {
   font-variant-numeric: tabular-nums; min-width: 54px; text-align: right;
 }
 
-/* ═══ Closing CTA ═══ */
+/* ═══ Closing CTA (with parallax ghost title behind it) ═══ */
+/* The wrap clips the giant title so it reads as rising up from behind the card;
+ * the title's own travel is driven by --lp-cta-shift (set per-frame in JS). */
+.lp-cta-wrap {
+  position: relative;
+  overflow: hidden;
+  padding-top: 110px;
+  margin-bottom: 160px;
+}
+.lp-cta-ghost {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 0;
+  transform: translate(-50%, calc(-50% + var(--lp-cta-shift, 0px)));
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3.5rem, 15vw, 12rem);
+  line-height: 0.84;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--cd-text) 13%, transparent);
+  pointer-events: none;
+  user-select: none;
+  will-change: transform;
+}
 .lp-cta-band {
+  position: relative;
+  z-index: 1;
   width: calc(100% - 48px);
   max-width: 1032px;
-  margin: 20px auto 48px;
-  padding: 48px 32px 52px;
+  margin: 0 auto;
+  padding: 64px 32px 68px;
   text-align: center;
   border-radius: 26px;
 }
@@ -721,13 +1190,49 @@ html[data-theme="glass"] .lp-chip {
 .lp-foot-link:hover { color: var(--cd-text); text-decoration: underline; }
 .lp-footer-pad { height: 28px; }
 
+/* ═══ Floating CTA — fixed pill that fades in past the hero and hands off to
+ *    the real CTA button as the bottom card scrolls into view. ═══ */
+.lp-float-cta {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  z-index: 50;
+  transform: translateX(-50%) translateY(26px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.lp-float-cta.is-shown {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+/* Docking: shrink + settle so it reads as merging into the real CTA button that
+ * is now arriving from the bottom. */
+.lp-float-cta.is-docked {
+  opacity: 0;
+  transform: translateX(-50%) translateY(14px) scale(0.9);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-float-cta { transition: opacity 0.3s ease; transform: translateX(-50%); }
+  .lp-float-cta.is-shown { transform: translateX(-50%); }
+  .lp-float-cta.is-docked { transform: translateX(-50%); }
+}
+
 /* ═══ Responsive ═══ */
 @media (max-width: 860px) {
   .lp-hero { grid-template-columns: 1fr; gap: 8px; padding-bottom: 40px; }
   .lp-hero-art { order: -1; min-height: 280px; margin-bottom: 8px; }
-  .lp-grid { grid-template-columns: 1fr; }
-  .lp-steps { grid-template-columns: 1fr; }
-  .lp-versus { grid-template-columns: 1fr; gap: 28px; }
+  .lp-section { padding: 72px 20px; }
+  /* Callouts stack; copy always leads, visual follows (drop the zig-zag). */
+  .lp-callout,
+  .lp-callout--orbit { grid-template-columns: 1fr; gap: 32px; margin-top: 96px; }
+  .lp-callout-rev .lp-callout-art { order: 0; }
+  /* Single stacked column — both align flush-left with the copy. */
+  .lp-ghost,
+  .lp-callout-rev .lp-ghost { left: 0; right: auto; }
+  .lp-cta-wrap { margin-bottom: 112px; }
 }
 @media (max-width: 480px) {
   .lp-cta-row { flex-direction: column; align-items: stretch; }

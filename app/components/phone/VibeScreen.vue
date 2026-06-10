@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VIBE_MOODS, getAct, cEmoji } from '~/composables/useConstants'
+import { getAct } from '~/composables/useConstants'
 import { fmtRelative } from '~/composables/useFormatters'
 import type { CdActivity, CdContact } from '~/types/directus'
 
@@ -33,8 +33,7 @@ const recentActivity = computed(() => {
     .slice(0, 5)
 })
 
-const moodIdx = ref(0)
-const curMood = computed(() => VIBE_MOODS[moodIdx.value % VIBE_MOODS.length])
+const { ask: askEarnest } = useAskEarnest()
 
 const sessionMode = ref<'tough' | 'hype' | null>(null)
 
@@ -192,6 +191,58 @@ async function loadLeadSuggestions() {
   } catch { leadSugError.value = 'Could not load suggestions' }
   finally { leadSugLoading.value = false }
 }
+
+// Earnest AI "Daily Vibe" — a warm, personalized pep-talk that replaces the old
+// hardcoded mood rotator. It reads the user's real momentum and returns one
+// emotional nudge (distinct from the tactical "What should I do next?" widget).
+// Generated on demand and cached per-day in localStorage so revisiting the Vibe
+// screen doesn't re-spend AI credits.
+type DailyVibe = { mood: string; emoji: string; title: string; body: string; cta?: string }
+const vibe = ref<DailyVibe | null>(null)
+const vibeLoading = ref(false)
+const vibeError = ref<string | null>(null)
+const VIBE_CACHE_KEY = 'cd-daily-vibe'
+
+onMounted(() => {
+  try {
+    const cached = JSON.parse(localStorage.getItem(VIBE_CACHE_KEY) || 'null')
+    if (cached?.date === today && cached.vibe) vibe.value = cached.vibe
+  } catch { /* ignore bad cache */ }
+})
+
+async function loadVibe() {
+  if (vibeLoading.value) return
+  vibeLoading.value = true; vibeError.value = null
+  analytics.aiFeatureUse('daily_vibe')
+  try {
+    const hot = contacts.value.filter((c) => c.rating === 'hot' && !c.hibernated).length
+    const warm = contacts.value.filter((c) => c.rating === 'warm' && !c.hibernated).length
+    const data = await $fetch<DailyVibe>('/api/ai-daily-vibe', {
+      method: 'POST',
+      body: {
+        stats: {
+          streak: xp.value.streak,
+          level: xp.value.level,
+          levelTitle: curLevel.value.title,
+          totalXp: xp.value.total_xp,
+          weekXp: weekXp.value,
+          weekTouchpoints: weekTotal.value,
+          hot, warm, cold: coldCs.value.length, overdue: alertCs.value.length,
+          total: contacts.value.length,
+          actedToday: didActionToday.value,
+        },
+        recentActivity: recentActivity.value.map((item) => ({
+          type: item.act.type,
+          contactName: item.contact.name,
+          isResponse: item.act.is_response,
+        })),
+      },
+    })
+    vibe.value = data
+    try { localStorage.setItem(VIBE_CACHE_KEY, JSON.stringify({ date: today, vibe: data })) } catch { /* quota */ }
+  } catch { vibeError.value = 'Could not tune into your vibe' }
+  finally { vibeLoading.value = false }
+}
 </script>
 
 <template>
@@ -211,7 +262,7 @@ async function loadLeadSuggestions() {
       </button>
       <!-- Grow your network: share your card or invite -->
       <div style="display: flex; gap: 8px; margin-bottom: 12px">
-        <button class="cd-abtn ice" style="font-size: 12px; padding: 10px" @click="openShareSheet('card')"><CdIcon emoji="🪪" icon="lucide:contact" :size="14" /> My Card</button>
+        <button class="cd-abtn ice" style="font-size: 12px; padding: 10px" @click="openShareSheet('card')"><CdCardMark :size="15" :gradient="false" /> My Card</button>
         <button class="cd-abtn b" style="font-size: 12px; padding: 10px" @click="openShareSheet('invite')"><CdIcon emoji="🔗" icon="lucide:user-plus" :size="14" /> Invite</button>
       </div>
       <div class="cd-vc" style="border-color: color-mix(in srgb, var(--cd-green) 22%, transparent); padding-bottom: 6px; position: relative">
@@ -326,6 +377,9 @@ async function loadLeadSuggestions() {
       <!-- Leaderboard snapshot — only renders if you have accepted connections -->
       <PhoneLeaderboardCallout />
 
+      <!-- Swipeable card stack: your network's activity (with reactions) + people -->
+      <PhoneSwipeDeck />
+
       <!-- Pipeline Health Card -->
       <div v-if="pipelineStats.stageCounts && Object.values(pipelineStats.stageCounts).some((v: any) => v > 0)" class="cd-vc" style="border: 1px solid rgba(77,166,255,0.2)">
         <div class="cd-vct">
@@ -376,7 +430,7 @@ async function loadLeadSuggestions() {
       <div class="cd-vc" style="border-color: rgba(77, 166, 255, 0.2)">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px">
           <div style="display: flex; align-items: center; gap: 6px">
-            <CdIcon emoji="🤖" icon="lucide:sparkles" :size="15" />
+            <CdEarnestMark :size="15" />
             <span style="font-size: 13px; font-weight: 800; color: #4da6ff">What should I do next?</span>
           </div>
           <button
@@ -385,7 +439,7 @@ async function loadLeadSuggestions() {
             :disabled="leadSugLoading"
             @click="loadLeadSuggestions"
           >
-            <CdIcon emoji="✨" icon="lucide:sparkles" :size="10" />
+            <CdEarnestMark :size="12" />
             {{ leadSugLoading ? 'Thinking...' : leadSuggestions.length ? 'Refresh' : 'Get Earnest AI Ideas' }}
           </button>
         </div>
@@ -495,17 +549,34 @@ async function loadLeadSuggestions() {
         </div>
       </div>
 
-      <div class="cd-mood" @click="moodIdx++">
-        <div style="font-size: 24px; margin-bottom: 5px"><CdIcon :emoji="curMood.e" :icon="curMood.lucide" :size="24" /></div>
-        <div class="cd-mc-t" :class="curMood.color">{{ curMood.title }}</div>
-        <div class="cd-mc-b">{{ curMood.body }}</div>
-        <div style="font-size: 10px; color: var(--cd-dim); margin-top: 6px">tap to rotate</div>
+      <!-- Earnest AI Daily Vibe — a personalized pep-talk (was the mood rotator) -->
+      <div class="cd-vibe" :class="vibe ? 'vibe-' + vibe.mood : ''">
+        <template v-if="vibe">
+          <div class="cd-vibe-emoji">{{ vibe.emoji }}</div>
+          <div class="cd-vibe-title">{{ vibe.title }}</div>
+          <div class="cd-vibe-body">{{ vibe.body }}</div>
+          <div class="cd-vibe-actions">
+            <button v-if="vibe.cta" class="cd-vibe-cta" @click="askEarnest">
+              <CdEarnestMark :size="12" /> {{ vibe.cta }}
+            </button>
+            <button class="cd-vibe-refresh" :disabled="vibeLoading" @click="loadVibe">
+              <CdIcon icon="lucide:refresh-cw" :size="11" :class="{ spin: vibeLoading }" />
+              {{ vibeLoading ? 'Tuning in…' : 'New vibe' }}
+            </button>
+          </div>
+        </template>
+        <button v-else class="cd-vibe-empty" :disabled="vibeLoading" @click="loadVibe">
+          <span class="cd-vibe-empty-ico"><CdEarnestMark :size="24" /></span>
+          <span class="cd-vibe-empty-t">{{ vibeLoading ? 'Reading your momentum…' : 'Get your daily vibe' }}</span>
+          <span class="cd-vibe-empty-b">A quick, personal check-in from Earnest — tuned to your week.</span>
+        </button>
+        <div v-if="vibeError" class="cd-vibe-err">{{ vibeError }}</div>
       </div>
 
       <!-- Who is Earnest? — context for the Earnest-powered backend/billing -->
       <div class="cd-vc" style="border-color: rgba(77, 166, 255, 0.2)">
         <div class="cd-vct">
-          <span class="cd-vci"><CdIcon emoji="✨" icon="lucide:sparkles" /></span>
+          <span class="cd-vci"><CdEarnestMark :size="18" /></span>
           <div>
             <div class="cd-vch" style="color: #4da6ff">Who is Earnest?</div>
             <div class="cd-vcb">
@@ -526,3 +597,71 @@ async function loadLeadSuggestions() {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Earnest AI Daily Vibe — a personalized pep-talk card. Mood-tinted accent
+   keeps the warm, emotional tone of the old mood rotator it replaced. */
+.cd-vibe {
+  --vibe: var(--cd-blue, #4da6ff);
+  position: relative;
+  text-align: center;
+  border-radius: 16px;
+  padding: 16px 16px 14px;
+  margin-bottom: 10px;
+  /* Plain liquid-glass surface to match the deck cards (the glass material is
+     applied globally via carddesk.css). The mood lives in the title/icon/CTA. */
+  background: var(--cd-bg2);
+  border: 1px solid var(--cd-bdr);
+  box-shadow: var(--glass-shadow, 0 18px 40px -22px rgba(0, 0, 0, 0.4));
+}
+.cd-vibe.vibe-fire { --vibe: #ff6b35; }
+.cd-vibe.vibe-steady { --vibe: var(--cd-accent, #00ff87); }
+.cd-vibe.vibe-gentle { --vibe: var(--cd-purple, #b87dff); }
+.cd-vibe.vibe-nudge { --vibe: var(--cd-blue, #4da6ff); }
+
+.cd-vibe-emoji { font-size: 26px; line-height: 1; margin-bottom: 6px; }
+.cd-vibe-title { font-size: 15px; font-weight: 800; color: var(--vibe); margin-bottom: 4px; }
+.cd-vibe-body { font-size: 11.5px; color: var(--cd-muted); line-height: 1.6; max-width: 36ch; margin: 0 auto; }
+
+.cd-vibe-actions { display: flex; gap: 8px; justify-content: center; margin-top: 11px; }
+.cd-vibe-cta,
+.cd-vibe-refresh {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 700; font-family: inherit;
+  padding: 6px 12px; border-radius: 9999px; cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.cd-vibe-cta {
+  color: var(--cd-bg, #050710);
+  background: var(--vibe);
+  border: 1px solid var(--vibe);
+}
+.cd-vibe-refresh {
+  color: var(--cd-dim);
+  background: transparent;
+  border: 1px solid var(--cd-bdr);
+}
+.cd-vibe-cta:active,
+.cd-vibe-refresh:active { transform: scale(0.96); }
+.cd-vibe-refresh:hover { color: var(--vibe); border-color: color-mix(in srgb, var(--vibe) 45%, var(--cd-bdr)); }
+.cd-vibe-refresh:disabled { opacity: 0.6; cursor: default; }
+
+.cd-vibe-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  width: 100%; padding: 4px 0; cursor: pointer;
+  background: transparent; border: none; font-family: inherit; color: inherit;
+}
+.cd-vibe-empty:disabled { cursor: default; }
+.cd-vibe-empty-ico {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 50%; margin-bottom: 4px; color: var(--vibe);
+  background: color-mix(in srgb, var(--vibe) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vibe) 28%, transparent);
+}
+.cd-vibe-empty-t { font-size: 14px; font-weight: 800; color: var(--cd-text); }
+.cd-vibe-empty-b { font-size: 11px; color: var(--cd-dim); line-height: 1.5; max-width: 32ch; }
+.cd-vibe-err { font-size: 11px; color: #f87171; margin-top: 8px; }
+
+.cd-vibe :deep(.spin) { animation: cd-vibe-spin 0.9s linear infinite; }
+@keyframes cd-vibe-spin { to { transform: rotate(360deg); } }
+</style>

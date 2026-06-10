@@ -1838,6 +1838,8 @@ html[data-theme="glass"][data-cd-glass="full"][data-mode="dark"] .cd-root {
  * Overrides the earlier "flatten to --cd-bg2" + light-elevation rules by
  * specificity (3 attrs + class vs 1-2 attrs + class). */
 html[data-theme="glass"][data-cd-glass="full"][data-mode="light"] .cd-vc,
+html[data-theme="glass"][data-cd-glass="full"][data-mode="light"] .cd-swipe-card,
+html[data-theme="glass"][data-cd-glass="full"][data-mode="light"] .cd-vibe,
 html[data-theme="glass"][data-cd-glass="full"][data-mode="light"] .cd-sess-entry,
 html[data-theme="glass"][data-cd-glass="full"][data-mode="light"] .cd-mood,
 html[data-theme="glass"][data-cd-glass="full"][data-mode="light"] .cd-scard,
@@ -1865,6 +1867,8 @@ html[data-theme="glass"][data-cd-glass="full"][data-mode="light"] .cd-fu-banner 
   box-shadow: var(--glass-inset), var(--glass-shadow);
 }
 html[data-theme="glass"][data-cd-glass="full"][data-mode="dark"] .cd-vc,
+html[data-theme="glass"][data-cd-glass="full"][data-mode="dark"] .cd-swipe-card,
+html[data-theme="glass"][data-cd-glass="full"][data-mode="dark"] .cd-vibe,
 html[data-theme="glass"][data-cd-glass="full"][data-mode="dark"] .cd-sess-entry,
 html[data-theme="glass"][data-cd-glass="full"][data-mode="dark"] .cd-mood,
 html[data-theme="glass"][data-cd-glass="full"][data-mode="dark"] .cd-scard,
