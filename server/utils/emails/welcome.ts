@@ -1,5 +1,6 @@
 // server/utils/emails/welcome.ts
-import { renderCardDeskEmail, escapeHtml, type RenderedEmail } from './shell'
+import { renderEmail, type RenderedEmail } from './shell'
+import { welcomeHtml } from './compiled'
 
 interface WelcomeEmailArgs {
   firstName?: string | null
@@ -7,10 +8,26 @@ interface WelcomeEmailArgs {
   appUrl: string
 }
 
+// Plain-text fallback. Mirrors the MJML copy; Handlebars tokens match the
+// design source so both render from the same per-send data.
+const WELCOME_TEXT = `Hey {{#if firstName}}{{firstName}}{{else}}there{{/if}},
+
+Your CardDesk account is ready. Scan a business card, save the contact, and watch the XP roll in — networking, but make it a game.
+
+Confirm this email and jump in:
+- Scan your first card for +50 XP
+- Save the contact for +25 XP
+- Come back daily to build a streak
+
+Open CardDesk: {{appUrl}}
+
+This is an automated message from CardDesk — your gamified networking sidekick.`
+
 /**
- * 🎨 MJML SWAP POINT — replace the body of this function with your MJML render
- * for the signup welcome / "confirm your email" message. Keep the same args in
- * and { subject, html, text } out. Dynamic content available: firstName, appUrl.
+ * Signup welcome / "confirm your email" message. The visual design is in
+ * mjml/welcome.mjml (compiled into ./compiled.ts via `npm run build:emails`);
+ * edit that source and regenerate to change the look. Keep the args in and
+ * { subject, html, text } out — callers don't change.
  *
  * Note: with the current signup flow the account is created ACTIVE and the user
  * is logged in immediately, so this is a welcome + soft email-confirmation (not
@@ -19,27 +36,11 @@ interface WelcomeEmailArgs {
  * password_reset_tokens collection / approach works for a verify token.
  */
 export function welcomeEmail(args: WelcomeEmailArgs): { subject: string } & RenderedEmail {
-  const { firstName, appUrl } = args
   const subject = 'Welcome to CardDesk 🎴'
-  const greeting = firstName ? `Hey ${escapeHtml(firstName)},` : 'Hey there,'
-
-  const bodyHtml = `
-    <p style="margin:0 0 16px;">${greeting}</p>
-    <p style="margin:0 0 16px;">Your CardDesk account is ready. Scan a business card, save the contact, and watch the XP roll in — networking, but make it a game.</p>
-    <p style="margin:0 0 16px;">Tap below to confirm this email and jump in:</p>
-    <ul style="margin:0 0 16px;padding-left:20px;color:#333333;">
-      <li style="margin:0 0 6px;">📷 Scan your first card for <strong>+50 XP</strong></li>
-      <li style="margin:0 0 6px;">💾 Save the contact for <strong>+25 XP</strong></li>
-      <li style="margin:0 0 6px;">🔥 Come back daily to build a streak</li>
-    </ul>
-  `
-
-  const rendered = renderCardDeskEmail({
-    subject,
+  const rendered = renderEmail(welcomeHtml, WELCOME_TEXT, {
+    firstName: args.firstName || null,
+    appUrl: args.appUrl,
     preheader: 'Your CardDesk account is ready — confirm your email and start earning XP.',
-    heading: 'You’re in.',
-    bodyHtml,
-    cta: { label: 'Open CardDesk', url: appUrl },
   })
 
   return { subject, ...rendered }

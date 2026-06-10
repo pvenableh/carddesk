@@ -24,6 +24,38 @@ const analytics = useAnalytics()
 // first authenticated load so the new user lands already connected.
 const inviteCookie = useCookie<string | null>('cd_invite', { path: '/' })
 
+// ─── Marketing SEO ───
+// The logged-out landing at `/` is the public face of the site, so the page
+// root owns the marketing meta (title/description/OG/Twitter/canonical).
+// Absolute URLs are derived from the actual request host so canonical + share
+// images resolve correctly across preview/prod domains.
+const seoUrl = useRequestURL()
+const siteOrigin = seoUrl.origin
+const ogImage = `${siteOrigin}/og-image.png`
+const seoTitle = 'CardDesk — Networking, but make it a game'
+const seoDescription =
+  'Turn the business cards piling up in your pocket into XP, streaks, and real relationships. CardDesk makes meeting people genuinely fun — with Earnest AI doing the heavy lifting. Start free with 25 tokens, no credit card.'
+useSeoMeta({
+  title: seoTitle,
+  description: seoDescription,
+  ogType: 'website',
+  ogSiteName: 'CardDesk',
+  ogTitle: seoTitle,
+  ogDescription: seoDescription,
+  ogUrl: `${siteOrigin}/`,
+  ogImage,
+  ogImageWidth: 1200,
+  ogImageHeight: 630,
+  ogImageAlt: 'CardDesk — turn the cards in your pocket into XP, streaks, and real relationships',
+  twitterCard: 'summary_large_image',
+  twitterTitle: seoTitle,
+  twitterDescription: seoDescription,
+  twitterImage: ogImage,
+})
+useHead({
+  link: [{ rel: 'canonical', href: `${siteOrigin}/` }],
+})
+
 const rootClass = computed(() => ['cd-root', theme.value === 'glass' ? 'cd-glass' : ''])
 
 const screenComponents: Record<Screen, Component> = {

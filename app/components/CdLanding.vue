@@ -60,6 +60,17 @@ const steps = [
   { n: '3', emoji: '🪐', icon: 'lucide:orbit', title: 'Your Orbit grows', body: 'They join your network. Earnest AI tees up the follow-up.' },
 ]
 
+// Sample friends leaderboard for the "compete with friends" spotlight. You sit
+// at #2, 160 XP behind Maya — close enough to feel the chase (the handwriting
+// microcopy references that exact gap).
+const leaderboard = [
+  { rank: 1, name: 'Maya C.', xp: 2640, streak: 9, tint: 'var(--cd-gold)' },
+  { rank: 2, name: 'You', xp: 2480, streak: 12, tint: 'var(--cd-green)', you: true },
+  { rank: 3, name: 'Devin B.', xp: 2210, streak: 5, tint: 'var(--cd-ice)' },
+  { rank: 4, name: 'Priya N.', xp: 1990, streak: 7, tint: 'var(--cd-palette-primary, #4da6ff)' },
+  { rank: 5, name: 'Alex R.', xp: 1640, streak: 3, tint: 'var(--cd-orange)' },
+]
+
 // Hero deck — a small stack of cards that slowly flips through sample contacts.
 const heroCards = [
   { name: 'Alex Rivera', role: 'Founder · Northwind', email: 'alex@northwind.co', phone: '(415) 555-0199', tint: 'var(--cd-palette-primary, #4da6ff)' },
@@ -164,6 +175,42 @@ onUnmounted(() => { if (heroTimer) clearInterval(heroTimer) })
           <h3 class="lp-feature-title">{{ p.title }}</h3>
           <p class="lp-feature-body">{{ p.body }}</p>
         </article>
+      </div>
+    </section>
+
+    <!-- ═══ Compete with friends ═══ -->
+    <section class="lp-section lp-versus">
+      <div class="lp-versus-copy">
+        <div class="lp-eyebrow">The fun part</div>
+        <h2 class="lp-h2 lp-versus-h2">Climb the board. Earn the <span class="lp-grad">bragging rights</span>.</h2>
+        <p class="lp-versus-body">
+          Add the friends and colleagues you actually network with and you’ll all share a
+          leaderboard. Watch the XP race update in real time, defend your streak, and let a
+          little healthy rivalry push everyone to keep in touch. Nothing makes you send the
+          follow-up quite like watching a friend pass you.
+        </p>
+        <p class="lp-hand">Maya’s only 160 XP ahead 👀</p>
+        <div class="lp-cta-row lp-versus-cta">
+          <NuxtLink to="/auth/register" class="lp-btn lp-btn-lg">
+            Start climbing <CdIcon emoji="→" icon="lucide:arrow-right" :size="17" />
+          </NuxtLink>
+        </div>
+      </div>
+
+      <div class="lp-board lp-glass" aria-hidden="true">
+        <div class="lp-board-head">
+          <span class="lp-board-title"><CdIcon emoji="🏆" icon="lucide:trophy" :size="16" /> Friends · this week</span>
+          <span class="lp-board-tag">XP</span>
+        </div>
+        <div class="lp-board-rows">
+          <div v-for="r in leaderboard" :key="r.name" class="lp-row" :class="{ 'lp-row-you': r.you }">
+            <span class="lp-rank" :class="`lp-rank-${r.rank}`">{{ r.rank }}</span>
+            <span class="lp-ava" :style="{ background: `color-mix(in srgb, ${r.tint} 20%, transparent)`, color: r.tint }">{{ r.name[0] }}</span>
+            <span class="lp-row-name">{{ r.name }}<span v-if="r.you" class="lp-you-tag">you</span></span>
+            <span class="lp-row-streak"><CdIcon emoji="🔥" icon="lucide:flame" :size="13" /> {{ r.streak }}</span>
+            <span class="lp-row-xp">{{ r.xp.toLocaleString() }}</span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -558,6 +605,73 @@ html[data-theme="glass"] .lp-chip {
 .lp-step-title { font-size: 1.1rem; font-weight: 800; margin: 0 0 6px; }
 .lp-step-body { font-size: 0.92rem; line-height: 1.5; color: var(--cd-muted); margin: 0; }
 
+/* ═══ Compete with friends ═══ */
+.lp-versus {
+  display: grid;
+  grid-template-columns: 0.92fr 1.08fr;
+  gap: 48px;
+  align-items: center;
+}
+.lp-versus-h2 { text-align: left; margin: 6px 0 0; max-width: 12em; }
+.lp-versus-body { font-size: 1.02rem; line-height: 1.6; color: var(--cd-muted); margin: 16px 0 0; max-width: 32em; }
+.lp-versus-cta { margin-top: 18px; }
+
+.lp-board { border-radius: 22px; padding: 18px 18px 14px; }
+.lp-board-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 2px 8px 12px;
+}
+.lp-board-title { display: inline-flex; align-items: center; gap: 7px; font-weight: 800; font-size: 0.95rem; }
+.lp-board-tag {
+  font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--cd-dim); font-weight: 700;
+}
+.lp-board-rows { display: flex; flex-direction: column; gap: 6px; }
+.lp-row {
+  display: grid;
+  grid-template-columns: 24px 34px 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--cd-text) 4%, transparent);
+  transition: transform 0.18s ease;
+}
+.lp-row-you {
+  background: color-mix(in srgb, var(--cd-green) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-green) 40%, transparent);
+  box-shadow: var(--glass-shadow);
+  transform: scale(1.015);
+}
+.lp-rank {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.15rem; line-height: 1;
+  color: var(--cd-dim); text-align: center;
+}
+.lp-rank-1 { color: var(--cd-gold); }
+.lp-rank-2 { color: var(--cd-ice); }
+.lp-rank-3 { color: var(--cd-orange); }
+.lp-ava {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 0.9rem;
+}
+.lp-row-name { font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; }
+.lp-you-tag {
+  font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--cd-green);
+  background: color-mix(in srgb, var(--cd-green) 16%, transparent);
+  padding: 2px 7px; border-radius: 999px;
+}
+.lp-row-streak {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.82rem; font-weight: 700; color: var(--cd-orange);
+}
+.lp-row-xp {
+  font-weight: 800; font-size: 0.95rem;
+  font-variant-numeric: tabular-nums; min-width: 54px; text-align: right;
+}
+
 /* ═══ Closing CTA ═══ */
 .lp-cta-band {
   width: calc(100% - 48px);
@@ -602,6 +716,7 @@ html[data-theme="glass"] .lp-chip {
   .lp-hero-art { order: -1; min-height: 280px; margin-bottom: 8px; }
   .lp-grid { grid-template-columns: 1fr; }
   .lp-steps { grid-template-columns: 1fr; }
+  .lp-versus { grid-template-columns: 1fr; gap: 28px; }
 }
 @media (max-width: 480px) {
   .lp-cta-row { flex-direction: column; align-items: stretch; }

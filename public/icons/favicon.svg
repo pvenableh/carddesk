@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Card mark only, no background. The strokes wear the aurora color blobs. -->
+  <defs>
+    <radialGradient id="fb-A">
+      <stop offset="0%" stop-color="hsl(163 100% 42%)" stop-opacity="1"/>
+      <stop offset="75%" stop-color="hsl(163 100% 42%)" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="fb-B">
+      <stop offset="0%" stop-color="hsl(213 80% 55%)" stop-opacity="1"/>
+      <stop offset="80%" stop-color="hsl(213 80% 55%)" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="fb-C">
+      <stop offset="0%" stop-color="hsl(278 85% 56%)" stop-opacity="1"/>
+      <stop offset="78%" stop-color="hsl(278 85% 56%)" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="fb-D">
+      <stop offset="0%" stop-color="hsl(190 90% 55%)" stop-opacity="0.9"/>
+      <stop offset="78%" stop-color="hsl(190 90% 55%)" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="fb-soften" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="60"/>
+    </filter>
+    <!-- mask = the card glyph; only the strokes reveal the blobs -->
+    <mask id="fb-card">
+      <g transform="translate(256 256)" fill="none" stroke="#ffffff"
+         stroke-linecap="round" stroke-linejoin="round">
+        <rect x="-150" y="-104" width="300" height="208" rx="34" stroke-width="26"/>
+        <line x1="-112" y1="-50" x2="70" y2="-50" stroke-width="26"/>
+        <line x1="-112" y1="8" x2="2" y2="8" stroke-width="24"/>
+      </g>
+    </mask>
+  </defs>
+
+  <g mask="url(#fb-card)">
+    <!-- opaque blue base so the strokes stay solid, plus blurred color blobs -->
+    <rect width="512" height="512" fill="hsl(213 80% 55%)"/>
+    <g filter="url(#fb-soften)">
+      <ellipse cx="120" cy="120" rx="320" ry="300" fill="url(#fb-A)"/>
+      <ellipse cx="256" cy="256" rx="340" ry="360" fill="url(#fb-B)"/>
+      <ellipse cx="330" cy="430" rx="320" ry="300" fill="url(#fb-C)"/>
+      <ellipse cx="90" cy="360" rx="260" ry="280" fill="url(#fb-D)"/>
+    </g>
+  </g>
+</svg>

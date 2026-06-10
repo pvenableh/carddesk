@@ -1,5 +1,6 @@
 // server/utils/emails/password-reset.ts
-import { renderCardDeskEmail, escapeHtml, type RenderedEmail } from './shell'
+import { renderEmail, type RenderedEmail } from './shell'
+import { passwordResetHtml } from './compiled'
 
 interface PasswordResetEmailArgs {
   firstName?: string | null
@@ -8,30 +9,33 @@ interface PasswordResetEmailArgs {
   expiresIn?: string
 }
 
+// Plain-text fallback. Mirrors the MJML copy; tokens match the design source.
+const PASSWORD_RESET_TEXT = `Hi {{#if firstName}}{{firstName}}{{else}}there{{/if}},
+
+We got a request to reset the password on your CardDesk account. Open the link below to choose a new one.
+
+This link expires in {{expiresIn}} and can only be used once.
+
+Set a new password: {{resetUrl}}
+
+If you didn't request this, you can safely ignore this email — your password stays the same.
+
+This is an automated message from CardDesk — your gamified networking sidekick.`
+
 /**
- * 🎨 MJML SWAP POINT — replace the body of this function with your MJML render
- * for the password-reset email. Keep the same args in and { subject, html, text }
- * out. Dynamic content available: firstName, resetUrl, expiresIn.
+ * Password-reset email. The visual design is in mjml/password-reset.mjml
+ * (compiled into ./compiled.ts via `npm run build:emails`); edit that source and
+ * regenerate to change the look. Keep the args in and { subject, html, text }
+ * out — callers don't change.
  */
 export function passwordResetEmail(args: PasswordResetEmailArgs): { subject: string } & RenderedEmail {
-  const { firstName, resetUrl } = args
   const expiresIn = args.expiresIn || '1 hour'
   const subject = 'Reset your CardDesk password'
-  const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : 'Hi there,'
-
-  const bodyHtml = `
-    <p style="margin:0 0 16px;">${greeting}</p>
-    <p style="margin:0 0 16px;">We got a request to reset the password on your CardDesk account. Tap the button below to choose a new one.</p>
-    <p style="margin:0 0 16px;">This link expires in <strong>${escapeHtml(expiresIn)}</strong> and can only be used once.</p>
-    <p style="margin:0 0 16px;color:#8a94a6;font-size:14px;">If you didn't request this, you can safely ignore this email — your password stays the same.</p>
-  `
-
-  const rendered = renderCardDeskEmail({
-    subject,
+  const rendered = renderEmail(passwordResetHtml, PASSWORD_RESET_TEXT, {
+    firstName: args.firstName || null,
+    resetUrl: args.resetUrl,
+    expiresIn,
     preheader: `Set a new CardDesk password. Link expires in ${expiresIn}.`,
-    heading: 'Reset your password',
-    bodyHtml,
-    cta: { label: 'Set new password', url: resetUrl },
   })
 
   return { subject, ...rendered }

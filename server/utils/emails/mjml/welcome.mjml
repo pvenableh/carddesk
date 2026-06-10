@@ -1,0 +1,137 @@
+<mjml>
+  <mj-head>
+    <!-- Display face for headings + wordmark. Outlook ignores web fonts and
+         falls back to the system stack below — that's expected/acceptable. -->
+    <mj-font name="Bebas Neue" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" />
+
+    <mj-preview>{{preheader}}</mj-preview>
+
+    <mj-attributes>
+      <mj-all font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" />
+      <mj-text color="#ededed" font-size="16px" line-height="1.6" />
+      <mj-section padding="0" />
+    </mj-attributes>
+
+    <mj-style>
+      /* ---- Dark canvas. backdrop-filter blur is stripped by mail clients, so
+            "glass" here is simulated: a frozen gradient tint + hairline border +
+            a bright inset top-edge highlight, layered over near-black. ---- */
+      body, .cd-bg { background-color: #0d0d0d; }
+
+      /* Ambient palette wash behind the card (Aurora dark: green / ice / violet).
+         Kept in a head style class so supporting clients (Apple/iOS Mail) render
+         the depth; everywhere else degrades to the solid #0d0d0d body. */
+      .cd-ambient {
+        background-color: #0d0d0d;
+        background-image:
+          radial-gradient(120% 80% at 0% 0%,   rgba(0, 255, 135, 0.10) 0%, transparent 55%),
+          radial-gradient(120% 85% at 100% 0%, rgba(184, 125, 255, 0.10) 0%, transparent 52%),
+          radial-gradient(150% 100% at 50% 100%, rgba(168, 216, 234, 0.08) 0%, transparent 60%);
+      }
+
+      /* The frosted "widget" panel. */
+      .cd-card > table {
+        background-color: #141414 !important;
+        background-image: linear-gradient(135deg,
+          rgba(255, 255, 255, 0.06) 0%,
+          rgba(255, 255, 255, 0.02) 50%,
+          rgba(184, 125, 255, 0.05) 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 22px !important;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.10),
+          0 32px 70px -28px rgba(0, 0, 0, 0.65) !important;
+      }
+
+      /* Frosted-chrome CTA — translucent green fill, glowing green ring + text,
+         matching the app's data-surface="glass" primary button. */
+      .cd-cta a {
+        box-shadow: 0 0 28px rgba(0, 255, 135, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+      }
+
+      .cd-xp td { color: #ededed; }
+      a { color: #00ff87; }
+
+      @media (prefers-color-scheme: light) {
+        /* These emails are intentionally dark in every mode. */
+        body, .cd-bg, .cd-ambient { background-color: #0d0d0d !important; }
+      }
+    </mj-style>
+  </mj-head>
+
+  <mj-body background-color="#0d0d0d" css-class="cd-bg" width="600px">
+    <mj-wrapper css-class="cd-ambient" padding="32px 16px">
+
+      <!-- Wordmark -->
+      <mj-section padding="0 12px 18px">
+        <mj-column>
+          <mj-text font-size="22px" font-weight="800" letter-spacing="-0.02em" color="#ededed" padding="0">
+            CardDesk<span style="color:#00ff87;">.</span>
+          </mj-text>
+        </mj-column>
+      </mj-section>
+
+      <!-- Glass widget -->
+      <mj-section css-class="cd-card" background-color="#141414" border-radius="22px" padding="0">
+        <mj-column padding="0">
+
+          <!-- accent hairline -->
+          <mj-divider border-width="3px" border-color="#00ff87" width="56px" align="left" padding="22px 28px 0" />
+
+          <mj-text css-class="cd-heading" font-family="'Bebas Neue', -apple-system, BlinkMacSystemFont, sans-serif"
+                   font-size="46px" line-height="1.0" letter-spacing="0.01em" color="#ffffff"
+                   padding="18px 28px 6px">
+            You&rsquo;re in.
+          </mj-text>
+
+          <mj-text padding="6px 28px 0">
+            {{#if firstName}}Hey {{firstName}},{{else}}Hey there,{{/if}}
+          </mj-text>
+
+          <mj-text padding="14px 28px 0">
+            Your CardDesk account is ready. Scan a business card, save the contact, and watch the XP roll in &mdash; networking, but make it a game.
+          </mj-text>
+
+          <mj-text padding="14px 28px 0" color="#8c8c8c">
+            Tap below to confirm this email and jump in:
+          </mj-text>
+
+          <!-- XP rows -->
+          <mj-table css-class="cd-xp" padding="16px 28px 4px" cellpadding="0" font-size="15px" line-height="1.5">
+            <tr>
+              <td style="padding:7px 0; color:#ededed;">📷&#160;&#160;Scan your first card for <strong style="color:#00ff87;">+50 XP</strong></td>
+            </tr>
+            <tr>
+              <td style="padding:7px 0; color:#ededed;">💾&#160;&#160;Save the contact for <strong style="color:#00ff87;">+25 XP</strong></td>
+            </tr>
+            <tr>
+              <td style="padding:7px 0; color:#ededed;">🔥&#160;&#160;Come back daily to build a streak</td>
+            </tr>
+          </mj-table>
+
+          <!-- CTA -->
+          <mj-button css-class="cd-cta" href="{{appUrl}}"
+                     background-color="#0e2a1d" color="#00ff87"
+                     border="1px solid rgba(0,255,135,0.45)" border-radius="9999px"
+                     font-size="15px" font-weight="700" letter-spacing="0.02em"
+                     inner-padding="14px 28px" align="left" padding="24px 28px 10px">
+            Open CardDesk
+          </mj-button>
+
+          <mj-text padding="2px 28px 0" font-size="12px" line-height="1.5" color="#666666">
+            Or paste this link into your browser:<br />
+            <a href="{{appUrl}}" style="color:#8c8c8c; word-break:break-all;">{{appUrl}}</a>
+          </mj-text>
+
+          <!-- divider + footer inside the card -->
+          <mj-divider border-width="1px" border-color="rgba(255,255,255,0.07)" padding="22px 28px 0" />
+          <mj-text padding="16px 28px 24px" font-size="12px" line-height="1.6" color="#666666">
+            This is an automated message from CardDesk &mdash; your gamified networking sidekick.
+          </mj-text>
+
+        </mj-column>
+      </mj-section>
+
+    </mj-wrapper>
+  </mj-body>
+</mjml>
