@@ -20,6 +20,24 @@ async function load() {
 }
 defineExpose({ reload: load })
 
+// Share your standing — a competitive brag that links back to the marketing
+// landing (the acquisition surface), driving the invite/signup loop. Uses the
+// native share sheet on mobile, clipboard on desktop. NOTE: `window` is shadowed
+// by the all/week toggle ref above, so reach the DOM window via globalThis.
+const { shareUrl } = useShare()
+const shareNote = ref('')
+async function shareStanding() {
+  if (!myRank.value) return
+  const origin = globalThis.location?.origin ?? ''
+  const wk = window.value === 'week' ? ' this week' : ''
+  const text = `I'm #${myRank.value} of ${total.value} in my CardDesk network${wk} 🔥 Think you can out-network me?`
+  const res = await shareUrl({ url: `${origin}/`, title: 'CardDesk — Networking, but make it a game', text })
+  if (res !== 'cancelled') {
+    shareNote.value = res === 'copied' ? 'Link copied!' : 'Shared!'
+    setTimeout(() => { shareNote.value = '' }, 2200)
+  }
+}
+
 function medal(rank: number): string | null {
   return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null
 }
@@ -30,9 +48,14 @@ function initials(name: string): string {
 
 <template>
   <div>
-    <div class="cd-eyebrow" style="color: var(--cd-muted); margin: 16px 2px 8px; display: flex; justify-content: space-between">
+    <div class="cd-eyebrow" style="color: var(--cd-muted); margin: 16px 2px 8px; display: flex; justify-content: space-between; align-items: center">
       <span>Leaderboard</span>
-      <span v-if="myRank && total > 1" style="color: var(--cd-accent)">You're #{{ myRank }} of {{ total }}</span>
+      <span v-if="myRank && total > 1" class="cd-lb-head-right">
+        <button class="cd-lb-share" @click="shareStanding">
+          <CdIcon emoji="↗" icon="lucide:share-2" :size="12" />{{ shareNote || 'Share' }}
+        </button>
+        <span style="color: var(--cd-accent)">You're #{{ myRank }} of {{ total }}</span>
+      </span>
     </div>
     <div class="cd-lb-toggle">
       <button :class="{ on: window === 'all' }" @click="window = 'all'">All-time</button>
@@ -55,6 +78,25 @@ function initials(name: string): string {
 </template>
 
 <style scoped>
+.cd-lb-head-right { display: inline-flex; align-items: center; gap: 9px; }
+.cd-lb-share {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--cd-bdr);
+  background: var(--cd-bg2);
+  color: var(--cd-accent);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 9px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.12s ease;
+}
+.cd-lb-share:hover { border-color: var(--cd-accent); }
+.cd-lb-share:active { transform: scale(0.96); }
 .cd-lb-toggle {
   display: flex;
   gap: 4px;
