@@ -19,17 +19,33 @@ export function useCardScan() {
     return new Promise((resolve, reject) => {
       const img = new Image()
       const url = URL.createObjectURL(file)
-      img.onload = () => {
+      // Some phone photos (very large, or HEIC on browsers that can't decode it)
+      // never fire onload/onerror — guard with a timeout so the flow can recover
+      // instead of hanging silently.
+      const timer = setTimeout(() => {
         URL.revokeObjectURL(url)
-        const MAX = 1600
-        const scale = Math.min(1, MAX / Math.max(img.width, img.height))
-        const canvas = document.createElement('canvas')
-        canvas.width = Math.round(img.width * scale)
-        canvas.height = Math.round(img.height * scale)
-        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
-        resolve({ data: canvas.toDataURL('image/jpeg', 0.9).split(',')[1], mediaType: 'image/jpeg' })
+        reject(new Error("Couldn't read that photo — try again"))
+      }, 15000)
+      img.onload = () => {
+        clearTimeout(timer)
+        URL.revokeObjectURL(url)
+        try {
+          const MAX = 1600
+          const scale = Math.min(1, MAX / Math.max(img.width, img.height))
+          const canvas = document.createElement('canvas')
+          canvas.width = Math.round(img.width * scale)
+          canvas.height = Math.round(img.height * scale)
+          canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+          resolve({ data: canvas.toDataURL('image/jpeg', 0.9).split(',')[1], mediaType: 'image/jpeg' })
+        } catch (e) {
+          reject(new Error("Couldn't read that photo — try again"))
+        }
       }
-      img.onerror = () => reject(new Error('Image load failed'))
+      img.onerror = () => {
+        clearTimeout(timer)
+        URL.revokeObjectURL(url)
+        reject(new Error("Couldn't read that photo — try again"))
+      }
       img.src = url
     })
   }
@@ -38,12 +54,26 @@ export function useCardScan() {
     return new Promise((resolve, reject) => {
       const input = document.createElement('input')
       input.type = 'file'; input.accept = 'image/*'; input.capture = 'environment'
+      let settled = false
       input.onchange = () => {
+        settled = true
         const file = input.files?.[0]
-        if (!file) { reject(new Error('No file selected')); return }
+        // No file means the user backed out of the picker — treat as a cancel,
+        // not an error, so we don't flash a scary toast.
+        if (!file) { reject(new Error('Cancelled')); return }
         resolve(file)
       }
-      input.oncancel = () => reject(new Error('Cancelled'))
+      input.oncancel = () => { settled = true; reject(new Error('Cancelled')) }
+      // Safari/iOS don't reliably fire `oncancel`. When the window regains focus
+      // without a change event, the user dismissed the camera/picker — resolve as
+      // a cancel after a short grace period so the promise never dangles.
+      const onFocus = () => {
+        setTimeout(() => {
+          window.removeEventListener('focus', onFocus)
+          if (!settled) reject(new Error('Cancelled'))
+        }, 800)
+      }
+      window.addEventListener('focus', onFocus)
       input.click()
     })
   }

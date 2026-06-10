@@ -4,6 +4,9 @@ const year = new Date().getFullYear()
 
 <template>
   <div class="cd-brand-footer">
+    <nav class="cd-bf-links">
+      <NuxtLink to="/help" class="cd-bf-link">Help &amp; FAQ</NuxtLink>
+    </nav>
     <p class="cd-bf-powered">
       CARDDESK is Powered by <a href="https://earnest.guru" target="_blank" rel="noopener">Earnest</a>
     </p>
@@ -42,6 +45,23 @@ const year = new Date().getFullYear()
   align-items: center;
   justify-content: center;
   margin-top: 32px;
+}
+.cd-bf-links {
+  margin: 0 0 18px;
+  display: flex;
+  gap: 16px;
+}
+.cd-bf-link {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+  text-decoration: none;
+}
+.cd-bf-link:hover {
+  color: var(--cd-text);
+  text-decoration: underline;
 }
 .cd-bf-powered {
   margin: 0 0 26px;

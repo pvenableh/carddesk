@@ -55,7 +55,13 @@ async function doScanFront() {
   try {
     await captureFront()
   } catch (err: any) {
-    if (err?.message !== 'Cancelled') console.error('[scan]', err)
+    // 'Cancelled' = user backed out of the camera/picker; stay silent.
+    // Anything else (photo failed to decode, etc.) used to fail silently and
+    // leave the user staring at the idle screen — now we tell them.
+    if (err?.message !== 'Cancelled') {
+      console.error('[scan]', err)
+      showError(err?.message || 'Oops — something went wrong reading that photo. Try again.')
+    }
   }
 }
 
@@ -66,7 +72,7 @@ async function doScanBack() {
   } catch (err: any) {
     if (err?.message !== 'Cancelled') {
       console.error('[scan]', err)
-      showError(err?.message || 'Card scan failed — try again')
+      showError(err?.message || 'Oops — the scan didn\'t go through. Try again.')
     }
   }
 }
@@ -76,27 +82,40 @@ async function doSkipBack() {
     const result = await scanFrontOnly()
     applyResult(result)
   } catch (err: any) {
-    console.error('[scan]', err)
-    showError(err?.message || 'Card scan failed — try again')
+    if (err?.message !== 'Cancelled') {
+      console.error('[scan]', err)
+      showError(err?.message || 'Oops — the scan didn\'t go through. Try again.')
+    }
   }
 }
 
+const saving = ref(false)
+
 async function doSaveContact() {
-  if (!addName.value) return
-  const contact = await createContact({
-    name: addName.value,
-    first_name: addForm.value.firstName || undefined,
-    last_name: addForm.value.lastName || undefined,
-    title: addForm.value.title || undefined,
-    company: addForm.value.company || undefined,
-    email: addForm.value.email || undefined,
-    phone: addForm.value.phone || undefined,
-    industry: addForm.value.industry || undefined,
-    ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, addForm.value[k] || undefined])),
-    met_at: (eventMode.active.value ? eventMode.name.value : addForm.value.metAt) || undefined,
-    rating: (addForm.value.rating as any) || undefined,
-    notes: addForm.value.notes || undefined,
-  })
+  if (!addName.value || saving.value) return
+  saving.value = true
+  let contact: any
+  try {
+    contact = await createContact({
+      name: addName.value,
+      first_name: addForm.value.firstName || undefined,
+      last_name: addForm.value.lastName || undefined,
+      title: addForm.value.title || undefined,
+      company: addForm.value.company || undefined,
+      email: addForm.value.email || undefined,
+      phone: addForm.value.phone || undefined,
+      industry: addForm.value.industry || undefined,
+      ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, addForm.value[k] || undefined])),
+      met_at: (eventMode.active.value ? eventMode.name.value : addForm.value.metAt) || undefined,
+      rating: (addForm.value.rating as any) || undefined,
+      notes: addForm.value.notes || undefined,
+    })
+  } catch (err: any) {
+    console.error('[AddContact] Failed to save contact:', err?.data?.message ?? err)
+    showError(err?.data?.message || 'Couldn\'t save this contact — try again.')
+    saving.value = false
+    return
+  }
   if (wasScanned.value) {
     try {
       await logActivity({
@@ -129,6 +148,7 @@ async function doSaveContact() {
   }
   wasScanned.value = false
   resetScan()
+  saving.value = false
   // In Event Mode, loop straight back for the next card; otherwise open the detail.
   if (eventMode.active.value) {
     addForm.value.metAt = eventMode.name.value
@@ -237,9 +257,9 @@ async function doSaveContact() {
       <button
         class="cd-abtn g"
         style="font-size: 16px; padding: 13px"
-        :disabled="!addName"
+        :disabled="!addName || saving"
         @click="doSaveContact"
-      >SAVE + EARN 25 XP →</button>
+      >{{ saving ? 'Saving…' : 'SAVE + EARN 25 XP →' }}</button>
     </div>
   </div>
 </template>

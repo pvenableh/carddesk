@@ -5,12 +5,18 @@
  * shows a live count + the people met here, and keeps a one-tap "Scan a card"
  * loop going. Built on the shared liquid-glass surfaces + brand-tinted lucide.
  */
-const { active, name, captured, count, start, end } = useEventMode()
+const { active, name, captured, count, pastEvents, start, saveAndEnd, loadPastEvents } = useEventMode()
 const { nav, goDetail } = useNavigation()
 const { state: xp } = useXp()
 
 const draftName = ref('')
 const summary = ref(false)
+const finishing = ref(false)
+
+// Show the user their networking history when they land on the start screen.
+onMounted(() => {
+  if (!active.value) loadPastEvents()
+})
 
 function startEvent() {
   start(draftName.value)
@@ -19,13 +25,26 @@ function startEvent() {
 function endEvent() {
   summary.value = true
 }
-function finish() {
+async function finish() {
+  if (finishing.value) return
+  finishing.value = true
+  // Snapshot the event into history before we clear the live state.
+  await saveAndEnd()
+  finishing.value = false
   summary.value = false
-  end()
   nav('vibe')
 }
 function initials(n: string): string {
   return n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('') || '?'
+}
+function eventDate(iso: string): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+}
+function eventCount(s: any): number {
+  const c = s?.messages?.[0]?.content
+  return typeof c?.count === 'number' ? c.count : 0
 }
 </script>
 
@@ -62,6 +81,23 @@ function initials(n: string): string {
             <CdIcon icon="lucide:play" :size="15" /> Start Event Mode
           </button>
         </div>
+
+        <!-- ── Past events (history) ── -->
+        <template v-if="pastEvents.length">
+          <div class="em-sec-lbl" style="margin-top: 22px">
+            <CdIcon icon="lucide:history" :size="12" /> Your past events
+          </div>
+          <div class="em-list">
+            <div v-for="ev in pastEvents" :key="ev.id" class="em-row glass-thin" style="cursor: default">
+              <span class="em-av"><CdIcon icon="lucide:calendar-check" :size="16" /></span>
+              <span class="em-row-info">
+                <span class="em-row-name">{{ ev.title }}</span>
+                <span class="em-row-co">{{ eventDate(ev.date_created) }} · {{ ev.summary }}</span>
+              </span>
+              <span class="em-past-count">{{ eventCount(ev) }}</span>
+            </div>
+          </div>
+        </template>
       </template>
 
       <!-- ── Active capture ── -->
@@ -112,9 +148,10 @@ function initials(n: string): string {
           <div class="em-summary-count">{{ count }}</div>
           <div class="em-summary-title">{{ count === 1 ? 'new connection' : 'new connections' }} at {{ name }}</div>
           <p class="em-summary-sub">Nice work. They're all tagged and waiting in your network — sort them into your pipeline whenever you're ready.</p>
-          <button class="cd-abtn g em-start-btn" @click="finish">
-            <CdIcon icon="lucide:check" :size="15" /> Done
+          <button class="cd-abtn g em-start-btn" :disabled="finishing" @click="finish">
+            <CdIcon icon="lucide:check" :size="15" /> {{ finishing ? 'Saving…' : 'Done' }}
           </button>
+          <p class="em-summary-saved"><CdIcon icon="lucide:bookmark" :size="11" /> Saved to your event history</p>
         </div>
       </template>
     </div>
@@ -211,4 +248,17 @@ function initials(n: string): string {
 .em-summary-count { font-family: 'Bebas Neue', sans-serif; font-size: 5rem; line-height: 0.95; color: var(--cd-green); }
 .em-summary-title { font-size: 1.05rem; font-weight: 800; color: var(--cd-text); }
 .em-summary-sub { font-size: 0.9rem; line-height: 1.5; color: var(--cd-muted); margin: 10px 0 4px; }
+.em-summary-saved {
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  font-size: 0.72rem; color: var(--cd-dim); margin-top: 12px;
+}
+
+/* past-events count pill */
+.em-past-count {
+  flex-shrink: 0; min-width: 26px; text-align: center;
+  font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--cd-green);
+  padding: 2px 8px; border-radius: 999px;
+  background: color-mix(in srgb, var(--cd-green) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-green) 28%, transparent);
+}
 </style>

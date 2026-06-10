@@ -88,7 +88,7 @@ export interface CdSession {
   user_created: string
   date_created: string
   contact?: string | CdContact | null
-  type: 'coaching' | 'suggestions' | 'lead_review' | 'insights' | 'note'
+  type: 'coaching' | 'suggestions' | 'lead_review' | 'insights' | 'note' | 'event'
   title: string
   summary?: string | null
   messages: CdSessionMessage[]

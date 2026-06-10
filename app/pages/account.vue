@@ -5,6 +5,26 @@ definePageMeta({ middleware: 'auth' })
 
 const { user } = useUserSession()
 const { logout } = useAuth()
+const { success, error: showError } = useToast()
+const { submitting: feedbackSubmitting, submitReport } = useFeedback()
+
+const feedbackKind = ref<'bug' | 'idea' | 'other'>('bug')
+const feedbackMessage = ref('')
+const FEEDBACK_KINDS = [
+  { key: 'bug', label: 'Bug', icon: 'lucide:bug' },
+  { key: 'idea', label: 'Idea', icon: 'lucide:lightbulb' },
+  { key: 'other', label: 'Other', icon: 'lucide:message-circle' },
+] as const
+
+async function sendFeedbackReport() {
+  try {
+    await submitReport(feedbackKind.value, feedbackMessage.value)
+    feedbackMessage.value = ''
+    success('Thanks — your feedback is on its way to us.')
+  } catch (err: any) {
+    showError(err?.data?.message || err?.message || 'Couldn\'t send that — try again.')
+  }
+}
 const { profile, loading: profileLoading, saved: profileSaved, loadProfile, saveProfile, fullName, company } = useProfile()
 
 const email = computed(() => (user.value?.email as string) ?? '')
@@ -193,6 +213,44 @@ async function suggestGoal() {
         </div>
       </div>
 
+      <!-- Help & Feedback -->
+      <div class="acct-section">
+        <div class="acct-section-title">Help &amp; Feedback</div>
+        <div style="background: var(--cd-bg2); border: 1.5px solid var(--cd-bdr); border-radius: 12px; padding: 14px">
+          <NuxtLink to="/help" class="acct-card-btn" style="margin-bottom: 14px">
+            <CdIcon icon="lucide:life-buoy" :size="14" /> Help &amp; FAQ
+          </NuxtLink>
+
+          <div style="font-size: 12px; color: var(--cd-muted); margin-bottom: 10px; line-height: 1.5">
+            Found a bug or have an idea? Tell us — it goes straight to the team.
+          </div>
+          <div class="acct-fb-kinds">
+            <button
+              v-for="k in FEEDBACK_KINDS"
+              :key="k.key"
+              class="acct-fb-kind"
+              :class="{ active: feedbackKind === k.key }"
+              @click="feedbackKind = k.key"
+            >
+              <CdIcon :icon="k.icon" :size="13" /> {{ k.label }}
+            </button>
+          </div>
+          <textarea
+            v-model="feedbackMessage"
+            class="acct-field-input"
+            style="min-height: 80px; resize: vertical; margin-top: 8px"
+            :placeholder="feedbackKind === 'bug' ? 'What went wrong? What were you doing when it happened?' : feedbackKind === 'idea' ? 'What would make CardDesk better?' : 'What\'s on your mind?'"
+          ></textarea>
+          <button
+            class="acct-save-btn"
+            :disabled="feedbackSubmitting || !feedbackMessage.trim()"
+            @click="sendFeedbackReport"
+          >
+            {{ feedbackSubmitting ? 'Sending…' : 'Send Feedback' }}
+          </button>
+        </div>
+      </div>
+
       <div class="acct-section">
         <button class="acct-logout" @click="logout">
           Log Out
@@ -327,6 +385,37 @@ async function suggestGoal() {
 }
 .acct-save-btn:hover {
   opacity: 0.85;
+}
+.acct-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.acct-fb-kinds {
+  display: flex;
+  gap: 6px;
+}
+.acct-fb-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--cd-bdr);
+  background: var(--cd-bg);
+  color: var(--cd-muted);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.acct-fb-kind:hover {
+  color: var(--cd-text);
+}
+.acct-fb-kind.active {
+  border-color: var(--cd-accent);
+  color: var(--cd-accent);
+  background: color-mix(in srgb, var(--cd-accent) 10%, transparent);
 }
 .acct-card-btn {
   display: inline-flex;
