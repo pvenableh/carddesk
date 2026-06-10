@@ -104,7 +104,7 @@ onUnmounted(() => {
       <div class="cd-installp-body">
         <div class="cd-installp-title">Install CardDesk</div>
         <p v-if="platform === 'ios'" class="cd-installp-hint">
-          Tap <span class="cd-installp-share">⬆</span> Share, then
+          Tap <span class="cd-installp-share"><CdIcon icon="lucide:share" :size="13" /></span> Share, then
           <strong>Add to Home Screen</strong>.
         </p>
         <p v-else class="cd-installp-hint">

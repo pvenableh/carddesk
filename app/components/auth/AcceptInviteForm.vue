@@ -39,7 +39,7 @@ const displayError = computed(() => localError.value || error.value)
   <div class="auth-card">
     <template v-if="success">
       <div style="text-align: center; padding: 20px 0">
-        <div style="font-size: 48px; margin-bottom: 16px">🎉</div>
+        <div style="margin-bottom: 16px; line-height: 0; color: var(--cd-green)"><CdIcon icon="lucide:party-popper" :size="48" /></div>
         <h1 class="auth-title">You're in!</h1>
         <p class="auth-subtitle" style="margin-bottom: 24px">
           Your account is ready. Sign in to get started.
