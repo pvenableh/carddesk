@@ -92,6 +92,7 @@ function improveScore() {
       contacts: contacts.value.length,
       clients: contacts.value.filter((c: any) => c.is_client).length,
     },
+    focus: 'their Earnest Score on the Account page — the overall score and its dimension breakdown',
     intro: `Your Earnest Score is ${earnestScore.value.current_score} (${scoreLabel(earnestScore.value.current_score)}). Want a prioritized plan to raise it, or should I break down what's holding each area back?`,
   })
   nav('chat')

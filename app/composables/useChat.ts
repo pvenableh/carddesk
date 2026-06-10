@@ -20,6 +20,8 @@ export interface OpenChatOptions {
   title: string
   context?: any
   contactId?: string | null
+  /** Human-readable description of the page/content the user is looking at. */
+  focus?: string
   /** A canned assistant greeting shown immediately (no API call / no charge). */
   intro?: string
 }
@@ -56,6 +58,7 @@ export function useChat() {
   const title = useState('cd-chat-title', () => 'Earnest AI')
   const contactId = useState<string | null>('cd-chat-contact', () => null)
   const context = useState<any>('cd-chat-context', () => null)
+  const focus = useState('cd-chat-focus', () => '')
   const sessionId = useState<string | null>('cd-chat-session', () => null)
   const messages = useState<ChatMessage[]>('cd-chat-messages', () => [])
   const loading = useState('cd-chat-loading', () => false)
@@ -76,6 +79,7 @@ export function useChat() {
     title.value = opts.title
     context.value = opts.context ?? null
     contactId.value = opts.contactId ?? null
+    focus.value = opts.focus ?? ''
     sessionId.value = null
     loading.value = false
     messages.value = opts.intro
@@ -84,13 +88,14 @@ export function useChat() {
   }
 
   /** Reopen a saved chat session to keep talking. `freshContext` re-grounds it. */
-  function resume(session: CdSession, freshContext?: any, scopeHint?: ChatScope) {
+  function resume(session: CdSession, freshContext?: any, scopeHint?: ChatScope, focusHint?: string) {
     scope.value = scopeHint ?? (session.contact ? 'contact' : 'general')
     title.value = session.title || 'Earnest AI'
     contactId.value = typeof session.contact === 'string'
       ? session.contact
       : (session.contact?.id ?? null)
     context.value = freshContext ?? null
+    focus.value = focusHint ?? ''
     sessionId.value = session.id
     loading.value = false
     messages.value = (session.messages ?? [])
@@ -150,6 +155,7 @@ export function useChat() {
           contactId: contactId.value,
           sessionId: sessionId.value,
           context: context.value,
+          focus: focus.value,
           messages: messages.value.map((m) => ({ role: m.role, content: m.content })),
         },
       })

@@ -48,6 +48,25 @@ function scopeInstructions(scope: ChatScope): string {
   }
 }
 
+function buildUserBlock(profile: any): string {
+  if (!profile) return ''
+  const name = [profile.first_name, profile.last_name].filter(Boolean).join(' ')
+  const org = profile.organization
+  const bits: string[] = []
+  if (name) bits.push(`Name: ${name}`)
+  if (profile.title) bits.push(`Role: ${profile.title}`)
+  if (org?.name) bits.push(`Company: ${org.name}`)
+  if (profile.industry || org?.industry) bits.push(`Industry: ${profile.industry || org.industry}`)
+  if (profile.location || org?.address) bits.push(`Location: ${profile.location || org.address}`)
+  let block = bits.length ? `\n\nAbout the user:\n- ${bits.join('\n- ')}` : ''
+  // The networking goal is the user's north star — surface it prominently so
+  // every reply is steered toward advancing what they're actually trying to do.
+  if (profile.networking_goal && String(profile.networking_goal).trim()) {
+    block += `\n\nThe user's stated networking goal (tailor your help to advancing this): "${String(profile.networking_goal).trim()}"`
+  }
+  return block
+}
+
 function buildContextBlock(scope: ChatScope, context: any): string {
   if (!context) return ''
   try {
@@ -93,14 +112,20 @@ export default defineEventHandler(async (event) => {
     }
   } catch { /* proceed without */ }
 
-  const userName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ')
   const summary: string = typeof body?.summary === 'string' && body.summary.trim()
     ? `\n\nEarlier in this conversation (summary): ${body.summary.trim()}`
     : ''
 
+  // What the user is looking at right now — keeps Earnest anchored to the page /
+  // content in front of them (passed by each surface that opens the chat).
+  const focus: string = typeof body?.focus === 'string' && body.focus.trim()
+    ? `\n\nRight now the user is focused on: ${body.focus.trim()}. Anchor your help here unless they steer elsewhere.`
+    : ''
+
   const system =
     `${BASE_PERSONA}\n\n${scopeInstructions(scope)}` +
-    (userName ? `\n\nThe user is ${userName}${profile?.title ? `, ${profile.title}` : ''}.` : '') +
+    buildUserBlock(profile) +
+    focus +
     buildContextBlock(scope, body?.context) +
     summary +
     earnestContext

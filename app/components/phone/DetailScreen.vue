@@ -305,6 +305,12 @@ function contactContext() {
   }
 }
 
+function contactFocus(): string {
+  const c = selContact.value as any
+  if (!c) return ''
+  return `the contact "${c.name}"${c.company ? ` from ${c.company}` : ''} — their CRM profile (rating, pipeline stage, notes, and full activity history)`
+}
+
 function askEarnest() {
   const c = selContact.value as any
   if (!c) return
@@ -314,13 +320,14 @@ function askEarnest() {
     title: c.name,
     contactId: c.id,
     context: contactContext(),
+    focus: contactFocus(),
     intro: `Let's talk about ${c.name}${c.company ? ` at ${c.company}` : ''}. Want help with your next move, a follow-up message, or moving them through your pipeline?`,
   })
   nav('chat')
 }
 
 function continueChat(s: any) {
-  resumeChat(s, contactContext(), 'contact')
+  resumeChat(s, contactContext(), 'contact', contactFocus())
   nav('chat')
 }
 

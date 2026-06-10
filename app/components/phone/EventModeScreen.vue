@@ -27,6 +27,7 @@ function analyzeEvents() {
     scope: 'events',
     title: 'Your events',
     context: { events },
+    focus: 'their networking event history — the events they\'ve worked and the people they met at each',
     intro: `You've worked ${events.length} ${events.length === 1 ? 'event' : 'events'}. Want me to find who to follow up with first, or spot patterns across them?`,
   })
   nav('chat')
