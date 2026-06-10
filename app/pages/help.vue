@@ -12,6 +12,7 @@ useSeoMeta({
 })
 
 const { loggedIn } = useUserSession()
+const { show: openFeedback } = useFeedbackSheet()
 
 const tutorials = [
   {
@@ -112,12 +113,12 @@ function toggle(i: number) {
       <section class="help-cta glass-surface">
         <h2 class="help-cta-title">Still stuck or found a bug?</h2>
         <p class="help-cta-sub">
-          <template v-if="loggedIn">Head to your Account page and use the feedback form — it goes straight to us.</template>
-          <template v-else>Log in and use the feedback form on your Account page, or email us anytime.</template>
+          <template v-if="loggedIn">Tell us what's up — it goes straight to the team.</template>
+          <template v-else>Log in to send feedback from inside the app, or email us anytime.</template>
         </p>
-        <NuxtLink v-if="loggedIn" to="/account" class="cd-abtn g help-cta-btn">
+        <button v-if="loggedIn" class="cd-abtn g help-cta-btn" @click="openFeedback('bug')">
           <CdIcon icon="lucide:message-square-plus" :size="15" /> Send feedback
-        </NuxtLink>
+        </button>
         <a v-else href="mailto:hello@earnest.guru" class="cd-abtn g help-cta-btn">
           <CdIcon icon="lucide:mail" :size="15" /> Email us
         </a>

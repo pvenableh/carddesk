@@ -15,9 +15,10 @@ const cSort = ref('recent')
 const viewMode = ref<'rating' | 'pipeline'>('rating')
 
 // Top-level sub-tab for the "Network" screen: your saved contacts vs. your
-// user↔user connections (the orbit lives under Connections). The activity Feed
-// is now its own bottom-nav tab, so it's no longer a sub-tab here.
-const netTab = ref<'contacts' | 'connections'>('contacts')
+// user↔user connections (the orbit + leaderboard live under Connections). The
+// activity Feed is now its own bottom-nav tab. Shared via useState so other
+// surfaces (e.g. the Vibe leaderboard callout) can deep-link to the Orbit tab.
+const netTab = useState<'contacts' | 'connections'>('cd-net-tab', () => 'contacts')
 const { incoming } = useConnections()
 
 const ratingCounts = computed(() => {

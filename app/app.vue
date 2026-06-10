@@ -26,5 +26,5 @@ watch(loggedIn, async (val) => {
 }, { immediate: true })
 </script>
 <template>
-  <div><NuxtRouteAnnouncer /><NuxtPage /><BuyCreditsModal /><CreditRewardToast /><GlassToast /></div>
+  <div><NuxtRouteAnnouncer /><NuxtPage /><BuyCreditsModal /><CreditRewardToast /><CdFeedbackSheet /><GlassToast /></div>
 </template>

@@ -4,6 +4,7 @@ const { logout } = useAuth()
 const router = useRouter()
 const { nav } = useNavigation()
 const { show: openShareSheet } = useShareSheet()
+const { show: openFeedback } = useFeedbackSheet()
 
 // Logo → home (the Vibe screen). If we somehow aren't on the app route,
 // route there first.
@@ -95,6 +96,10 @@ function onClickOutside(e: MouseEvent) {
           <button class="cd-dd-item" @click="goEditCard">
             <span class="cd-dd-icon"><CdIcon emoji="🪪" icon="lucide:contact" /></span>
             Edit My Card
+          </button>
+          <button class="cd-dd-item" @click="closeDropdown(); openFeedback()">
+            <span class="cd-dd-icon"><CdIcon emoji="💬" icon="lucide:message-square-plus" /></span>
+            Send Feedback
           </button>
           <div class="cd-dd-divider" />
           <div class="cd-dd-credits">

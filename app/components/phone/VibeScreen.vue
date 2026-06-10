@@ -322,6 +322,9 @@ async function loadLeadSuggestions() {
         </template>
       </div>
 
+      <!-- Leaderboard snapshot — only renders if you have accepted connections -->
+      <PhoneLeaderboardCallout />
+
       <!-- Pipeline Health Card -->
       <div v-if="pipelineStats.stageCounts && Object.values(pipelineStats.stageCounts).some((v: any) => v > 0)" class="cd-vc" style="border: 1px solid rgba(77,166,255,0.2)">
         <div class="cd-vct">
