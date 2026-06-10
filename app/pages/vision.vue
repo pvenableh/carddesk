@@ -250,7 +250,7 @@ function reset() {
 .vz-rankup-title { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; margin: 2px 0 8px; }
 .vz-rankup-sub { font-size: 0.9rem; color: var(--cd-muted); line-height: 1.5; margin: 0 auto 20px; max-width: 22em; }
 .vz-rankup-btn {
-  width: 100%; padding: 15px; border-radius: 16px; border: none; cursor: pointer;
+  width: 100%; padding: 15px; border-radius: 999px; border: none; cursor: pointer;
   font-weight: 800; font-size: 0.98rem; color: #060810;
   background: linear-gradient(135deg, var(--cd-green), var(--cd-palette-primary, #4da6ff));
   transition: transform 0.12s cubic-bezier(0.32, 0.72, 0, 1);
