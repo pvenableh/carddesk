@@ -478,8 +478,8 @@ onUnmounted(() => {
       <p class="lp-hand lp-cta-hand">go on — your network’s waiting</p>
       <h2 class="lp-cta-title">Networking, but&nbsp;make&nbsp;it a&nbsp;<span class="lp-grad">game</span>.</h2>
       <p class="lp-cta-sub">Start free with 25 Earnest AI tokens on us. Build your card, scan your first contact, and watch the XP roll in.</p>
-      <NuxtLink to="/auth/register" class="lp-btn lp-btn-lg">
-        Start your CardDesk game <CdIcon emoji="→" icon="lucide:arrow-right" :size="17" />
+      <NuxtLink to="/auth/register" class="lp-btn lp-btn-lg lp-btn-game">
+        Start your <span class="lp-btn-wm"><span class="lp-wm-a">CARD</span><span class="lp-wm-b">DESK</span></span> game <CdIcon emoji="→" icon="lucide:arrow-right" :size="17" />
       </NuxtLink>
       </section>
     </div>
@@ -491,8 +491,8 @@ onUnmounted(() => {
     <!-- Floating CTA — appears past the hero, hands off to the real CTA at the
          bottom. State (hidden / shown / docked) is set by the scroll handler. -->
     <div class="lp-float-cta" :class="`is-${floatCta}`">
-      <NuxtLink to="/auth/register" class="lp-btn lp-btn-lg">
-        Start your CardDesk game <CdIcon emoji="→" icon="lucide:arrow-right" :size="17" />
+      <NuxtLink to="/auth/register" class="lp-btn lp-btn-lg lp-btn-game">
+        Start your <span class="lp-btn-wm"><span class="lp-wm-a">CARD</span><span class="lp-wm-b">DESK</span></span> game <CdIcon emoji="→" icon="lucide:arrow-right" :size="17" />
       </NuxtLink>
     </div>
   </div>
@@ -628,6 +628,29 @@ html[data-theme="glass"] .lp-btn:hover {
   opacity: 0.85;
 }
 .lp-btn-ghost:hover { opacity: 1; text-decoration: underline; }
+
+/* "Start your CARDDESK game" — the closing/floating CTA set entirely in the
+ * brand display face. Condensed Bebas keeps it on ONE line on small phones
+ * (it used to wrap), and the CARDDESK wordmark inside uses the exact header
+ * logo treatment (.lp-wm-a chrome / .lp-wm-b green). */
+.lp-btn-game {
+  font-family: 'Bebas Neue', sans-serif;
+  font-weight: 400;
+  font-size: 1.35rem;
+  letter-spacing: 0.07em;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--cd-text);
+  /* Bebas rides high in its em box — drop the bottom padding a touch so the
+   * text sits optically centred in the pill. */
+  padding-top: 15px;
+  padding-bottom: 13px;
+}
+html[data-theme="glass"] .lp-btn.lp-btn-game { color: var(--cd-text); }
+.lp-btn-wm { display: inline-flex; letter-spacing: 0.08em; }
+@media (max-width: 380px) {
+  .lp-btn-game { font-size: 1.2rem; padding-left: 20px; padding-right: 20px; }
+}
 
 /* ═══ Hero ═══ */
 .lp-hero {
