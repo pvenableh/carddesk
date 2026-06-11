@@ -24,7 +24,7 @@ const seed: SortItem[] = [
   { id: '1', name: 'Maya Chen', company: 'Lumen', accent: 'var(--cd-green)' },
   { id: '2', name: 'Alex Rivera', company: 'Northwind Co', accent: 'var(--cd-palette-primary, #4da6ff)' },
   { id: '3', name: 'Devin Brooks', company: 'Foundry Studio', accent: 'var(--cd-gold, #ffd700)' },
-  { id: '4', name: 'Priya Nair', company: 'Beacon', accent: 'var(--cd-orange, #ff6b35)' },
+  { id: '4', name: 'Emily Carter', company: 'Beacon', accent: 'var(--cd-orange, #ff6b35)' },
   { id: '5', name: 'Sam Tran', company: 'Vellum', accent: 'var(--cd-ice, #a8d8ea)' },
   { id: '6', name: 'Jordan Lee', company: 'Cobalt Labs', accent: 'var(--cd-green)' },
 ]
