@@ -25,8 +25,8 @@ export default defineEventHandler(async (event) => {
 
   // Run the two lookups in parallel; either failing shouldn't sink the other.
   const [place, venues] = await Promise.all([
-    reverseGeocode(lat, lng, key).catch((e) => { console.error('[location] geocode', e); return null }),
-    nearbyVenues(lat, lng, key).catch((e) => { console.error('[location] nearby', e); return [] as Venue[] }),
+    reverseGeocode(lat, lng, key).catch((e) => { logGoogleErr('geocode', e); return null }),
+    nearbyVenues(lat, lng, key).catch((e) => { logGoogleErr('nearby', e); return [] as Venue[] }),
   ])
 
   return {
@@ -37,6 +37,20 @@ export default defineEventHandler(async (event) => {
     venues,
   }
 })
+
+/**
+ * Surface Google's own explanation. A 403 on places:searchNearby almost always
+ * means the "Places API (New)" isn't enabled on the project (it's a SEPARATE
+ * product from the legacy "Places API"), or the key is restricted (HTTP-referrer
+ * restriction blocks server calls; or an API allowlist that omits Places New).
+ */
+function logGoogleErr(label: string, e: any) {
+  const body = e?.data ?? e?.response?._data
+  const status = e?.status ?? e?.statusCode ?? body?.error?.code ?? ''
+  // Geocoding errors come back as { error_message }; Places (New) as { error: { message } }.
+  const msg = body?.error?.message ?? body?.error_message ?? body?.status ?? e?.message ?? e
+  console.error(`[location] ${label} ${status} →`, msg)
+}
 
 /** Coords → "City, ST" using the Geocoding API. */
 async function reverseGeocode(lat: number, lng: number, key: string) {
