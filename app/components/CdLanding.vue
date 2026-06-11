@@ -199,9 +199,10 @@ onUnmounted(() => {
           <div class="lp-eyebrow">Networking, gamified</div>
           <h3 class="lp-callout-h">Every scan throws <span class="lp-grad">confetti</span>.</h3>
           <p class="lp-callout-body">
-            Earn XP for every card you scan and contact you save. Level up, keep your streak
-            alive, and watch the reward land the second you do it — follow-ups become a game
-            you actually want to win.
+            Earn XP for every card you scan and contact you save. Level up, chase a weekly
+            goal, and clear daily missions that complete themselves when you do the real
+            thing — and if life happens, a streak shield saves your run. Follow-ups become
+            a game you actually want to win.
           </p>
           <p class="lp-hand">+50 XP, just like that 🎉</p>
         </div>
@@ -229,6 +230,7 @@ onUnmounted(() => {
 
             <div class="lp-gamify-chips">
               <span class="lp-gchip lp-gchip-streak"><CdIcon emoji="🔥" icon="lucide:flame" :size="13" /> 7-day streak</span>
+              <span class="lp-gchip lp-gchip-shield"><CdIcon emoji="🛡️" icon="lucide:shield" :size="13" /> shield ×2</span>
               <span class="lp-gchip lp-gchip-orbit"><CdIcon emoji="🪐" icon="lucide:orbit" :size="13" /> +1 to Orbit</span>
             </div>
           </div>
@@ -243,8 +245,9 @@ onUnmounted(() => {
           <h3 class="lp-callout-h">It already knows your <span class="lp-grad">next move</span>.</h3>
           <p class="lp-callout-body">
             Earnest AI reads both sides of every card, remembers where you met and what you
-            talked about, then drafts the follow-up and surfaces the connections worth
-            nurturing — so the right move is always one tap away.
+            talked about, then drafts the follow-up — even the “it’s been a while” re-opener
+            — and surfaces the connections worth nurturing. The right move is always one
+            tap away.
           </p>
           <p class="lp-hand">context in, follow-up out ✨</p>
         </div>
@@ -281,10 +284,11 @@ onUnmounted(() => {
           <h3 class="lp-callout-h">Your whole network, orbiting <span class="lp-grad">you</span>.</h3>
           <p class="lp-callout-body">
             Everyone you meet pulls into your personal Orbit — a living map of your network.
-            See who’s close, who’s drifting, and who deserves a check-in. Color shows their
-            industry; size shows how active they are.
+            Contacts ride along as dim dots; the people playing CardDesk with you light up
+            as planets. Tap a dot to invite them in — color shows their industry, size shows
+            how active they are.
           </p>
-          <p class="lp-hand">hover a planet — it’s live 👇</p>
+          <p class="lp-hand">tap a dim dot — light them up ✨</p>
         </div>
 
         <div class="lp-callout-art">
@@ -294,7 +298,72 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Callout 4 · Compete — leaderboard left, copy right -->
+      <!-- Callout 4 · Daily games — quiz visual left, copy right -->
+      <div class="lp-callout lp-callout-rev">
+        <div class="lp-ghost" data-parallax aria-hidden="true">PLAY</div>
+        <div class="lp-callout-copy">
+          <div class="lp-eyebrow">Daily games, real XP</div>
+          <h3 class="lp-callout-h">Your network is the <span class="lp-grad">game board</span>.</h3>
+          <p class="lp-callout-body">
+            Network IQ quizzes you on your own contacts — who works where, where you met —
+            three fresh questions a day. Then Reconnect Roulette spins up someone going
+            quiet and dares you to reach out (Earnest will even draft the opener). Knowing
+            your people pays.
+          </p>
+          <p class="lp-hand">3 questions a day · up to +75 XP 🧠</p>
+        </div>
+
+        <div class="lp-callout-art" aria-hidden="true">
+          <div class="lp-quiz lp-glass">
+            <div class="lp-quiz-head">
+              <span class="lp-quiz-badge"><CdIcon emoji="🧠" icon="lucide:brain" :size="15" /> Network IQ</span>
+              <span class="lp-quiz-tag">daily quiz</span>
+            </div>
+            <div class="lp-quiz-dots"><span class="hit" /><span class="hit" /><span class="cur" /></div>
+            <div class="lp-quiz-q">Who works at Lumen?</div>
+            <div class="lp-quiz-opt lp-quiz-correct"><span>Maya Chen</span><CdIcon emoji="✓" icon="lucide:check" :size="14" /></div>
+            <div class="lp-quiz-opt"><span>Alex Rivera</span></div>
+            <div class="lp-quiz-opt"><span>Priya Nair</span></div>
+            <div class="lp-quiz-foot">
+              <span class="lp-quiz-xp">+15 XP</span>
+              <span class="lp-quiz-roulette"><CdIcon emoji="🎰" icon="lucide:dices" :size="13" /> Roulette: 2 spins left</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Callout 5 · Event Mode — copy left, live-count visual right -->
+      <div class="lp-callout">
+        <div class="lp-ghost" data-parallax aria-hidden="true">EVENT</div>
+        <div class="lp-callout-copy">
+          <div class="lp-eyebrow">Event Mode</div>
+          <h3 class="lp-callout-h">Work the room. Watch the <span class="lp-grad">count climb</span>.</h3>
+          <p class="lp-callout-body">
+            At a conference? Flip on Event Mode and it rides along on every screen — each
+            card you scan is auto-tagged to the event, the live counter ticks up, and the
+            whole night lands in your history. Meet fast, sort later.
+          </p>
+          <p class="lp-hand">scan → next → scan → next 📡</p>
+        </div>
+
+        <div class="lp-callout-art" aria-hidden="true">
+          <div class="lp-event lp-glass">
+            <div class="lp-event-pill">
+              <span class="lp-event-live" /> SaaS Summit NYC
+              <span class="lp-event-met">14 met</span>
+            </div>
+            <div class="lp-event-num">14</div>
+            <div class="lp-event-unit">people met here</div>
+            <div class="lp-event-scan">
+              <CdIcon emoji="📷" icon="lucide:scan-line" :size="16" />
+              <span class="lp-event-scan-t">Scan a card</span>
+              <span class="lp-event-scan-s">+50 XP · auto-tagged</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Callout 6 · Compete — leaderboard left, copy right -->
       <div class="lp-callout lp-callout-rev">
         <div class="lp-ghost" data-parallax aria-hidden="true">COMPETE</div>
         <div class="lp-callout-copy">
@@ -333,7 +402,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Callout 5 · Your card — copy left, card visual right -->
+      <!-- Callout 7 · Your card — copy left, card visual right -->
       <div class="lp-callout">
         <div class="lp-ghost" data-parallax aria-hidden="true">SHARE</div>
         <div class="lp-callout-copy">
@@ -367,7 +436,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Callout 6 · Coaching — coaching chat left, copy right -->
+      <!-- Callout 8 · Coaching — coaching chat left, copy right -->
       <div class="lp-callout lp-callout-rev">
         <div class="lp-ghost" data-parallax aria-hidden="true">HYPE</div>
         <div class="lp-callout-copy">
@@ -908,6 +977,7 @@ html[data-theme="glass"] .lp-gchip {
   border: 1px solid hsl(var(--glass-h) 40% 78% / 0.28);
 }
 .lp-gchip-streak { color: var(--cd-orange); }
+.lp-gchip-shield { color: var(--cd-gold); }
 .lp-gchip-orbit { color: var(--cd-blue); }
 /* Motion: confetti drifts down + XP gives a little pop. Held still for
  * reduced-motion users — the layout reads fine static. */
@@ -991,6 +1061,113 @@ html[data-theme="glass"] .lp-gchip {
   margin-bottom: 6px;
 }
 .lp-ai-draft-body { font-size: 0.92rem; line-height: 1.5; color: var(--cd-text); margin: 0; }
+
+/* ── Daily-games visual (Play callout) — a Network IQ round mid-answer ── */
+.lp-quiz {
+  width: 100%;
+  max-width: 380px;
+  border-radius: 22px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lp-quiz-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.lp-quiz-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-weight: 800; font-size: 0.92rem; color: var(--cd-purple, #b87dff);
+}
+.lp-quiz-tag {
+  font-size: 0.66rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--cd-muted);
+  background: color-mix(in srgb, var(--cd-muted) 14%, transparent);
+  padding: 3px 9px; border-radius: 999px;
+}
+.lp-quiz-dots { display: flex; align-items: center; gap: 5px; }
+.lp-quiz-dots span { width: 7px; height: 7px; border-radius: 50%; background: color-mix(in srgb, var(--cd-text) 14%, transparent); }
+.lp-quiz-dots .hit { background: var(--cd-green); }
+.lp-quiz-dots .cur { background: var(--cd-purple, #b87dff); transform: scale(1.25); }
+.lp-quiz-q { font-weight: 800; font-size: 1.02rem; margin: 2px 0; }
+.lp-quiz-opt {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 10px 13px; border-radius: 12px;
+  font-size: 0.9rem; font-weight: 700; color: var(--cd-muted);
+  background: color-mix(in srgb, var(--cd-text) 5%, transparent);
+  border: 1px solid var(--cd-bdr);
+}
+.lp-quiz-correct {
+  color: var(--cd-green);
+  background: color-mix(in srgb, var(--cd-green) 12%, transparent);
+  border-color: color-mix(in srgb, var(--cd-green) 42%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lp-quiz-correct { animation: lp-quiz-land 3.4s ease-in-out infinite; }
+}
+@keyframes lp-quiz-land {
+  0%, 86%, 100% { transform: scale(1); }
+  92% { transform: scale(1.03); }
+}
+.lp-quiz-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 10px; border-top: 1px solid var(--cd-bdr);
+}
+.lp-quiz-xp {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.3rem; line-height: 1; color: var(--cd-green);
+}
+.lp-quiz-roulette {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 0.78rem; font-weight: 800; color: var(--cd-gold);
+}
+
+/* ── Event Mode visual (Event callout) — live pill + climbing count ── */
+.lp-event {
+  width: 100%;
+  max-width: 360px;
+  border-radius: 22px;
+  padding: 20px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.lp-event-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  width: 100%;
+  font-size: 0.84rem; font-weight: 700; color: var(--cd-text);
+  padding: 8px 13px; border-radius: 999px;
+  background: color-mix(in srgb, var(--cd-green) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-green) 30%, transparent);
+  margin-bottom: 8px;
+}
+.lp-event-live {
+  width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%;
+  background: var(--cd-green);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--cd-green) 70%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lp-event-live { animation: lp-ep-pulse 1.6s ease-in-out infinite; }
+}
+@keyframes lp-ep-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.8); }
+}
+.lp-event-met { margin-left: auto; font-size: 0.78rem; color: var(--cd-green); }
+.lp-event-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 4.4rem; line-height: 0.95; color: var(--cd-green);
+}
+.lp-event-unit { font-size: 0.9rem; font-weight: 700; color: var(--cd-text); }
+.lp-event-scan {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%;
+  margin-top: 14px; padding: 12px 14px; border-radius: 14px;
+  color: var(--cd-text);
+  background: color-mix(in srgb, var(--cd-text) 5%, transparent);
+  border: 1px solid var(--cd-bdr);
+}
+.lp-event-scan-t { font-weight: 800; font-size: 0.92rem; }
+.lp-event-scan-s { margin-left: auto; font-size: 0.76rem; color: var(--cd-muted); }
 
 /* ── Digital-card visual (Card callout) — a shareable contact card + QR ── */
 .lp-cardviz {
