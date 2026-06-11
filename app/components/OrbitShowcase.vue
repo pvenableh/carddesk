@@ -22,7 +22,7 @@ const PEOPLE = [
   { name: 'Daniel Okafor',  title: 'Managing Partner',   industry: 'Venture Capital', img: 'men/32' },
   { name: 'Sofia Marin',    title: 'Brand Director',     industry: 'Marketing',       img: 'women/44' },
   { name: 'Liam Walsh',     title: 'Founder & CEO',      industry: 'Technology',      img: 'men/75' },
-  { name: 'Priya Nair',     title: 'Investor',           industry: 'Finance',         img: 'women/12' },
+  { name: 'Emily Carter',   title: 'Investor',           industry: 'Finance',         img: 'women/12' },
   { name: 'Marcus Bell',    title: 'Broker',             industry: 'Real Estate',     img: 'men/14' },
   { name: 'Elena Petrova',  title: 'General Counsel',    industry: 'Legal',           img: 'women/29' },
   { name: 'Noah Kim',       title: 'Growth Lead',        industry: 'Marketing',       img: 'men/45' },

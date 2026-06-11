@@ -24,7 +24,7 @@ const leaderboard = [
   { rank: 1, name: 'Maya C.', xp: 2640, streak: 9, tint: 'var(--cd-gold)' },
   { rank: 2, name: 'You', xp: 2480, streak: 12, tint: 'var(--cd-green)', you: true },
   { rank: 3, name: 'Devin B.', xp: 2210, streak: 5, tint: 'var(--cd-ice)' },
-  { rank: 4, name: 'Priya N.', xp: 1990, streak: 7, tint: 'var(--cd-palette-primary, #4da6ff)' },
+  { rank: 4, name: 'Emily C.', xp: 1990, streak: 7, tint: 'var(--cd-palette-primary, #4da6ff)' },
   { rank: 5, name: 'Alex R.', xp: 1640, streak: 3, tint: 'var(--cd-orange)' },
 ]
 
@@ -33,7 +33,7 @@ const heroCards = [
   { name: 'Sarah Johnson', role: 'Founder · Northwind', email: 'sarah@northwind.co', phone: '(415) 555-0199', tint: 'var(--cd-palette-primary, #4da6ff)' },
   { name: 'Maya Chen', role: 'Product Lead · Lumen', email: 'maya@lumen.io', phone: '(212) 555-0148', tint: 'var(--cd-green)' },
   { name: 'Devin Brooks', role: 'Designer · Foundry', email: 'devin@foundry.studio', phone: '(646) 555-0173', tint: 'var(--cd-gold)' },
-  { name: 'Priya Nair', role: 'VP Sales · Beacon', email: 'priya@beacon.co', phone: '(312) 555-0186', tint: 'var(--cd-orange)' },
+  { name: 'Emily Carter', role: 'VP Sales · Beacon', email: 'emily@beacon.co', phone: '(312) 555-0186', tint: 'var(--cd-orange)' },
 ]
 const activeHero = ref(0)
 let heroTimer: ReturnType<typeof setInterval> | undefined
@@ -323,7 +323,7 @@ onUnmounted(() => {
             <div class="lp-quiz-q">Who works at Lumen?</div>
             <div class="lp-quiz-opt lp-quiz-correct"><span>Maya Chen</span><CdIcon emoji="✓" icon="lucide:check" :size="14" /></div>
             <div class="lp-quiz-opt"><span>Alex Rivera</span></div>
-            <div class="lp-quiz-opt"><span>Priya Nair</span></div>
+            <div class="lp-quiz-opt"><span>Emily Carter</span></div>
             <div class="lp-quiz-foot">
               <span class="lp-quiz-xp">+15 XP</span>
               <span class="lp-quiz-roulette"><CdIcon emoji="🎰" icon="lucide:dices" :size="13" /> Roulette: 2 spins left</span>
