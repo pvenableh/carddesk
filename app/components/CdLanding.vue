@@ -141,7 +141,7 @@ onUnmounted(() => {
         </div>
 
         <div class="lp-cta-row">
-          <NuxtLink to="/auth/register" class="lp-btn lp-btn-lg">
+          <NuxtLink to="/auth/register" class="lp-btn lp-btn-lg lp-btn-game">
             Start free <CdIcon emoji="→" icon="lucide:arrow-right" :size="17" />
           </NuxtLink>
           <NuxtLink to="/login" class="lp-btn-ghost">I already have an account</NuxtLink>
