@@ -77,6 +77,10 @@ function eventCount(s: any): number {
       <button v-if="active" class="cd-back" @click="endEvent">
         <CdIcon icon="lucide:flag" :size="13" /> End event
       </button>
+      <!-- Pushed sub-screen (no nav tab anymore) — give the start screen a way back. -->
+      <button v-else class="cd-back" @click="nav('vibe')">
+        <CdIcon emoji="‹" icon="lucide:chevron-left" :size="14" /> Back
+      </button>
       <div class="cd-stitle">Event Mode <CdIcon icon="lucide:radio" :size="16" /></div>
     </div>
 

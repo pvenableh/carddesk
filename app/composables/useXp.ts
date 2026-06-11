@@ -1,3 +1,5 @@
+import { MISSIONS } from '~/composables/useConstants'
+
 export const LEVELS = [
   { level: 1, title: 'Rookie', xp: 0 },
   { level: 2, title: 'Hustler', xp: 200 },
@@ -31,8 +33,12 @@ const DEFAULT = {
   total_scans: 0, total_contacts: 0, total_clients: 0, fast_followups: 0, hot_responses: 0, intros: 0,
   pipeline_contacts: 0, qualified_count: 0, proposals_sent: 0, deals_won: 0, lost_reasons_logged: 0,
   week_xp: 0, week_start: '',
+  streak_shields: 0,
   unlocked_badges: [] as string[], completed_missions: [] as string[], missions_date: '', hype_date: '',
 }
+
+/** Most shields a user can bank — scarcity keeps them feeling earned. */
+export const MAX_STREAK_SHIELDS = 2
 
 /** Monday (YYYY-MM-DD) of the given date's week — the bucket for week_xp. */
 function weekStartStr(d = new Date()): string {
@@ -76,9 +82,27 @@ export function useXp() {
       if (s.total_xp >= LEVELS[i].xp) { s.level = LEVELS[i].level; break }
     if (s.level > prevLevel) emitFeed('level_up', { level: s.level })
     if (s.last_activity_date !== today) {
-      s.streak = s.last_activity_date === yesterday ? s.streak + 1 : 1
+      const dayBefore = new Date(Date.now() - 2 * 86_400_000).toISOString().slice(0, 10)
+      if (s.last_activity_date === yesterday) {
+        s.streak += 1
+      } else if (s.streak > 0 && (s.streak_shields ?? 0) > 0 && s.last_activity_date === dayBefore) {
+        // Exactly one missed day and a shield in the bank: the streak survives.
+        // A hard reset to 1 is the #1 rage-quit moment in streak systems —
+        // recovery, not punishment, is the house style here.
+        s.streak_shields -= 1
+        s.streak += 1
+        useToast().info(`🛡️ Streak shield used — your ${s.streak}-day streak survived the missed day.`)
+      } else {
+        s.streak = 1
+      }
       s.last_activity_date = today
-      if (s.streak === 7) { s.total_xp += 200; s.week_xp += 200; showToast('🔥', '+200 XP', '7-day streak bonus!'); emitFeed('streak', { days: 7 }) }
+      if (s.streak === 7) {
+        s.total_xp += 200; s.week_xp += 200
+        // A 7-day streak also banks a shield — consistency earns resilience.
+        s.streak_shields = Math.min(MAX_STREAK_SHIELDS, (s.streak_shields ?? 0) + 1)
+        showToast('🔥', '+200 XP', '7-day streak bonus + a streak shield!')
+        emitFeed('streak', { days: 7 })
+      }
     }
     for (const [key, check] of Object.entries(BADGE_CHECKS)) {
       if (!s.unlocked_badges.includes(key) && check(s)) {
@@ -90,6 +114,23 @@ export function useXp() {
     if (s.missions_date !== today) { s.completed_missions = []; s.missions_date = today }
     showToast(icon, `+${amount} XP`, msg)
     syncXp()
+  }
+
+  /**
+   * Mark a daily mission complete from the real action that fulfils it.
+   * Missions are verified, not self-reported — call sites are the actual earn
+   * moments (scan, follow-up, response, …), never a checkbox tap. Awards the
+   * mission's bonus XP on top of the action's own XP, once per day.
+   */
+  function completeMission(key: string) {
+    const s = state.value
+    const today = new Date().toISOString().slice(0, 10)
+    if (s.missions_date !== today) { s.completed_missions = []; s.missions_date = today }
+    if (s.completed_missions.includes(key)) return
+    const m = MISSIONS.find((x) => x.key === key)
+    if (!m) return
+    s.completed_missions.push(key)
+    earn(m.xp, '🎯', `Mission complete: ${m.label}`)
   }
 
   function deduct(amount: number, icon: string, msg: string, extras: Record<string, any> = {}) {
@@ -119,5 +160,5 @@ export function useXp() {
     }
   }
 
-  return { state, toast, curLevel, nextLevel, xpPct, earn, deduct, loadXp }
+  return { state, toast, curLevel, nextLevel, xpPct, earn, deduct, completeMission, loadXp }
 }

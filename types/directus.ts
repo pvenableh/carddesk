@@ -36,7 +36,7 @@ export interface CdCard {
 }
 
 export type FeedVisibility = 'private' | 'connections' | 'public'
-export type FeedEventType = 'card_scanned' | 'level_up' | 'streak' | 'badge' | 'connected' | 'joined' | 'intro'
+export type FeedEventType = 'card_scanned' | 'level_up' | 'streak' | 'badge' | 'connected' | 'joined' | 'intro' | 'revival'
 
 export interface CdFeedEvent {
   id: string
@@ -173,6 +173,7 @@ export interface CdXpState {
   unlocked_badges: string[]
   completed_missions: string[]
   missions_date: string
+  streak_shields?: number
 }
 
 // Per-user AI credit balance for standalone (non-Earnest-org) users.

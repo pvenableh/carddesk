@@ -81,8 +81,19 @@ const alertCs = computed(() =>
   contacts.value.filter((c) => !c.hibernated && followUpStatus(c) === 'overdue')
 )
 
+const { pending: pendingScans, hydrate: hydratePendingScans } = usePendingScans()
+const { info: infoToast } = useToast()
+
 onMounted(async () => {
   if (!loggedIn.value) return
+  // Offline scan stash: restore any cards captured without a connection, and
+  // nudge when connectivity returns so they actually get processed.
+  hydratePendingScans()
+  window.addEventListener('online', () => {
+    if (pendingScans.value.length) {
+      infoToast(`Back online — ${pendingScans.value.length} scanned card${pendingScans.value.length > 1 ? 's' : ''} waiting on the Scan screen.`)
+    }
+  })
   await Promise.all([fetchContacts(), loadXp(), loadProfile()])
 
   // Redeem a pending invite (set by /i/[code] before signup).
@@ -106,6 +117,9 @@ onMounted(async () => {
   <CdLanding v-if="!loggedIn" />
   <div v-else :class="rootClass">
     <PhoneHeaderBar />
+
+    <!-- Live Event Mode banner — visible on every screen while an event runs -->
+    <PhoneEventPill />
 
     <!-- Screens with iOS-like transitions -->
     <div class="cd-screens">

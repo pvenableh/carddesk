@@ -1,12 +1,15 @@
 export type Screen = "vibe" | "session" | "cold" | "home" | "contacts" | "detail" | "add" | "event" | "feed" | "chat"
 
 // Bottom-nav screens animate as tabs (slide by their bar position). `add` (the
-// scan button) sits between `event` and `feed` in the bar, so it's a tab here
-// too — otherwise scan↔feed slid the wrong way. `detail`/`cold` are pushed
-// sub-screens; `chat` is a slide-up overlay handled outside this system.
-const PUSH_SCREENS = new Set<Screen>(["detail", "cold", "chat"])
+// scan button) sits in the middle of the bar, so it's a tab here too —
+// otherwise scan↔feed slid the wrong way. `detail`/`cold`/`session`/`event`
+// are pushed sub-screens; `chat` is a slide-up overlay handled outside this
+// system. Session and Event left the bar in the 7→5 nav consolidation: Session
+// is reached from the Vibe screen, Event Mode is a state entered from Vibe or
+// the scan screen (with an app-wide pill while active).
+const PUSH_SCREENS = new Set<Screen>(["detail", "cold", "chat", "session", "event"])
 const TAB_INDEX: Record<string, number> = {
-  vibe: 0, session: 1, event: 2, add: 3, feed: 4, home: 5, contacts: 6,
+  vibe: 0, home: 1, add: 2, feed: 3, contacts: 4,
 }
 
 export function useNavigation() {

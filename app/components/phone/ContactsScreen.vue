@@ -3,7 +3,7 @@ import { RATINGS, RATING_ORDER, getRating, cEmoji } from '~/composables/useConst
 import { PIPELINE_STAGES } from '~/composables/usePipeline'
 import ConnectionsView from './ConnectionsView.vue'
 
-const { contacts, followUpStatus } = useContacts()
+const { contacts, followUpStatus, loading: contactsLoading, error: contactsError, fetchContacts } = useContacts()
 const { nav, goDetail } = useNavigation()
 const { getContactsByStage, getStageInfo } = usePipeline()
 
@@ -197,7 +197,21 @@ async function runExport() {
     <!-- Rating view -->
     <div v-else-if="viewMode === 'rating'" class="cd-scrl" style="padding: 4px var(--cd-gutter) 8px">
       <div class="cd-foot-fill">
-      <div v-if="!contacts.length" class="cd-empty">
+      <!-- A failed load must never read as "you have no contacts" — show the
+           truth and a way to recover instead of an empty list. -->
+      <div v-if="!contacts.length && contactsError" class="cd-empty">
+        <div style="font-size: 40px; margin-bottom: 10px"><CdIcon emoji="📡" icon="lucide:wifi-off" :size="40" /></div>
+        <div style="font-size: 18px; font-weight: 800; margin-bottom: 6px">Couldn't load your contacts</div>
+        <div style="font-size: 12px; color: var(--cd-muted); margin-bottom: 12px">They're safe — this is just a connection hiccup.</div>
+        <CdButton tier="primary" :disabled="contactsLoading" @click="fetchContacts()">
+          <CdIcon emoji="🔄" icon="lucide:refresh-cw" :size="14" /> {{ contactsLoading ? 'Retrying…' : 'Try again' }}
+        </CdButton>
+      </div>
+      <div v-else-if="!contacts.length && contactsLoading" class="cd-empty">
+        <div class="cd-spin" style="font-size: 32px; margin-bottom: 10px"><CdIcon emoji="⏳" icon="lucide:loader-circle" :size="32" /></div>
+        <div style="font-size: 13px; color: var(--cd-muted)">Loading your network…</div>
+      </div>
+      <div v-else-if="!contacts.length" class="cd-empty">
         <div style="font-size: 40px; margin-bottom: 10px"><CdIcon emoji="🃏" icon="lucide:credit-card" :size="40" /></div>
         <div style="font-size: 18px; font-weight: 800; margin-bottom: 12px">No contacts yet</div>
         <CdButton tier="primary" @click="nav('add')"><CdIcon emoji="📷" icon="lucide:camera" :size="14" /> Scan First Card</CdButton>

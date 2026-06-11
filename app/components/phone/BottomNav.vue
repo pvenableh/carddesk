@@ -10,34 +10,35 @@ const emit = defineEmits<{
   nav: [screen: Screen]
 }>()
 
+// 5-slot bar: 2 tabs, the scan button, 2 tabs. Session and Event Mode are no
+// longer tabs — Session is reached from Vibe, Event Mode is a state entered
+// from Vibe/scan (an app-wide pill shows while it's active).
 const tabs: { key: Screen; icon: string; lucide: string; label: string }[] = [
   { key: 'vibe', icon: '⚡', lucide: 'lucide:zap', label: 'Vibe' },
-  { key: 'session', icon: '🎙', lucide: 'lucide:mic', label: 'Session' },
-  { key: 'event', icon: '📡', lucide: 'lucide:radio', label: 'Event' },
-  { key: 'feed', icon: '📰', lucide: 'lucide:newspaper', label: 'Feed' },
   { key: 'home', icon: '📊', lucide: 'lucide:bar-chart-3', label: 'Stats' },
+  { key: 'feed', icon: '📰', lucide: 'lucide:newspaper', label: 'Feed' },
   { key: 'contacts', icon: '👥', lucide: 'lucide:users', label: 'Network' },
 ]
 
-// Left-to-right order of the seven nav slots (3 tabs, scan, 3 tabs). Drives the
+// Left-to-right order of the five nav slots (2 tabs, scan, 2 tabs). Drives the
 // sliding top-highlight: its index sets the indicator's horizontal position, and
 // CSS animates `left` so the line glides to the active page on every change.
-const NAV_ORDER: Screen[] = ['vibe', 'session', 'event', 'add', 'feed', 'home', 'contacts']
+const NAV_ORDER: Screen[] = ['vibe', 'home', 'add', 'feed', 'contacts']
 const activeIndex = computed(() => NAV_ORDER.indexOf(props.active))
 </script>
 
 <template>
   <nav class="cd-bnav">
     <!-- Sliding highlight that rides above whichever tab is active. Hidden on the
-         scan slot (index 3), which shows its own glow ring instead. -->
+         scan slot (index 2), which shows its own glow ring instead. -->
     <span
       class="cd-nav-indicator"
-      :class="{ hidden: activeIndex < 0 || activeIndex === 3 }"
-      :style="{ left: `calc(${activeIndex} * (100% / 7))` }"
+      :class="{ hidden: activeIndex < 0 || activeIndex === 2 }"
+      :style="{ left: `calc(${activeIndex} * (100% / 5))` }"
     ></span>
 
     <button
-      v-for="t in tabs.slice(0, 3)"
+      v-for="t in tabs.slice(0, 2)"
       :key="t.key"
       class="cd-bn"
       :class="{ on: active === t.key }"
@@ -56,7 +57,7 @@ const activeIndex = computed(() => NAV_ORDER.indexOf(props.active))
     </button>
 
     <button
-      v-for="t in tabs.slice(3)"
+      v-for="t in tabs.slice(2)"
       :key="t.key"
       class="cd-bn"
       :class="{ on: active === t.key }"
@@ -82,20 +83,20 @@ const activeIndex = computed(() => NAV_ORDER.indexOf(props.active))
   z-index: 10;
   position: relative;
 }
-/* Sliding top-highlight over the active tab. One slot = 1/7 of the bar; the
+/* Sliding top-highlight over the active tab. One slot = 1/5 of the bar; the
    inline `left` sets the slot and the transition glides it on page change. */
 .cd-nav-indicator {
   position: absolute;
   top: 0;
   box-sizing: border-box;
-  width: calc(100% / 7);
+  width: calc(100% / 5);
   height: 3px;
   border-radius: 0 0 3px 3px;
   background: var(--cd-accent);
   box-shadow: 0 0 10px color-mix(in srgb, var(--cd-accent) 60%, transparent);
-  /* inset the visible line within its 1/7 slot so it sits centred over the icon */
-  border-left: 18px solid transparent;
-  border-right: 18px solid transparent;
+  /* inset the visible line within its 1/5 slot so it sits centred over the icon */
+  border-left: 26px solid transparent;
+  border-right: 26px solid transparent;
   background-clip: padding-box;
   transition: left 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s;
   pointer-events: none;

@@ -4,8 +4,9 @@ import { SOCIALS, SOCIAL_KEYS } from '~/types/socials'
 import confettiLib from 'canvas-confetti'
 
 const { contacts, createContact, logActivity } = useContacts()
-const { state: xp, earn } = useXp()
-const { scanning, scanStep, error: scanError, captureFront, captureBackAndScan, scanFrontOnly, reset: resetScan } = useCardScan()
+const { state: xp, earn, completeMission } = useXp()
+const { scanning, scanStep, error: scanError, captureFront, captureBackAndScan, scanFrontOnly, processImages, reset: resetScan } = useCardScan()
+const { pending: pendingScans, remove: removePendingScan } = usePendingScans()
 const { nav, goDetail } = useNavigation()
 const { error: showError } = useToast()
 const eventMode = useEventMode()
@@ -47,6 +48,7 @@ function applyResult(result: any) {
   }
   wasScanned.value = true
   earn(50, '📷', 'Card scanned!', { total_scans: (xp.value.total_scans ?? 0) + 1 })
+  completeMission('scan')
   useFeed().emit('card_scanned', { company: result.company || null })
   fireConfetti()
 }
@@ -86,6 +88,22 @@ async function doSkipBack() {
       console.error('[scan]', err)
       showError(err?.message || 'Oops — the scan didn\'t go through. Try again.')
     }
+  }
+}
+
+// Replay a capture stashed while offline (oldest first). The replay never
+// re-stashes itself — the card is already safe in the queue until it succeeds.
+async function processPendingScan() {
+  const item = pendingScans.value[0]
+  if (!item || scanning.value) return
+  if (item.metAt && !addForm.value.metAt) addForm.value.metAt = item.metAt
+  try {
+    const result = await processImages(item.images, { stashOnNetworkError: false })
+    removePendingScan(item.id)
+    applyResult(result)
+  } catch (err: any) {
+    console.error('[scan] pending replay failed:', err)
+    showError(err?.message || 'Couldn\'t process that card yet — it\'s still safe in the queue.')
   }
 }
 
@@ -179,6 +197,35 @@ async function doSaveContact() {
         </div>
         <span class="cd-xpb" style="margin-top: 9px; display: inline-block">+50 XP</span>
       </div>
+
+      <!-- Cards captured offline, waiting for a connection — one tap replays them. -->
+      <button
+        v-if="scanStep === 'idle' && !scanning && pendingScans.length"
+        type="button"
+        style="display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; margin-top: 8px; padding: 10px; background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.3); border-radius: 10px; font-size: 12px; font-weight: 700; color: var(--cd-gold, #ffd700); cursor: pointer; font-family: inherit"
+        @click="processPendingScan"
+      >
+        <CdIcon emoji="📦" icon="lucide:inbox" :size="14" />
+        {{ pendingScans.length }} card{{ pendingScans.length > 1 ? 's' : '' }} captured offline — tap to process
+      </button>
+
+      <!-- Event Mode context: show the active auto-tag, or offer to turn it on.
+           Scanning at a conference is the core loop — this keeps the mode one
+           tap away from where the cards actually get captured. -->
+      <button
+        v-if="scanStep === 'idle' && !scanning"
+        type="button"
+        style="display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 8px; padding: 8px; background: transparent; border: 1px dashed var(--cd-bdr); border-radius: 10px; font-size: 11px; font-weight: 700; color: var(--cd-dim); cursor: pointer; font-family: inherit"
+        @click="nav('event')"
+      >
+        <CdIcon icon="lucide:radio" :size="12" />
+        <template v-if="eventMode.active.value">
+          Tagging to <span style="color: var(--cd-accent)">{{ eventMode.name.value }}</span> · {{ eventMode.count.value }} met
+        </template>
+        <template v-else>
+          At an event? Turn on Event Mode <CdIcon icon="lucide:arrow-right" :size="11" />
+        </template>
+      </button>
 
       <!-- Scan Zone: Front captured, prompt for back -->
       <div v-else-if="scanStep === 'captured-front'" class="cd-scan-captured">

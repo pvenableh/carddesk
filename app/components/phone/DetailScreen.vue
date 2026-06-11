@@ -7,7 +7,7 @@ import type { PipelineStage } from '~/types/directus'
 import confettiLib from 'canvas-confetti'
 
 const { contacts, updateContact, uploadContactImage, removeContactImage, hibernate, logActivity, markResponded, updateActivity, deleteActivity, lastActivity, daysSince, followUpStatus } = useContacts()
-const { state: xp, earn, deduct } = useXp()
+const { state: xp, earn, deduct, completeMission } = useXp()
 const { success, error: showError } = useToast()
 const { selectedId, editing, nav } = useNavigation()
 
@@ -142,10 +142,13 @@ async function doLogAct(isResp: boolean) {
     const extras = c.rating === 'hot' ? { hot_responses: (xp.value.hot_responses ?? 0) + 1 } : {}
     earn(100, '🎉', 'They came back. Of course they did.', extras)
     fireConfetti()
+    completeMission('response')
   } else {
     c.rating === 'hot'
       ? earn(50, '⚡', "Don't leave them hanging.")
       : earn(25, '✉️', "They'll remember you.")
+    completeMission('followup')
+    if (c.rating === 'hot') completeMission('hot')
   }
 }
 
@@ -155,6 +158,7 @@ async function doMarkResponded(actId: string) {
   await markResponded(c.id, actId)
   earn(100, '🎉', 'They replied!', { hot_responses: (xp.value.hot_responses ?? 0) + 1 })
   fireConfetti()
+  completeMission('response')
 }
 
 async function doHibernate(id: string) {
@@ -271,6 +275,7 @@ async function loadSuggestions() {
       },
     })
     suggestions.value = data
+    completeMission('ai_ideas')
   } catch { sugError.value = 'Could not load suggestions' }
   finally { sugLoading.value = false }
 }

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { cEmoji, coldWarmer } from '~/composables/useConstants'
+import { MAX_STREAK_SHIELDS } from '~/composables/useXp'
 
 const { contacts, hibernate, wake } = useContacts()
-const { earn } = useXp()
+const { state: xp, earn, completeMission } = useXp()
 
 const coldCs = computed(() => contacts.value.filter((c) => c.rating === 'cold' && !c.hibernated))
 const hibCs = computed(() => contacts.value.filter((c) => c.hibernated))
@@ -18,8 +19,15 @@ async function doHibernate(id: string) {
 }
 
 async function doWake(id: string) {
+  const c = contacts.value.find((x) => x.id === id)
   await wake(id)
-  earn(10, '🌅', 'Welcome back.')
+  // Reviving a sleeping relationship is harder (and worth more) than scanning a
+  // new card — celebrate it like the marquee move it is. It also banks a streak
+  // shield: acts of recovery earn resilience.
+  earn(75, '🌅', `${c?.name?.split(' ')[0] ?? 'They'}'re back in orbit!`, {
+    streak_shields: Math.min(MAX_STREAK_SHIELDS, (xp.value.streak_shields ?? 0) + 1),
+  })
+  useFeed().emit('revival', {})
 }
 </script>
 
@@ -49,7 +57,7 @@ async function doWake(id: string) {
             <div v-if="openCold.has(c.id)" class="cd-cw">
               <div class="cd-cw-q">"{{ coldWarmer(c) }}"</div>
               <div style="display: flex; gap: 6px">
-                <button class="cd-cwb reach" @click="earn(25, '📧', 'Reached out.'); toggleCold(c.id)">
+                <button class="cd-cwb reach" @click="earn(25, '📧', 'Reached out.'); completeMission('followup'); toggleCold(c.id)">
                   <CdIcon emoji="📧" icon="lucide:mail" :size="12" /> Reach out +25 XP
                 </button>
                 <button class="cd-cwb hib" @click="doHibernate(c.id)">Hibernate <CdIcon emoji="😴" icon="lucide:moon" :size="12" /></button>

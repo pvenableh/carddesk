@@ -2,7 +2,7 @@ import { readItems, createItem } from '@directus/sdk'
 import { getDirectus } from './directus'
 import type { FeedEventType } from '~/types/directus'
 
-export const FEED_TYPES: FeedEventType[] = ['card_scanned', 'level_up', 'streak', 'badge', 'connected', 'joined', 'intro']
+export const FEED_TYPES: FeedEventType[] = ['card_scanned', 'level_up', 'streak', 'badge', 'connected', 'joined', 'intro', 'revival']
 
 /**
  * Record a social activity event. Visibility follows the actor's

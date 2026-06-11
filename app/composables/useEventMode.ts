@@ -75,8 +75,10 @@ export function useEventMode() {
       pastEvents.value = [session, ...pastEvents.value]
       return session
     } catch (err) {
-      // Don't block the user from leaving the event over a failed log write.
+      // Don't block the user from leaving the event over a failed log write —
+      // but say so. The contacts stay tagged via met_at either way.
       console.error('[eventMode] Failed to save event session:', err)
+      useToast().error("Couldn't save this event to history — your contacts are still tagged to it.")
       return null
     }
   }

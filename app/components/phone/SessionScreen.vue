@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { TOUGH_CARDS, HYPE_CARDS } from '~/composables/useConstants'
 
-const { state: xp, earn } = useXp()
+const { state: xp, earn, completeMission } = useXp()
+const { nav } = useNavigation()
 const { contacts, followUpStatus } = useContacts()
 const { profile } = useProfile()
 const { getPipelineStats } = usePipeline()
@@ -81,6 +82,7 @@ async function saveCurrentSession() {
     })
     sessionSaved.value = true
     earn(15, '💾', 'Session saved to your history')
+    completeMission('ai_session')
     setTimeout(() => (sessionSaved.value = false), 2500)
     claimRewards()
   } catch { /* non-fatal */ }
@@ -89,6 +91,11 @@ async function saveCurrentSession() {
 
 <template>
   <div class="cd-screen on">
+    <!-- Pushed sub-screen (no nav tab of its own) — give it a way back. -->
+    <div class="cd-shdr">
+      <button class="cd-back" @click="nav('vibe')"><CdIcon emoji="‹" icon="lucide:chevron-left" :size="14" /> Back</button>
+      <div class="cd-stitle">Session <CdIcon emoji="🎙" icon="lucide:mic" :size="16" /></div>
+    </div>
     <div class="cd-scrl cd-pad">
       <div class="cd-foot-fill">
       <div style="text-align: center; padding: 14px 0 16px">

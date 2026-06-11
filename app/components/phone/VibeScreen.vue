@@ -250,6 +250,9 @@ async function loadVibe() {
     <div class="cd-shdr"><div class="cd-stitle">Your Vibe <CdIcon emoji="⚡" icon="lucide:zap" /></div></div>
     <div class="cd-scrl cd-pad">
       <div class="cd-foot-fill">
+      <!-- Next-best-action queue: overdue follow-ups + a revival candidate.
+           First thing you see — the follow-up half of the loop. -->
+      <PhoneUpNext />
       <!-- Event Mode: focused capture for networking events -->
       <button
         class="cd-abtn g"
@@ -405,27 +408,8 @@ async function loadVibe() {
         </div>
       </div>
 
-      <div v-if="coldCs.length" class="cd-vc cold-vc" @click="nav('cold')">
-        <div class="cd-vct">
-          <span class="cd-vci"><CdIcon emoji="❄️" icon="lucide:snowflake" /></span>
-          <div>
-            <div class="cd-vch" style="color: #a8d8ea">{{ coldCs[0].name }} has gone quiet.</div>
-            <div class="cd-vcb">One check-in could be all it takes.</div>
-          </div>
-        </div>
-        <button class="cd-abtn ice" @click.stop="nav('cold')"><CdIcon emoji="🌡" icon="lucide:thermometer" :size="14" /> See cold contacts</button>
-      </div>
-
-      <div v-if="alertCs.length" class="cd-vc warn" @click="goDetail(alertCs[0].id)">
-        <div class="cd-vct">
-          <span class="cd-vci"><CdIcon emoji="⚡" icon="lucide:zap" /></span>
-          <div>
-            <div class="cd-vch" style="color: #ff6b35">{{ alertCs[0].name }} is slipping away.</div>
-            <div class="cd-vcb">{{ daysSince(alertCs[0]) }} days without a follow-up.</div>
-          </div>
-        </div>
-        <button class="cd-abtn o" @click.stop="goDetail(alertCs[0].id)"><CdIcon emoji="⚡" icon="lucide:zap" :size="14" /> Follow up now</button>
-      </div>
+      <!-- (The old single cold/overdue callouts were replaced by the Up next
+           queue at the top of this screen.) -->
 
       <div class="cd-vc" style="border-color: rgba(77, 166, 255, 0.2)">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px">

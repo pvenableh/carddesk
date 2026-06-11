@@ -22,6 +22,7 @@ const earnGroups: { title: string; items: { icon: string; lucide: string; label:
       { icon: '✅', lucide: 'lucide:check-circle', label: 'Log a touchpoint', xp: '+25' },
       { icon: '🎉', lucide: 'lucide:message-circle', label: 'Log a reply from a lead', xp: '+100' },
       { icon: '💎', lucide: 'lucide:gem', label: 'Response from a hot lead', xp: '+50' },
+      { icon: '🌅', lucide: 'lucide:sunrise', label: 'Revive a hibernated contact', xp: '+75' },
       { icon: '💰', lucide: 'lucide:badge-check', label: 'Convert a client', xp: '+200' },
     ],
   },
@@ -31,6 +32,7 @@ const earnGroups: { title: string; items: { icon: string; lucide: string; label:
       { icon: '🏆', lucide: 'lucide:trophy', label: 'Daily hype claim', xp: '+20' },
       { icon: '🔥', lucide: 'lucide:flame', label: '7-day streak bonus', xp: '+200' },
       { icon: '🏅', lucide: 'lucide:award', label: 'Unlock a badge', xp: '+75' },
+      { icon: '🛡️', lucide: 'lucide:shield', label: 'Streak shield — earned at 7-day streaks & revivals, saves a missed day', xp: 'hold 2' },
     ],
   },
 ]

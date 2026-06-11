@@ -29,6 +29,7 @@ export default defineEventHandler(async (event) => {
       intros: r.intros ?? 0,
       week_xp: r.week_xp ?? 0,
       week_start: r.week_start ?? "",
+      streak_shields: r.streak_shields ?? 0,
       unlocked_badges: r.unlocked_badges ?? [],
       completed_missions: r.completed_missions ?? [],
       missions_date: r.missions_date ?? "",

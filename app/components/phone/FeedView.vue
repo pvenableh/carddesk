@@ -30,6 +30,7 @@ const ICON: Record<string, { emoji: string; icon: string }> = {
   connected: { emoji: '🤝', icon: 'lucide:users' },
   joined: { emoji: '🎉', icon: 'lucide:party-popper' },
   intro: { emoji: '🌉', icon: 'lucide:git-merge' },
+  revival: { emoji: '🌅', icon: 'lucide:sunrise' },
 }
 
 // Tooltip listing who reacted with an emoji ("You" first). Empty = no tooltip.
@@ -49,6 +50,7 @@ function text(e: FeedEvent): string {
     case 'connected': return `${who} made a new connection`
     case 'joined': return `${who} joined CardDesk`
     case 'intro': return `${who} made an introduction`
+    case 'revival': return `${who} revived a sleeping connection`
     default: return `${who} was active`
   }
 }

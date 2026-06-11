@@ -4,7 +4,8 @@ import { todayStr } from '~/composables/useFormatters'
 import type { CdActivity } from '~/types/directus'
 
 const { contacts, followUpStatus, logActivity } = useContacts()
-const { state: xp, curLevel, nextLevel, xpPct, earn } = useXp()
+const { state: xp, curLevel, nextLevel, xpPct, earn, completeMission } = useXp()
+const { nav, goDetail } = useNavigation()
 const { getPipelineStats } = usePipeline()
 
 const hotCount = computed(() => contacts.value.filter((c) => c.rating === 'hot').length)
@@ -111,10 +112,27 @@ const sDots = computed(() => {
   return dots
 })
 
-function doMission(key: string) {
+// Missions complete themselves when you do the real thing (useXp.completeMission
+// is called from the actual earn moments) — they're verified, not self-reported.
+// Tapping an open mission takes you to where you'd do it.
+function goMission(key: string) {
   if (xp.value.completed_missions.includes(key)) return
-  xp.value.completed_missions.push(key)
-  earn(50, '🎯', 'Mission complete.')
+  switch (key) {
+    case 'scan': nav('add'); break
+    case 'followup': logOpen.value = true; break
+    case 'hot': {
+      const hot = contacts.value.find((c) => c.rating === 'hot' && !c.hibernated)
+      hot ? goDetail(hot.id) : nav('contacts')
+      break
+    }
+    case 'response': nav('contacts'); break
+    case 'ai_session': nav('session'); break
+    case 'ai_ideas': {
+      const first = contacts.value.find((c) => !c.hibernated)
+      first ? goDetail(first.id) : nav('add')
+      break
+    }
+  }
 }
 
 // Quick-log event
@@ -142,6 +160,7 @@ async function doQuickLog() {
       is_response: false,
     })
     earn(25, '✉️', "They'll remember you.")
+    completeMission('followup')
     logNote.value = ''
     logDate.value = todayStr()
     logContact.value = ''
@@ -288,6 +307,9 @@ async function doQuickLog() {
         <div style="flex: 1">
           <div style="font-family: 'Bebas Neue', sans-serif; font-size: 40px; color: #ff4500; line-height: 1">{{ xp.streak }}</div>
           <div style="font-size: 11px; font-weight: 700; color: var(--cd-muted); text-transform: uppercase">Day Streak</div>
+          <div v-if="xp.streak_shields" style="font-size: 10px; font-weight: 700; color: #4da6ff; margin-top: 2px">
+            <CdIcon emoji="🛡️" icon="lucide:shield" :size="10" /> {{ xp.streak_shields }} shield{{ xp.streak_shields > 1 ? 's' : '' }} — a missed day won't break it
+          </div>
         </div>
         <div style="display: flex; gap: 4px">
           <div v-for="(d, i) in sDots" :key="i" class="cd-sdot" :class="d"></div>
@@ -347,7 +369,7 @@ async function doQuickLog() {
         :key="m.key"
         class="cd-mission"
         :class="{ done: xp.completed_missions.includes(m.key) }"
-        @click="doMission(m.key)"
+        @click="goMission(m.key)"
       >
         <div class="cd-msn-glow" :class="xp.completed_missions.includes(m.key) ? 'g' : 'o'"></div>
         <span style="font-size: 20px; width: 30px; text-align: center; flex-shrink: 0"><CdIcon :emoji="m.icon" :icon="m.lucide" :size="20" /></span>
@@ -355,7 +377,10 @@ async function doQuickLog() {
           <div style="font-size: 13px; font-weight: 700">{{ m.label }}</div>
           <div style="font-size: 10px; color: var(--cd-dim); font-style: italic">{{ m.hype }}</div>
         </div>
-        <span v-if="!xp.completed_missions.includes(m.key)" class="cd-xpb">+{{ m.xp }} XP</span>
+        <template v-if="!xp.completed_missions.includes(m.key)">
+          <span class="cd-xpb">+{{ m.xp }} XP</span>
+          <CdIcon icon="lucide:chevron-right" :size="13" style="color: var(--cd-dim); flex-shrink: 0" />
+        </template>
         <span v-else><CdIcon emoji="✅" icon="lucide:check-circle" :size="16" /></span>
       </div>
 

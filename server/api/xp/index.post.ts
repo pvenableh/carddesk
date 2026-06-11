@@ -19,6 +19,7 @@ export default defineEventHandler(async (event) => {
     intros: body.intros ?? 0,
     week_xp: body.week_xp ?? 0,
     week_start: body.week_start ?? null,
+    streak_shields: Math.max(0, Math.min(2, body.streak_shields ?? 0)),
     unlocked_badges: body.unlocked_badges ?? [],
     completed_missions: body.completed_missions ?? [],
     missions_date: body.missions_date ?? null,

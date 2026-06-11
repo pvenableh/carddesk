@@ -96,7 +96,10 @@ export function useCardScan() {
     return await processImages([frontImage.value!])
   }
 
-  async function processImages(images: { data: string; mediaType: string }[]): Promise<ScannedCard> {
+  async function processImages(
+    images: { data: string; mediaType: string }[],
+    opts: { stashOnNetworkError?: boolean } = {},
+  ): Promise<ScannedCard> {
     scanning.value = true; scanStep.value = 'processing'; error.value = null; result.value = null
     const sides = images.length
     analytics.cardScanStart(sides)
@@ -109,7 +112,22 @@ export function useCardScan() {
       return scanned
     } catch (err: any) {
       analytics.cardScanFailed(sides)
-      const msg = err?.data?.message ?? 'Scan failed — try a clearer photo'
+      // A network failure (offline, dead conference wifi) has no HTTP status —
+      // the capture is good, only the upload failed. Stash it so the card is
+      // never lost; the scan screen offers a one-tap retry when back online.
+      const isNetworkError =
+        (import.meta.client && !navigator.onLine) ||
+        (err?.status == null && err?.statusCode == null && err?.response == null)
+      let msg = err?.data?.message ?? 'Scan failed — try a clearer photo'
+      if (isNetworkError && (opts.stashOnNetworkError ?? true)) {
+        const eventMode = useEventMode()
+        const stashed = usePendingScans().stash(images, eventMode.active.value ? eventMode.name.value : null)
+        msg = stashed
+          ? 'No connection — your card is saved. Process it from the scan screen when you\'re back online.'
+          : 'No connection, and the offline queue is full — try again once you\'re back online.'
+      } else if (isNetworkError) {
+        msg = 'Still no connection — your card is safe in the queue.'
+      }
       error.value = msg; throw new Error(msg)
     } finally {
       scanning.value = false
@@ -129,6 +147,8 @@ export function useCardScan() {
   return {
     scanning, scanStep, error, result, frontImage,
     captureFront, captureBackAndScan, scanFrontOnly, openCamera,
+    // Exposed so the scan screen can replay stashed offline captures.
+    processImages,
     reset: () => { result.value = null; error.value = null; scanStep.value = 'idle'; frontImage.value = null },
   }
 }

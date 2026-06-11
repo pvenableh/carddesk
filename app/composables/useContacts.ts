@@ -3,8 +3,11 @@ import type { CdContact, CdActivity } from '~/types/directus'
 export function useContacts() {
   const contacts = useState<CdContact[]>('cd_contacts', () => [])
   const analytics = useAnalytics()
-  const loading = ref(false)
-  const error = ref<string | null>(null)
+  // Shared (not per-call) so screens can render a real error + retry state. A
+  // failed load used to leave an empty list that read as "you have no
+  // contacts" — the worst possible failure for an app holding someone's network.
+  const loading = useState('cd_contacts_loading', () => false)
+  const error = useState<string | null>('cd_contacts_error', () => null)
 
   async function fetchContacts() {
     loading.value = true; error.value = null

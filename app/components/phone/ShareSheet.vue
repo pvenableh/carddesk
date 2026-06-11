@@ -18,21 +18,26 @@ async function makeQr(url: string) {
   return QR.toDataURL(url, { margin: 1, width: 260, color: { dark: '#060810', light: '#ffffff' } })
 }
 
+// Load failures used to leave the spinner up forever — surface them with a retry.
+const loadError = reactive<{ card: boolean; invite: boolean }>({ card: false, invite: false })
+
 async function ensureCard() {
   if (card.value) return
   busy.value = true
+  loadError.card = false
   try {
     card.value = await $fetch<MyCard>('/api/cards/me')
     qr.card = await makeQr(card.value.url)
-  } catch { /* surfaced via empty state */ } finally { busy.value = false }
+  } catch { loadError.card = true } finally { busy.value = false }
 }
 async function ensureInvite() {
   if (invite.value) return
   busy.value = true
+  loadError.invite = false
   try {
     invite.value = await $fetch<{ code: string; url: string }>('/api/invite')
     qr.invite = await makeQr(invite.value.url)
-  } catch { /* */ } finally { busy.value = false }
+  } catch { loadError.invite = true } finally { busy.value = false }
 }
 
 // Load whichever tab is shown (and when the user switches tabs).
@@ -73,6 +78,13 @@ async function shareInvite() {
       <template v-if="tab === 'card'">
         <div class="cd-sheet-sub">Scan to view your card &amp; save your contact.</div>
         <div v-if="busy && !qr.card" class="cd-sheet-qrbox cd-sheet-loading"><div class="cd-spin" style="font-size: 30px"><CdIcon emoji="⏳" icon="lucide:loader-circle" :size="30" /></div></div>
+        <div v-else-if="loadError.card && !card" class="cd-sheet-err">
+          <CdIcon emoji="📡" icon="lucide:wifi-off" :size="22" />
+          <div>Couldn't load your card — connection hiccup.</div>
+          <button class="cd-abtn g" style="font-size: 12px; padding: 8px 14px" @click="ensureCard">
+            <CdIcon emoji="🔄" icon="lucide:refresh-cw" :size="12" /> Try again
+          </button>
+        </div>
         <template v-else>
           <div class="cd-sheet-qrbox"><img v-if="qr.card" :src="qr.card" alt="Your card QR" width="220" height="220" /></div>
           <div v-if="card" style="margin: 4px 0 12px">
@@ -91,6 +103,13 @@ async function shareInvite() {
       <template v-else>
         <div class="cd-sheet-sub">Scan in person, or share the link to grow your network.</div>
         <div v-if="busy && !qr.invite" class="cd-sheet-qrbox cd-sheet-loading"><div class="cd-spin" style="font-size: 30px"><CdIcon emoji="⏳" icon="lucide:loader-circle" :size="30" /></div></div>
+        <div v-else-if="loadError.invite && !invite" class="cd-sheet-err">
+          <CdIcon emoji="📡" icon="lucide:wifi-off" :size="22" />
+          <div>Couldn't load your invite link — connection hiccup.</div>
+          <button class="cd-abtn g" style="font-size: 12px; padding: 8px 14px" @click="ensureInvite">
+            <CdIcon emoji="🔄" icon="lucide:refresh-cw" :size="12" /> Try again
+          </button>
+        </div>
         <template v-else>
           <div class="cd-sheet-qrbox"><img v-if="qr.invite" :src="qr.invite" alt="Invite QR" width="220" height="220" /></div>
           <button class="cd-abtn g" @click="shareInvite"><CdIcon emoji="📤" icon="lucide:share" :size="14" /> Share invite link</button>
@@ -207,4 +226,14 @@ async function shareInvite() {
   justify-content: center;
   background: var(--cd-bg2);
 }
+.cd-sheet-err {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 26px 10px;
+  font-size: 12.5px;
+  color: var(--cd-muted);
+}
+.cd-sheet-err .cd-abtn { width: auto; }
 </style>
