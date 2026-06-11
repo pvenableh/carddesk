@@ -50,6 +50,9 @@ export default defineEventHandler(async (event) => {
         ],
         filter: { user_created: { _eq: "$CURRENT_USER" } },
         sort: ["-date_created"],
+        // Newest touchpoint first, matching the optimistic order the client
+        // prepends in useContacts.logActivity — so a refresh doesn't reshuffle.
+        deep: { activities: { _sort: ["-date_created"] } },
         limit: 200,
       }),
     )) as any[];

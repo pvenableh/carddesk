@@ -1,3 +1,4 @@
+import confettiLib from 'canvas-confetti'
 import type { CdPlan, CdTask, TaskChannel } from '~/types/directus'
 
 /**
@@ -74,6 +75,18 @@ export function offsetToDueAt(anchorYmd: string, offsetDays: number): string {
 export function usePlans() {
   const { error: showError } = useToast()
   const { loadCredits } = useCredits()
+  const { earn } = useXp()
+
+  // Finishing a plan is a real milestone — reward it the same way the app
+  // celebrates a scan or a client conversion. Centralised here so every surface
+  // that can check off the last task (contact widget, agenda, Plans board)
+  // celebrates identically off the server's `planCompleted` signal.
+  function celebratePlan() {
+    earn(150, '🎯', 'Plan complete! Every step done.')
+    if (import.meta.client) {
+      confettiLib({ particleCount: 80, spread: 75, origin: { y: 0.6 }, colors: ['#00ff87', '#ffd700', '#ff6b35', '#4da6ff', '#b87dff'] })
+    }
+  }
 
   // Cross-component refresh signal: bumped after any plan/task mutation so widgets
   // on other screens (contact detail, Vibe agenda) reload without prop wiring.
@@ -143,7 +156,10 @@ export function usePlans() {
   }
 
   async function setTaskStatus(id: string, status: CdTask['status']) {
-    return await updateTask(id, { status })
+    const task = await updateTask(id, { status })
+    // The PATCH returns planCompleted=true only on the toggle that finishes a plan.
+    if ((task as any)?.planCompleted) celebratePlan()
+    return task
   }
 
   async function deleteTask(id: string) {

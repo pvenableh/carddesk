@@ -88,14 +88,19 @@ function text(e: FeedEvent): string {
         <div style="font-size: 13px; line-height: 1.35">{{ text(e) }}</div>
         <div style="font-size: 10px; color: var(--cd-dim); margin: 2px 0 6px">{{ fmtRelative(e.date) }}</div>
         <div class="cd-feed-reacts">
-          <button
+          <CdTooltip
             v-for="emoji in REACTIONS"
             :key="emoji"
-            class="cd-react"
-            :class="{ on: e.myReactions.includes(emoji) }"
-            :title="reactorTooltip(e, emoji)"
-            @click="react(e.id, emoji)"
-          >{{ emoji }}<span v-if="e.reactions[emoji]" class="cd-react-n">{{ e.reactions[emoji] }}</span></button>
+            :label="reactorTooltip(e, emoji)"
+            placement="top"
+            wrap
+          >
+            <button
+              class="cd-react"
+              :class="{ on: e.myReactions.includes(emoji) }"
+              @click="react(e.id, emoji)"
+            >{{ emoji }}<span v-if="e.reactions[emoji]" class="cd-react-n">{{ e.reactions[emoji] }}</span></button>
+          </CdTooltip>
         </div>
       </div>
     </div>

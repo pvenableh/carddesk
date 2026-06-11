@@ -74,7 +74,7 @@ watch(() => dirty.value, load)
         <button class="od-main" type="button" @click="openContact(t)">
           <div class="od-title">{{ t.title }}</div>
           <div class="od-meta">
-            <span v-if="t.contact && nameById[t.contact]" class="od-who">{{ nameById[t.contact] }}</span>
+            <span v-if="t.contact && nameById[t.contact]" class="od-who"><CdIcon icon="lucide:user" :size="10" /> {{ nameById[t.contact] }}</span>
             <span v-if="t.channel" class="od-chan"><CdIcon :icon="CHANNEL_ICON[t.channel]" :size="10" /></span>
             <span class="od-due" :class="{ over: dueMeta(t.due_at).overdue, today: dueMeta(t.due_at).today }">{{ dueMeta(t.due_at).label }}</span>
           </div>
@@ -111,7 +111,15 @@ watch(() => dirty.value, load)
 .od-main { flex: 1; min-width: 0; text-align: left; background: none; border: 0; cursor: pointer; padding: 0; color: var(--cd-text); font-family: inherit; }
 .od-title { font-size: 13px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .od-meta { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
-.od-who { font-size: 11px; color: var(--cd-accent); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%; }
+.od-who {
+  display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0;
+  font-size: 10.5px; color: var(--cd-accent); font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55%;
+  background: color-mix(in srgb, var(--cd-accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-accent) 26%, transparent);
+  border-radius: 999px; padding: 1px 8px 1px 6px;
+}
+.od-who :deep(svg) { flex-shrink: 0; }
 .od-chan { display: inline-flex; color: var(--cd-dim); }
 .od-due { font-size: 10.5px; font-weight: 700; color: var(--cd-muted); }
 .od-due.today { color: var(--cd-accent); }

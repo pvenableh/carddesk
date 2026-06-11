@@ -12,7 +12,7 @@ import { dueMeta } from '~/composables/usePlans'
 const props = defineProps<{ contactId: string }>()
 const emit = defineEmits<{ (e: 'ask'): void }>()
 
-const { listPlans, listTasks, createTask, setTaskStatus, deleteTask, deletePlan, dirty } = usePlans()
+const { listPlans, listTasks, createTask, setTaskStatus, deleteTask, deletePlan, updatePlan, dirty } = usePlans()
 
 const plans = ref<CdPlan[]>([])
 const looseTasks = ref<CdTask[]>([])
@@ -68,9 +68,18 @@ function sortedTasks(p: CdPlan): CdTask[] {
 }
 const sortedLoose = computed(() => [...looseTasks.value].sort(bySchedule))
 
-function planProgress(p: CdPlan): { done: number; total: number } {
+function planProgress(p: CdPlan): { done: number; total: number; pct: number } {
   const tasks = p.tasks ?? []
-  return { done: tasks.filter((t) => t.status === 'done').length, total: tasks.length }
+  const total = tasks.length
+  const done = tasks.filter((t) => t.status === 'done').length
+  return { done, total, pct: total ? Math.round((done / total) * 100) : 0 }
+}
+
+// Completion date = when the last task was checked off (no extra column needed).
+function planDoneOn(p: CdPlan): string {
+  const stamps = (p.tasks ?? []).map((t) => t.completed_at).filter(Boolean).map((s) => Date.parse(s as string))
+  if (!stamps.length) return ''
+  return new Date(Math.max(...stamps)).toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
 async function load() {
@@ -98,13 +107,35 @@ async function toggle(t: CdTask) {
   busy.value = { ...busy.value, [t.id]: true }
   const next = t.status === 'done' ? 'pending' : 'done'
   try {
-    await setTaskStatus(t.id, next)
+    const res = await setTaskStatus(t.id, next)
     t.status = next
     t.completed_at = next === 'done' ? new Date().toISOString() : null
+    // The server may have flipped the parent plan active⇄done off this toggle;
+    // mirror that locally so the plan slides into/out of the completed section.
+    const ps = (res as any)?.planStatus
+    if (t.plan && ps) {
+      const plan = plans.value.find((p) => p.id === t.plan)
+      if (plan) plan.status = ps
+    }
   } catch { /* leave as-is */ }
   finally {
     busy.value = { ...busy.value, [t.id]: false }
   }
+}
+
+// Inline plan rename.
+const renamingId = ref<string | null>(null)
+const renameText = ref('')
+function startRename(p: CdPlan) {
+  renamingId.value = p.id
+  renameText.value = p.title
+}
+async function commitRename(p: CdPlan) {
+  const title = renameText.value.trim()
+  renamingId.value = null
+  if (!title || title === p.title) return
+  p.title = title
+  try { await updatePlan(p.id, { title }) } catch { /* toast handled globally */ }
 }
 
 async function removeTask(t: CdTask) {
@@ -232,12 +263,22 @@ watch(() => props.contactId, () => { loadedOnce.value = false; load() })
         <!-- Active plans -->
         <div v-for="p in activePlans" :key="p.id" class="cp-plan">
           <div class="cp-plan-hd">
-            <div class="cp-plan-title">{{ p.title }}</div>
+            <input
+              v-if="renamingId === p.id"
+              v-model="renameText"
+              class="cd-inp cp-rename"
+              type="text"
+              @blur="commitRename(p)"
+              @keydown.enter="commitRename(p)"
+              @keydown.esc="renamingId = null"
+            />
+            <button v-else class="cp-plan-title cp-title-btn" type="button" title="Tap to rename" @click="startRename(p)">{{ p.title }}</button>
             <div class="cp-plan-right">
               <span class="cp-prog">{{ planProgress(p).done }}/{{ planProgress(p).total }}</span>
               <button class="cp-del" type="button" aria-label="Delete plan" @click="removePlan(p)"><CdIcon icon="lucide:trash-2" :size="13" /></button>
             </div>
           </div>
+          <div class="cp-bar"><span class="cp-bar-fill" :style="{ width: planProgress(p).pct + '%' }"></span></div>
           <div v-for="t in sortedTasks(p)" :key="t.id" class="cp-task" :class="{ done: t.status === 'done' }">
             <button class="cp-check" :class="{ on: t.status === 'done' }" type="button" :disabled="busy[t.id]" @click="toggle(t)">
               <CdIcon v-if="t.status === 'done'" icon="lucide:check" :size="12" />
@@ -260,8 +301,11 @@ watch(() => props.contactId, () => { loadedOnce.value = false; load() })
         </button>
         <div v-if="showDone" class="cp-past">
           <div v-for="p in donePlans" :key="p.id" class="cp-past-row">
+            <span v-if="p.status === 'done'" class="cp-done-badge"><CdIcon icon="lucide:check" :size="10" /> Done</span>
             <div class="cp-past-title">{{ p.title }}</div>
-            <span class="cp-past-meta">{{ planProgress(p).done }}/{{ planProgress(p).total }} · {{ p.status }}</span>
+            <span class="cp-past-meta">
+              {{ planProgress(p).done }}/{{ planProgress(p).total }}<template v-if="p.status === 'done' && planDoneOn(p)"> · {{ planDoneOn(p) }}</template><template v-else> · {{ p.status }}</template>
+            </span>
             <button class="cp-del" type="button" aria-label="Delete plan" @click="removePlan(p)"><CdIcon icon="lucide:trash-2" :size="12" /></button>
           </div>
         </div>
@@ -307,6 +351,19 @@ watch(() => props.contactId, () => { loadedOnce.value = false; load() })
 .cp-loose-title { color: var(--cd-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
 .cp-plan-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .cp-prog { font-size: 11px; color: var(--cd-dim); font-variant-numeric: tabular-nums; }
+.cp-title-btn { background: none; border: 0; padding: 0; margin: 0; color: inherit; font: inherit; cursor: text; text-align: left; }
+.cp-rename {
+  flex: 1; margin: 0 !important; padding: 4px 8px; font-size: 13px; font-weight: 800;
+}
+/* Slim progress bar under each active plan's header. */
+.cp-bar { height: 4px; border-radius: 999px; background: var(--cd-bdr); overflow: hidden; margin: 0 0 9px; }
+.cp-bar-fill { display: block; height: 100%; border-radius: 999px; background: var(--cd-accent); transition: width 0.25s ease; }
+.cp-done-badge {
+  display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0;
+  font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--cd-accent); background: color-mix(in srgb, var(--cd-accent) 14%, transparent);
+  border-radius: 5px; padding: 1px 5px;
+}
 .cp-del { background: none; border: 0; color: var(--cd-dim); cursor: pointer; padding: 2px; flex-shrink: 0; }
 .cp-del:hover { color: #e5484d; }
 

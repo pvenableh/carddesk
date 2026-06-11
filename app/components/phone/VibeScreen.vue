@@ -16,6 +16,8 @@ const eventMode = useEventMode()
 // coaching. Persists for the session (VibeScreen is kept-alive). Default: Next.
 const vibeTab = useState<'next' | 'play' | 'coach'>('cd-vibe-tab', () => 'next')
 const tabIndex = computed(() => ({ next: 0, play: 1, coach: 2 })[vibeTab.value])
+// Within Next: the daily task agenda vs. the full plan manager.
+const nextView = useState<'tasks' | 'plans'>('cd-next-view', () => 'tasks')
 
 const pipelineStats = computed(() => getPipelineStats())
 
@@ -262,8 +264,14 @@ async function loadVibe() {
       <div v-show="vibeTab === 'next'" class="vb-pane">
       <!-- Next-best-action queue: overdue follow-ups + a revival candidate. -->
       <PhoneUpNext />
-      <!-- Plans & tasks — list + calendar of everything coming up -->
-      <PhoneTaskBoard />
+      <!-- Tasks (daily agenda + calendar) vs. Plans (full plan manager). -->
+      <div class="vb-seg">
+        <div class="vb-seg-ind" :class="{ right: nextView === 'plans' }"></div>
+        <button type="button" :class="{ on: nextView === 'tasks' }" @click="nextView = 'tasks'"><CdIcon icon="lucide:list-checks" :size="13" /> Tasks</button>
+        <button type="button" :class="{ on: nextView === 'plans' }" @click="nextView = 'plans'"><CdIcon icon="lucide:flag" :size="13" /> Plans</button>
+      </div>
+      <PhoneTaskBoard v-if="nextView === 'tasks'" />
+      <PhonePlansBoard v-else />
       <!-- Event Mode: focused capture for networking events -->
       <button
         class="cd-abtn g"
@@ -279,49 +287,63 @@ async function loadVibe() {
         <button class="cd-abtn ice" style="font-size: 12px; padding: 10px" @click="openShareSheet('card')"><CdCardMark :size="15" :gradient="false" /> My Card</button>
         <button class="cd-abtn b" style="font-size: 12px; padding: 10px" @click="openShareSheet('invite')"><CdIcon emoji="🔗" icon="lucide:user-plus" :size="14" /> Invite</button>
       </div>
-      <!-- What should I do next? (AI lead suggestions) -->
-      <div class="cd-vc" style="border-color: rgba(77, 166, 255, 0.2)">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px">
-          <div style="display: flex; align-items: center; gap: 6px">
-            <CdEarnestMark :size="15" />
-            <span style="font-size: 13px; font-weight: 800; color: #4da6ff">What should I do next?</span>
+      <!-- Smart moves — Earnest's AI picks for who to act on next -->
+      <div class="cd-vc vb-sm">
+        <div class="vb-sm-hd">
+          <div class="vb-sm-hd-l">
+            <CdEarnestMark :size="17" />
+            <div>
+              <div class="vb-sm-title">Smart moves</div>
+              <div class="vb-sm-sub">Earnest's picks for who to nudge next</div>
+            </div>
           </div>
-          <button
-            class="cd-abtn"
-            style="font-size: 10px; padding: 4px 10px; background: transparent; border-color: var(--cd-bdr); color: #4da6ff; width: auto; flex-shrink: 0; white-space: nowrap"
-            :disabled="leadSugLoading"
-            @click="loadLeadSuggestions"
-          >
-            <CdEarnestMark :size="12" />
-            {{ leadSugLoading ? 'Thinking...' : leadSuggestions.length ? 'Refresh' : 'Get Earnest AI Ideas' }}
+          <button class="vb-sm-refresh" :disabled="leadSugLoading" aria-label="Get Earnest AI suggestions" @click="loadLeadSuggestions">
+            <CdIcon :icon="leadSuggestions.length ? 'lucide:refresh-cw' : 'lucide:sparkles'" :size="13" :class="{ 'vb-sm-spin': leadSugLoading }" />
+            <span v-if="!leadSuggestions.length && !leadSugLoading">Get picks</span>
           </button>
         </div>
-        <div v-if="leadSugError" style="font-size: 12px; color: #f87171; margin-bottom: 6px">{{ leadSugError }}</div>
-        <div v-if="!leadSuggestions.length && !leadSugLoading && !leadSugError" style="font-size: 11px; color: var(--cd-dim); line-height: 1.5">
-          Tap <strong style="color: #4da6ff">Get Earnest AI Ideas</strong> for personalized suggestions on growing your leads.
+
+        <div v-if="leadSugError" class="vb-sm-err">{{ leadSugError }}</div>
+
+        <!-- Empty: an inviting hero rather than fine print -->
+        <div v-if="!leadSuggestions.length && !leadSugLoading && !leadSugError" class="vb-sm-empty">
+          <div class="vb-sm-empty-ico"><CdEarnestMark :size="20" /></div>
+          <div class="vb-sm-empty-t">See your next best moves</div>
+          <div class="vb-sm-empty-s">Earnest scans your network and suggests exactly who to reach out to — and how.</div>
+          <button class="cd-abtn g vb-sm-empty-btn" @click="loadLeadSuggestions"><CdIcon icon="lucide:sparkles" :size="14" /> Get Earnest's picks</button>
         </div>
-        <div v-if="leadSugLoading" style="text-align: center; padding: 10px 0">
-          <div style="font-size: 12px; color: var(--cd-muted); animation: cd-pulse 1.5s ease-in-out infinite">Analyzing your network...</div>
+
+        <!-- Loading: skeleton shimmer -->
+        <div v-if="leadSugLoading" class="vb-sm-load">
+          <div v-for="n in 2" :key="n" class="vb-sm-skel">
+            <span class="vb-sm-skel-line w70"></span>
+            <span class="vb-sm-skel-line w90"></span>
+            <span class="vb-sm-skel-line w40"></span>
+          </div>
+          <div class="vb-sm-load-txt">Analyzing your network…</div>
         </div>
+
+        <!-- Suggestions -->
         <div
           v-for="(s, i) in leadSuggestions"
           :key="i"
-          style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 10px; padding: 9px 11px; margin-bottom: 6px"
+          class="vb-sm-card"
+          :style="{ '--sm-accent': (s.action && SUG_ACTIONS[s.action] ? SUG_ACTIONS[s.action].color : 'var(--cd-accent)') }"
         >
-          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px">
-            <div style="font-size: 13px; font-weight: 700">{{ s.icon }} {{ s.title }}</div>
+          <div class="vb-sm-card-hd">
+            <span class="vb-sm-emoji">{{ s.icon }}</span>
+            <div class="vb-sm-card-title">{{ s.title }}</div>
             <span
               v-if="s.contactId && getContact(s.contactId)?.pipeline_stage"
-              style="font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(77,166,255,0.1); border: 1px solid rgba(77,166,255,0.2); border-radius: 4px; padding: 1px 5px; color: #4da6ff; flex-shrink: 0"
+              class="vb-sm-stage"
             >{{ getContact(s.contactId)?.pipeline_stage?.replace('_', ' ') }}</span>
           </div>
-          <div style="font-size: 11px; color: var(--cd-muted); line-height: 1.5">{{ s.body }}</div>
-          <div v-if="s.contactId" style="display: flex; gap: 6px; margin-top: 7px">
+          <div class="vb-sm-body">{{ s.body }}</div>
+          <div v-if="s.contactId" class="vb-sm-actions">
             <button
               v-if="s.action && SUG_ACTIONS[s.action]"
-              class="cd-abtn"
-              style="font-size: 10px; padding: 4px 10px; width: auto; flex-shrink: 0"
-              :style="'border-color:' + SUG_ACTIONS[s.action].color + '44; color:' + SUG_ACTIONS[s.action].color"
+              class="vb-sm-act"
+              :style="{ borderColor: SUG_ACTIONS[s.action].color + '55', color: SUG_ACTIONS[s.action].color }"
               @click="doSugAction(s)"
             >
               <CdIcon :emoji="SUG_ACTIONS[s.action].icon" :icon="SUG_ACTIONS[s.action].lucide" :size="11" />
@@ -329,8 +351,7 @@ async function loadVibe() {
             </button>
             <button
               v-if="s.action !== 'view'"
-              class="cd-abtn"
-              style="font-size: 10px; padding: 4px 10px; width: auto; flex-shrink: 0; background: transparent; border-color: var(--cd-bdr); color: var(--cd-dim)"
+              class="vb-sm-act ghost"
               @click="goDetail(s.contactId!)"
             >
               <CdIcon emoji="👤" icon="lucide:user" :size="11" /> View
@@ -539,11 +560,95 @@ async function loadVibe() {
 }
 .vb-tabs button.on { color: #060810; }
 
+/* Tasks | Plans sub-toggle within the Next pane — same segmented look, 2-up. */
+.vb-seg {
+  position: relative; display: flex; background: var(--cd-bg2); border: 1px solid var(--cd-bdr);
+  border-radius: 9999px; padding: 4px; margin-bottom: 12px;
+}
+.vb-seg-ind {
+  position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / 2);
+  border-radius: 9999px; background: var(--cd-green); z-index: 0;
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.vb-seg-ind.right { transform: translateX(100%); }
+.vb-seg button {
+  position: relative; z-index: 1; flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  border: 0; background: none; color: var(--cd-muted); font-family: inherit;
+  font-size: 12px; font-weight: 800; letter-spacing: 0.02em; padding: 8px; border-radius: 9999px;
+  cursor: pointer; text-transform: uppercase; transition: color 0.2s;
+}
+.vb-seg button.on { color: #060810; }
+
 /* Cross-fade between panes (leaving pane goes absolute so no layout jump) */
 .vb-panes { position: relative; }
 .vb-fade-enter-active, .vb-fade-leave-active { transition: opacity 0.22s ease; }
 .vb-fade-leave-active { position: absolute; top: 0; left: 0; right: 0; }
 .vb-fade-enter-from, .vb-fade-leave-to { opacity: 0; }
+
+/* ── Smart moves (Earnest AI suggestions) — re-themed off the legacy blue ── */
+.vb-sm { border-color: color-mix(in srgb, var(--cd-accent) 22%, var(--cd-bdr)); }
+.vb-sm-hd { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 11px; }
+.vb-sm-hd-l { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.vb-sm-hd-l :deep(svg) { flex-shrink: 0; }
+.vb-sm-title { font-size: 13.5px; font-weight: 800; }
+.vb-sm-sub { font-size: 10.5px; color: var(--cd-dim); margin-top: 1px; }
+.vb-sm-refresh {
+  display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
+  background: color-mix(in srgb, var(--cd-accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-accent) 30%, transparent);
+  color: var(--cd-accent); border-radius: 999px; padding: 5px 11px;
+  font-family: inherit; font-size: 11px; font-weight: 800; cursor: pointer; transition: background 0.15s;
+}
+.vb-sm-refresh:hover { background: color-mix(in srgb, var(--cd-accent) 20%, transparent); }
+.vb-sm-refresh:disabled { opacity: 0.6; cursor: default; }
+.vb-sm-spin { animation: vb-sm-spin 0.9s linear infinite; }
+@keyframes vb-sm-spin { to { transform: rotate(360deg); } }
+.vb-sm-err { font-size: 12px; color: #f87171; margin-bottom: 6px; }
+
+.vb-sm-empty { text-align: center; padding: 14px 10px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.vb-sm-empty-ico {
+  width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;
+  background: color-mix(in srgb, var(--cd-accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--cd-accent) 24%, transparent);
+}
+.vb-sm-empty-t { font-size: 14px; font-weight: 800; }
+.vb-sm-empty-s { font-size: 11.5px; color: var(--cd-muted); line-height: 1.45; max-width: 240px; }
+.vb-sm-empty-btn { margin-top: 10px; width: auto; padding: 9px 16px; }
+
+.vb-sm-load { padding: 2px 0; }
+.vb-sm-skel { background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 10px; padding: 10px 11px; margin-bottom: 6px; display: flex; flex-direction: column; gap: 6px; }
+.vb-sm-skel-line {
+  height: 9px; border-radius: 5px;
+  background: linear-gradient(90deg, var(--cd-bdr) 25%, color-mix(in srgb, var(--cd-bdr) 35%, transparent) 50%, var(--cd-bdr) 75%);
+  background-size: 200% 100%; animation: vb-sm-sheen 1.3s ease-in-out infinite;
+}
+.vb-sm-skel-line.w40 { width: 40%; }
+.vb-sm-skel-line.w70 { width: 70%; }
+.vb-sm-skel-line.w90 { width: 90%; }
+@keyframes vb-sm-sheen { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.vb-sm-load-txt { text-align: center; font-size: 11px; color: var(--cd-muted); padding-top: 4px; }
+
+.vb-sm-card {
+  position: relative; background: var(--cd-bg2); border: 1px solid var(--cd-bdr);
+  border-left: 3px solid var(--sm-accent, var(--cd-accent));
+  border-radius: 10px; padding: 9px 11px 10px; margin-bottom: 6px;
+}
+.vb-sm-card-hd { display: flex; align-items: center; gap: 7px; margin-bottom: 3px; }
+.vb-sm-emoji { font-size: 14px; flex-shrink: 0; line-height: 1; }
+.vb-sm-card-title { font-size: 13px; font-weight: 800; flex: 1; min-width: 0; }
+.vb-sm-stage {
+  flex-shrink: 0; font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--sm-accent, var(--cd-accent)); background: color-mix(in srgb, var(--sm-accent, var(--cd-accent)) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sm-accent, var(--cd-accent)) 26%, transparent); border-radius: 4px; padding: 1px 5px;
+}
+.vb-sm-body { font-size: 11.5px; color: var(--cd-muted); line-height: 1.5; }
+.vb-sm-actions { display: flex; gap: 6px; margin-top: 8px; }
+.vb-sm-act {
+  display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
+  background: transparent; border: 1px solid var(--cd-bdr); border-radius: 8px; padding: 5px 11px;
+  font-family: inherit; font-size: 10.5px; font-weight: 800; cursor: pointer; color: var(--cd-text); transition: filter 0.15s;
+}
+.vb-sm-act.ghost { color: var(--cd-dim); }
+.vb-sm-act:hover { filter: brightness(1.15); }
 
 /* ── XP hero ── */
 .vb-hero {

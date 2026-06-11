@@ -15,15 +15,15 @@ const emit = defineEmits<{
 // from Vibe/scan (an app-wide pill shows while it's active).
 const tabs: { key: Screen; icon: string; lucide: string; label: string }[] = [
   { key: 'vibe', icon: '⚡', lucide: 'lucide:zap', label: 'Vibe' },
-  { key: 'home', icon: '📊', lucide: 'lucide:bar-chart-3', label: 'Stats' },
-  { key: 'feed', icon: '📰', lucide: 'lucide:newspaper', label: 'Feed' },
   { key: 'contacts', icon: '👥', lucide: 'lucide:users', label: 'Network' },
+  { key: 'feed', icon: '📰', lucide: 'lucide:newspaper', label: 'Feed' },
+  { key: 'home', icon: '📊', lucide: 'lucide:bar-chart-3', label: 'Stats' },
 ]
 
 // Left-to-right order of the five nav slots (2 tabs, scan, 2 tabs). Drives the
 // sliding top-highlight: its index sets the indicator's horizontal position, and
 // CSS animates `left` so the line glides to the active page on every change.
-const NAV_ORDER: Screen[] = ['vibe', 'home', 'add', 'feed', 'contacts']
+const NAV_ORDER: Screen[] = ['vibe', 'contacts', 'add', 'feed', 'home']
 const activeIndex = computed(() => NAV_ORDER.indexOf(props.active))
 </script>
 
@@ -44,6 +44,7 @@ const activeIndex = computed(() => NAV_ORDER.indexOf(props.active))
       :class="{ on: active === t.key }"
       @click="emit('nav', t.key)"
     >
+      <span v-if="t.key === 'contacts' && alertCount" class="cd-nav-dot"></span>
       <span class="cd-bni"><CdIcon :emoji="t.icon" :icon="t.lucide" /></span>{{ t.label }}
     </button>
 

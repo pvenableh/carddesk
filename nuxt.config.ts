@@ -112,6 +112,10 @@ export default defineNuxtConfig({
     sendgridFromName: process.env.SENDGRID_FROM_NAME || 'CardDesk',
     sendgridReplyToEmail: process.env.SENDGRID_REPLY_TO_EMAIL || '',
     sendgridBccEmail: process.env.SENDGRID_BCC_EMAIL || '',
+    // Google Places/Geocoding — powers location + nearby-venue suggestions on the
+    // Add Contact screen. Server-side only (never exposed). Leave unset to disable
+    // the whole feature (no key → no calls → no billing).
+    googlePlacesApiKey: process.env.GOOGLE_PLACES_API_KEY || '',
     public: {
       directusUrl: process.env.DIRECTUS_URL || 'http://localhost:8055',
       websocketUrl: process.env.DIRECTUS_WEBSOCKET_URL || 'ws://localhost:8055/websocket',
@@ -122,6 +126,10 @@ export default defineNuxtConfig({
       stripePublishableKey: process.env.NODE_ENV === 'production'
         ? (process.env.STRIPE_PUBLIC_KEY_LIVE || '')
         : (process.env.STRIPE_PUBLIC_KEY_TEST || ''),
+      // Whether to show the location/venue suggestion UI. On only when a Places
+      // key is configured and it hasn't been explicitly turned off — the simple
+      // "don't want to pay" switch (unset the key, or set LOCATION_SUGGEST=false).
+      locationSuggest: !!process.env.GOOGLE_PLACES_API_KEY && process.env.LOCATION_SUGGEST !== 'false',
     },
   },
   typescript: { strict: true },

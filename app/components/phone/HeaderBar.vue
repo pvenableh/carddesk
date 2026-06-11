@@ -5,6 +5,9 @@ const router = useRouter()
 const { nav } = useNavigation()
 const { show: openShareSheet } = useShareSheet()
 const { show: openFeedback } = useFeedbackSheet()
+// Event Mode lives in the header now (left cluster) so it's one tap from any
+// screen instead of buried in the Vibe › Next pane.
+const eventMode = useEventMode()
 
 // Logo → home (the Vibe screen). If we somehow aren't on the app route,
 // route there first.
@@ -22,24 +25,10 @@ const initials = computed(() => {
   return email.charAt(0).toUpperCase()
 })
 
-const time = ref('')
-let timer: ReturnType<typeof setInterval> | undefined
-
-onMounted(() => {
-  time.value = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-  timer = setInterval(() => {
-    time.value = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-  }, 10000)
-})
-
 function goEditCard() {
   closeDropdown()
   router.push('/account?tab=card')
 }
-
-onUnmounted(() => {
-  if (timer) clearInterval(timer)
-})
 
 function toggleDropdown() {
   dropdownOpen.value = !dropdownOpen.value
@@ -77,13 +66,24 @@ function onClickOutside(e: MouseEvent) {
 <template>
   <div class="cd-sbar">
     <div class="cd-sbar-left">
-      <span class="cd-sbar-time">{{ time }}</span>
-      <!-- Share moves here on small screens (time is hidden — phones show the OS clock). -->
-      <button class="cd-sbar-share cd-sbar-share--m" type="button" aria-label="Share card or invite" @click="openShareSheet('card')"><CdCardMark :size="17" :gradient="false" /></button>
+      <CdTooltip :label="eventMode.active.value ? `Event Mode · ${eventMode.count.value} met` : 'Event Mode — rapid capture at events'" placement="bottom">
+        <button
+          class="cd-sbar-btn cd-sbar-event"
+          :class="{ on: eventMode.active.value }"
+          type="button"
+          aria-label="Event Mode"
+          @click="eventMode.openPanel()"
+        >
+          <CdIcon icon="lucide:radio" :size="17" />
+          <span v-if="eventMode.active.value" class="cd-sbar-event-dot"></span>
+        </button>
+      </CdTooltip>
+      <CdTooltip label="Share your card or invite someone" placement="bottom">
+        <button class="cd-sbar-btn cd-sbar-share" type="button" aria-label="Share card or invite" @click="openShareSheet('card')"><CdCardMark :size="17" :gradient="false" /></button>
+      </CdTooltip>
     </div>
     <button class="cd-sbar-logo" type="button" aria-label="Home" @click="goHome"><span class="cd-sbar-logo-brand">CARD</span><span class="cd-sbar-logo-accent">DESK</span></button>
     <div class="cd-sbar-right">
-      <button class="cd-sbar-share cd-sbar-share--d" type="button" aria-label="Share card or invite" @click="openShareSheet('card')"><CdCardMark :size="17" :gradient="false" /></button>
       <PhoneCreditGauge />
     <div ref="dropdownRef" class="cd-avatar-wrap">
       <button class="cd-avatar" @click="toggleDropdown">{{ initials }}</button>
@@ -138,11 +138,7 @@ function onClickOutside(e: MouseEvent) {
 .cd-sbar-left {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 50px;
-}
-.cd-sbar-time {
-  min-width: 50px;
+  gap: 8px;
 }
 /* Centered via auto-margins rather than translateX(-50%): the global glass
  * button :active rule applies its own transform: scale(), which would wipe out
@@ -174,7 +170,9 @@ function onClickOutside(e: MouseEvent) {
   align-items: center;
   gap: 10px;
 }
-.cd-sbar-share {
+/* Shared circular chrome buttons in the header (Event Mode + Share). */
+.cd-sbar-btn {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -186,17 +184,32 @@ function onClickOutside(e: MouseEvent) {
   color: var(--cd-text);
   cursor: pointer;
   flex-shrink: 0;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
-.cd-sbar-share:hover {
+.cd-sbar-btn:hover {
   border-color: var(--cd-accent);
   color: var(--cd-accent);
 }
-/* The mobile share button lives in the left slot, hidden on wide screens.
- * Declared AFTER .cd-sbar-share so it overrides its display:flex (equal
- * specificity → source order wins). */
-.cd-sbar-share--m {
-  display: none;
+/* Event Mode active: tinted + accented, with a live pulsing dot. */
+.cd-sbar-event.on {
+  border-color: var(--cd-accent);
+  color: var(--cd-accent);
+  background: color-mix(in srgb, var(--cd-accent) 14%, var(--cd-bg2));
+}
+.cd-sbar-event-dot {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cd-accent);
+  border: 1.5px solid var(--cd-bg);
+  animation: cd-sbar-blink 1.8s ease-in-out infinite;
+}
+@keyframes cd-sbar-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
 }
 .cd-avatar-wrap {
   position: relative;
@@ -280,7 +293,7 @@ function onClickOutside(e: MouseEvent) {
   background: rgba(248, 113, 113, 0.08);
 }
 
-/* Dropdown transition */
+/* ── Dropdown transition ── */
 .cd-dropdown-enter-active {
   transition: all 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
@@ -294,19 +307,5 @@ function onClickOutside(e: MouseEvent) {
 .cd-dropdown-leave-to {
   opacity: 0;
   transform: translateY(-4px) scale(0.97);
-}
-
-/* ── Small screens: drop the redundant clock (phones show the OS time) and
- * move Share to the freed-up left slot so the right cluster isn't cramped. ── */
-@media (max-width: 480px) {
-  .cd-sbar-time {
-    display: none;
-  }
-  .cd-sbar-share--d {
-    display: none;
-  }
-  .cd-sbar-share--m {
-    display: flex;
-  }
 }
 </style>

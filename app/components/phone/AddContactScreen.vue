@@ -10,6 +10,17 @@ const { pending: pendingScans, remove: removePendingScan } = usePendingScans()
 const { nav, goDetail } = useNavigation()
 const { error: showError } = useToast()
 const eventMode = useEventMode()
+const { enabled: locEnabled, detecting: locDetecting, error: locError, venues: locVenues, location: locDetected, detect: detectLocation } = useLocation()
+
+// Tap-to-detect (never auto-prompts for permission). Fills Location with the
+// city/region and surfaces nearby venues as taps for "Where We Met".
+async function useMyLocation() {
+  const res = await detectLocation()
+  if (res?.location && !addForm.value.location) addForm.value.location = res.location
+}
+function pickVenue(name: string) {
+  addForm.value.metAt = addForm.value.metAt === name ? '' : name
+}
 
 // In Event Mode, pre-fill "Where We Met" with the event name so the user sees
 // the auto-tag (the save also enforces it regardless of the field).
@@ -307,7 +318,30 @@ async function doSaveContact() {
       <label class="cd-lbl">Company</label><input v-model="addForm.company" class="cd-inp" placeholder="Acme Corp" />
       <label class="cd-lbl">Email</label><input v-model="addForm.email" class="cd-inp" type="email" placeholder="jane@acme.com" />
       <label class="cd-lbl">Phone</label><input v-model="addForm.phone" class="cd-inp" type="tel" placeholder="+1 555 000 0000" />
+      <!-- Location suggestions (Google Places). Hidden entirely when the feature
+           is off (no API key). Tap to detect — no auto permission prompt. -->
+      <div v-if="locEnabled" class="cd-loc">
+        <button type="button" class="cd-loc-btn" :disabled="locDetecting" @click="useMyLocation">
+          <CdIcon icon="lucide:map-pin" :size="13" :class="{ 'cd-loc-spin': locDetecting }" />
+          {{ locDetecting ? 'Finding you…' : 'Use my location' }}
+        </button>
+        <span v-if="locDetected" class="cd-loc-found"><CdIcon icon="lucide:check" :size="11" /> {{ locDetected }}</span>
+      </div>
+      <div v-if="locError" class="cd-loc-err">{{ locError }}</div>
+
       <label class="cd-lbl">Where We Met</label><input v-model="addForm.metAt" class="cd-inp" placeholder="SaaS Summit NYC" />
+      <!-- Nearby venues as quick fills. Skipped in Event Mode (the event name is
+           the tag there). -->
+      <div v-if="locVenues.length && !eventMode.active.value" class="cd-loc-chips">
+        <button
+          v-for="v in locVenues"
+          :key="v.name"
+          type="button"
+          class="cd-loc-chip"
+          :class="{ on: addForm.metAt === v.name }"
+          @click="pickVenue(v.name)"
+        ><CdIcon icon="lucide:map-pin" :size="10" /> {{ v.name }}</button>
+      </div>
       <label class="cd-lbl">Location <span style="color: var(--cd-dim); font-weight: 600; text-transform: none; letter-spacing: 0">· city / region, helps Earnest AI</span></label>
       <input v-model="addForm.location" class="cd-inp" placeholder="Austin, TX" />
       <label class="cd-lbl">Address</label>
@@ -376,4 +410,35 @@ async function doSaveContact() {
 .cd-inp::placeholder {
   color: color-mix(in srgb, var(--cd-dim) 42%, transparent);
 }
+
+/* ── Location / venue suggestions ── */
+.cd-loc { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.cd-loc-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: color-mix(in srgb, var(--cd-accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-accent) 30%, transparent);
+  color: var(--cd-accent); border-radius: 999px; padding: 6px 12px;
+  font-family: inherit; font-size: 12px; font-weight: 800; cursor: pointer; transition: background 0.15s;
+}
+.cd-loc-btn:hover { background: color-mix(in srgb, var(--cd-accent) 20%, transparent); }
+.cd-loc-btn:disabled { opacity: 0.6; cursor: default; }
+.cd-loc-spin { animation: cd-loc-spin 0.9s linear infinite; }
+@keyframes cd-loc-spin { to { transform: rotate(360deg); } }
+.cd-loc-found { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; color: var(--cd-muted); }
+.cd-loc-found :deep(svg) { color: var(--cd-accent); }
+.cd-loc-err { font-size: 11.5px; color: #f87171; margin-bottom: 8px; }
+.cd-loc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 10px; }
+.cd-loc-chip {
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%;
+  background: var(--cd-bg2); border: 1px solid var(--cd-bdr); color: var(--cd-text);
+  border-radius: 999px; padding: 5px 11px; font-family: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.cd-loc-chip :deep(svg) { flex-shrink: 0; color: var(--cd-dim); }
+.cd-loc-chip:hover { border-color: color-mix(in srgb, var(--cd-accent) 40%, transparent); }
+.cd-loc-chip.on {
+  border-color: var(--cd-accent); color: var(--cd-accent);
+  background: color-mix(in srgb, var(--cd-accent) 12%, transparent);
+}
+.cd-loc-chip.on :deep(svg) { color: var(--cd-accent); }
 </style>

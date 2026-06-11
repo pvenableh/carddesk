@@ -18,13 +18,21 @@ const centerText = computed(() => {
   return String(s.credits ?? 0)
 })
 
+// Tooltip label — dynamic so it reflects the live credit count.
+const gaugeTip = computed(() =>
+  isOrg.value
+    ? `Earnest AI credits: ${centerText.value}`
+    : `Earnest AI credits: ${centerText.value} — tap to top up`,
+)
+
 function onTap() {
   if (!isOrg.value) openBuyModal()
 }
 </script>
 
 <template>
-  <button class="cd-gauge" :aria-label="`Earnest AI credits: ${centerText}`" @click="onTap">
+  <CdTooltip :label="gaugeTip" placement="bottom-end">
+    <button class="cd-gauge" :aria-label="`Earnest AI credits: ${centerText}`" @click="onTap">
     <svg class="cd-gauge-ring" viewBox="0 0 36 36">
       <!-- subtle filled background (matches the sibling header buttons) -->
       <circle cx="18" cy="18" r="16.5" fill="var(--cd-bg2)" />
@@ -39,6 +47,7 @@ function onTap() {
     </svg>
     <span class="cd-gauge-val" :class="{ 'is-inf': centerText === '∞' }" :style="{ color: gaugeColor }">{{ centerText }}</span>
   </button>
+  </CdTooltip>
 </template>
 
 <style scoped>

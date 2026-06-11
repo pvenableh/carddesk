@@ -8,8 +8,10 @@ export type Screen = "vibe" | "session" | "cold" | "home" | "contacts" | "detail
 // Vibe screen. Event Mode is a slide-up panel (like chat) owned by
 // useEventMode.panelOpen, not a screen here.
 const PUSH_SCREENS = new Set<Screen>(["detail", "cold", "chat", "session", "history"])
+// Must mirror NAV_ORDER in BottomNav.vue so the slide direction matches the
+// visual left→right position of each tab: vibe · network · scan · feed · stats.
 const TAB_INDEX: Record<string, number> = {
-  vibe: 0, home: 1, add: 2, feed: 3, contacts: 4,
+  vibe: 0, contacts: 1, add: 2, feed: 3, home: 4,
 }
 
 export function useNavigation() {

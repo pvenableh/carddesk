@@ -8,6 +8,7 @@
  * until the user explicitly ends it here.
  */
 const { active, name, captured, count, pastEvents, start, closePanel, saveAndEnd, loadPastEvents } = useEventMode()
+const { enabled: locEnabled, detecting: locDetecting, venues: locVenues, detect: detectLocation } = useLocation()
 const { nav, goDetail } = useNavigation()
 const { open: openChat } = useChat()
 const { state: xp } = useXp()
@@ -39,9 +40,18 @@ const summary = ref(false)
 const finishing = ref(false)
 
 // Show the user their networking history when they land on the start screen.
+// And — since opening this panel means they're about to work an event — detect
+// where they are so we can offer the venue as the event name (feature-gated).
 onMounted(() => {
-  if (!active.value) loadPastEvents()
+  if (!active.value) {
+    loadPastEvents()
+    if (locEnabled.value && !locVenues.value.length) detectLocation()
+  }
 })
+
+function useVenueName(venue: string) {
+  draftName.value = venue
+}
 
 function startEvent() {
   start(draftName.value)
@@ -112,6 +122,25 @@ function eventCount(s: any): number {
             placeholder="SaaS Summit NYC"
             @keyup.enter="startEvent"
           />
+          <!-- Nearby venues (Google Places) — tap one to name the event after the
+               place you're at. Hidden when the feature is off. -->
+          <div v-if="locEnabled && (locDetecting || locVenues.length)" class="em-venues">
+            <div class="em-venues-lbl">
+              <CdIcon icon="lucide:map-pin" :size="11" />
+              <span v-if="locDetecting">Finding where you are…</span>
+              <span v-else>You're nearby — tap to name it</span>
+            </div>
+            <div v-if="locVenues.length" class="em-venue-chips">
+              <button
+                v-for="v in locVenues"
+                :key="v.name"
+                type="button"
+                class="em-venue-chip"
+                :class="{ on: draftName === v.name }"
+                @click="useVenueName(v.name)"
+              ><CdIcon icon="lucide:map-pin" :size="10" /> {{ v.name }}</button>
+            </div>
+          </div>
           <button class="cd-abtn g em-start-btn" @click="startEvent">
             <CdIcon icon="lucide:play" :size="15" /> Start Event Mode
           </button>
@@ -236,6 +265,25 @@ function eventCount(s: any): number {
 .em-start-sub { font-size: 0.9rem; line-height: 1.5; color: var(--cd-muted); margin: 6px 0 16px; }
 .em-start .cd-lbl { text-align: left; }
 .em-start-btn { width: 100%; justify-content: center; margin-top: 14px; font-size: 15px; padding: 13px; }
+
+/* Nearby-venue suggestions on the start screen. */
+.em-venues { text-align: left; margin-top: 10px; }
+.em-venues-lbl { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: var(--cd-dim); margin-bottom: 7px; }
+.em-venues-lbl :deep(svg) { color: var(--cd-accent); }
+.em-venue-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.em-venue-chip {
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%;
+  background: var(--cd-bg2); border: 1px solid var(--cd-bdr); color: var(--cd-text);
+  border-radius: 999px; padding: 6px 12px; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.em-venue-chip :deep(svg) { flex-shrink: 0; color: var(--cd-dim); }
+.em-venue-chip:hover { border-color: color-mix(in srgb, var(--cd-accent) 40%, transparent); }
+.em-venue-chip.on {
+  border-color: var(--cd-accent); color: var(--cd-accent);
+  background: color-mix(in srgb, var(--cd-accent) 12%, transparent);
+}
+.em-venue-chip.on :deep(svg) { color: var(--cd-accent); }
 
 /* hero count */
 .em-hero { border-radius: 20px; padding: 22px; text-align: center; margin-bottom: 12px; }
