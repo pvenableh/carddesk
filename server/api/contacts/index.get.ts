@@ -29,6 +29,7 @@ export default defineEventHandler(async (event) => {
           "client_at",
           "notes",
           "image",
+          "linked_user",
           "date_created",
           {
             activities: [

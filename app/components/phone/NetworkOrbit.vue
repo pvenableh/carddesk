@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import type { NetworkConnection } from '~/composables/useConnections'
+import type { CdContact } from '~/types/directus'
 import { industryColor } from '~/composables/useConstants'
 
 const props = defineProps<{
   connections: NetworkConnection[]
+  // Plain contacts (rolodex) render as small DIM dots behind the connection
+  // planets — one orbit, two states: everyone you've met circles you, the ones
+  // playing CardDesk are lit. Tapping a dim dot emits selectContact (invite flow).
+  contacts?: CdContact[]
   me: { name: string; level: number }
   meAvatarUrl?: string | null
   // When true, every connection that has a photo gets a full upright avatar
@@ -13,12 +18,14 @@ const props = defineProps<{
   avatarDots?: boolean
 }>()
 
-const emit = defineEmits<{ select: [c: NetworkConnection] }>()
+const emit = defineEmits<{ select: [c: NetworkConnection]; selectContact: [c: CdContact] }>()
 
 // Geometry. Node radius falls off by rank (front = active = large, back = tiny),
 // and the viewBox auto-fits, so the whole orbit shrinks as the count grows.
 const NODE_MAX = 26      // most-active node radius
 const NODE_MIN = 5       // faded background dot radius
+const CONTACT_MAX = 7    // contacts stay dots — never grow into labeled planets
+const CONTACT_CAP = 60   // most contact dots rendered (top by touch recency)
 const FALLOFF = 0.9      // per-rank size decay (size_i = NODE_MAX * FALLOFF^i)
 const LABEL_MIN = 14     // show avatar/initials at/above this radius
 const LINE_MIN = 8       // draw a connecting line at/above this radius
@@ -66,6 +73,26 @@ const ranked = computed(() => {
     .map((s) => s.c)
 })
 
+// Contacts join the orbit ranked AFTER every connection (so they fill the outer
+// rings as dim depth-dots), ordered by how recently you touched them. Contacts
+// already linked to a connection (they joined via your invite) are skipped —
+// that human is a planet now, not a dot.
+const contactEntries = computed(() => {
+  const connUserIds = new Set(props.connections.map((c) => c.user.id))
+  return (props.contacts ?? [])
+    .filter((ct) => !ct.hibernated && !(ct.linked_user && connUserIds.has(ct.linked_user)))
+    .map((ct) => {
+      const last = ((ct.activities as any[]) ?? []).reduce(
+        (m, a) => Math.max(m, Date.parse(a.date) || 0),
+        Date.parse(ct.date_created) || 0,
+      )
+      return { ct, last }
+    })
+    .sort((a, b) => b.last - a.last)
+    .slice(0, CONTACT_CAP)
+    .map(({ ct }) => ct)
+})
+
 // Which ring a given rank falls in (inner rings fill first → active nearest centre).
 function ringOf(rank: number) {
   let ring = 0, start = 0
@@ -79,31 +106,41 @@ function ringOf(rank: number) {
 }
 
 const nodes = computed(() => {
-  const list = ranked.value
+  // Connections first (they earn the big front slots), then contact dots.
+  const list: { c?: NetworkConnection; contact?: CdContact }[] = [
+    ...ranked.value.map((c) => ({ c })),
+    ...contactEntries.value.map((contact) => ({ contact })),
+  ]
   const N = list.length
-  return list.map((c, i) => {
+  return list.map(({ c, contact }, i) => {
     const { ring, pos, cap, start } = ringOf(i)
     const inRing = Math.min(cap, N - start)
-    const seed = c.id || c.user.id || c.user.name
+    const seed = c ? (c.id || c.user.id || c.user.name) : 'ct-' + contact!.id
     // Organic jitter so the rings don't read as rigid concentric circles.
     const aJit = (rand01(seed + 'a') - 0.5) * (0.9 / inRing) * Math.PI * 2
     const rJit = (rand01(seed + 'r') - 0.5) * 16
     const r = R0 + ring * RSTEP + rJit
     // Stagger each ring so outer nodes don't sit directly behind inner ones.
     const angle = (pos / inRing) * Math.PI * 2 + ring * 0.6 - Math.PI / 2 + aJit
-    const size = Math.max(NODE_MIN, NODE_MAX * Math.pow(FALLOFF, i))
-    const opacity = clamp((size - NODE_MIN) / (NODE_MAX - NODE_MIN), 0, 1) * 0.6 + 0.4
+    let size = Math.max(NODE_MIN, NODE_MAX * Math.pow(FALLOFF, i))
+    let opacity = clamp((size - NODE_MIN) / (NODE_MAX - NODE_MIN), 0, 1) * 0.6 + 0.4
+    if (contact) {
+      // Contacts read as dim background dots regardless of how few planets
+      // there are — the visual IS the model: invite them to light them up.
+      size = Math.min(size, CONTACT_MAX)
+      opacity *= 0.55
+    }
     return {
-      c, rank: i, ring,
+      c, contact, key: seed, rank: i, ring,
       x: Math.cos(angle) * r,
       y: Math.sin(angle) * r,
       size,
       opacity,
-      labeled: size >= LABEL_MIN,
-      hasLine: size >= LINE_MIN,
+      labeled: !!c && size >= LABEL_MIN,
+      hasLine: !!c && size >= LINE_MIN,
       // Industry color codes the line + border; otherwise a neutral theme color
       // (adapts to the active light/dark theme) so only industries stand out.
-      color: industryColor(c.user.industry) ?? 'var(--cd-muted)',
+      color: industryColor(c ? c.user.industry : contact!.industry) ?? 'var(--cd-muted)',
     }
   })
 })
@@ -114,7 +151,7 @@ const spinFor = (ring: number) => ({ duration: SPIN_BASE + ring * SPIN_STEP, rev
 // in avatarDots mode, whenever it carries a photo (so even tiny back nodes show a
 // face that stays upright rather than tumbling with the ring spin).
 function isSolo(n: (typeof nodes.value)[number]) {
-  return n.labeled || (!!props.avatarDots && !!n.c.user.avatarUrl)
+  return n.labeled || (!!props.avatarDots && !!n.c?.user.avatarUrl)
 }
 
 // The large front nodes (plus, in avatarDots mode, every photo node) each orbit on
@@ -182,27 +219,27 @@ const meInitials = computed(() => initials(props.me.name || 'You'))
         <circle :r="r.anchor" fill="none" stroke="none" />
         <line
           v-for="n in r.lines"
-          :key="'l' + n.c.id"
+          :key="'l' + n.key"
           x1="0" y1="0" :x2="n.x" :y2="n.y"
           :stroke="n.color" stroke-width="1.5" :stroke-opacity="n.opacity * 0.4"
         />
         <circle
           v-for="n in r.dots"
-          :key="n.c.id"
+          :key="n.key"
           :cx="n.x" :cy="n.y" :r="n.size"
           class="orbit-node"
           :fill="n.color" :fill-opacity="n.opacity * 0.5"
           :stroke="n.color" stroke-width="1" :stroke-opacity="n.opacity"
-          @click="emit('select', n.c)"
+          @click="n.contact ? emit('selectContact', n.contact) : emit('select', n.c!)"
         />
       </g>
 
       <!-- Front nodes: each orbits on its own layer so a single hover pauses it. -->
       <g
         v-for="n in soloNodes"
-        :key="n.c.id"
+        :key="n.key"
         class="orbit-solo"
-        :class="{ paused: hovered === n.c.id }"
+        :class="{ paused: hovered === n.key }"
         :style="{ animationDuration: n.duration + 's', animationDirection: n.reverse ? 'reverse' : 'normal' }"
       >
         <!-- Symmetric anchor → this node's spin pivots on (0,0). -->
@@ -212,8 +249,8 @@ const meInitials = computed(() => initials(props.me.name || 'You'))
           :transform="`translate(${n.x} ${n.y})`"
           class="orbit-node"
           :opacity="avatarDots ? n.opacity : null"
-          @click="emit('select', n.c)"
-          @pointerenter="hovered = n.c.id"
+          @click="emit('select', n.c!)"
+          @pointerenter="hovered = n.key"
           @pointerleave="hovered = null"
         >
           <!-- Counter-rotate contents at this node's exact speed so labels stay upright. -->
@@ -258,7 +295,10 @@ const meInitials = computed(() => initials(props.me.name || 'You'))
     </svg>
     <div class="orbit-caption">
       <span class="cd-xpb">LVL {{ me.level }}</span>
-      <span>{{ connections.length }} in your orbit</span>
+      <span v-if="contactEntries.length">
+        {{ connections.length + contactEntries.length }} in your orbit · {{ connections.length }} playing
+      </span>
+      <span v-else>{{ connections.length }} in your orbit</span>
     </div>
   </div>
 </template>

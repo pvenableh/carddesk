@@ -34,7 +34,7 @@ const DEFAULT = {
   pipeline_contacts: 0, qualified_count: 0, proposals_sent: 0, deals_won: 0, lost_reasons_logged: 0,
   week_xp: 0, week_start: '',
   streak_shields: 0,
-  unlocked_badges: [] as string[], completed_missions: [] as string[], missions_date: '', hype_date: '',
+  unlocked_badges: [] as string[], completed_missions: [] as string[], missions_date: '', hype_date: '', quiz_date: '',
 }
 
 /** Most shields a user can bank — scarcity keeps them feeling earned. */

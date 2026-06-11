@@ -7,7 +7,10 @@ import { awardServerXp } from '../../utils/xp'
 /**
  * Redeem an invite code (called after the invitee signs up / logs in). Creates
  * an ACCEPTED connection between the inviter and the caller in both directions
- * (idempotent), and records the redemption on the invite for audit.
+ * (idempotent), records the redemption on the invite for audit, and — when the
+ * inviter already has the new user saved as a contact (matched by email) —
+ * stamps that contact's `linked_user`, so the same human stops being two
+ * unrelated records (contact rows show a "joined" badge; the orbit dedupes).
  */
 export default defineEventHandler(async (event) => {
   const me = await getCurrentUserId(event)
@@ -68,6 +71,35 @@ export default defineEventHandler(async (event) => {
   await admin
     .request(updateItem('cd_invites' as any, invite.id, { accepted_by: me, accepted_at: new Date().toISOString() } as any))
     .catch(() => {})
+
+  // Contact ↔ user bridge: if the inviter saved this person as a contact
+  // before they joined, link the records (matched on the new user's email).
+  // Best-effort — a failure here shouldn't block the connection.
+  try {
+    const meUsers = (await admin.request(
+      readUsers({ filter: { id: { _eq: me } } as any, fields: ['id', 'email'], limit: 1 }),
+    )) as any[]
+    const myEmail = meUsers?.[0]?.email?.toLowerCase()
+    if (myEmail) {
+      const matches = (await admin.request(
+        readItems('cd_contacts' as any, {
+          filter: {
+            _and: [
+              { user_created: { _eq: inviter } },
+              { email: { _ieq: myEmail } },
+              { linked_user: { _null: true } },
+            ],
+          } as any,
+          fields: ['id'],
+          limit: 5,
+        }),
+      )) as any[]
+      for (const c of matches ?? [])
+        await admin.request(updateItem('cd_contacts' as any, c.id, { linked_user: me } as any))
+    }
+  } catch (err) {
+    console.error('[invite/redeem] contact link failed:', err)
+  }
 
   await emitFeedEvent(me, 'joined', {})
   await emitFeedEvent(inviter, 'connected', {})

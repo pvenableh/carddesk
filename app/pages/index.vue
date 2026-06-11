@@ -21,6 +21,7 @@ const { toast, loadXp, earn } = useXp()
 const { loadProfile } = useProfile()
 const { screen, nav, transitionName } = useNavigation()
 const { isOpen: chatOpen } = useChat()
+const { panelOpen: eventOpen } = useEventMode()
 const { theme } = useTheme()
 const { load: loadConnections } = useConnections()
 const analytics = useAnalytics()
@@ -70,7 +71,6 @@ const screenComponents: Record<Screen, Component> = {
   contacts: PhoneContactsScreen,
   detail: PhoneDetailScreen,
   add: PhoneAddContactScreen,
-  event: PhoneEventModeScreen,
   feed: PhoneFeedScreen,
   chat: PhoneChatScreen,
 }
@@ -140,6 +140,15 @@ onMounted(async () => {
     <!-- Floating Ask Earnest button (context-aware per screen) -->
     <PhoneAskEarnestFab />
 
+    <!-- Event Mode panel — slides up over the page like the Earnest chat.
+         Sits *below* the chat sheet so "Analyze my past events" can open
+         Earnest on top of it. -->
+    <Transition name="cd-chatsheet">
+      <div v-if="eventOpen" class="cd-chat-sheet cd-event-sheet">
+        <PhoneEventModeScreen />
+      </div>
+    </Transition>
+
     <!-- Ask Earnest panel — slides up over the page; close slides it back down -->
     <Transition name="cd-chatsheet">
       <div v-if="chatOpen" class="cd-chat-sheet">
@@ -198,6 +207,10 @@ onMounted(async () => {
   flex-direction: column;
   background: var(--cd-bg);
   padding-top: env(safe-area-inset-top, 0px);
+}
+/* Event Mode shares the sheet treatment but layers under the chat sheet. */
+.cd-event-sheet {
+  z-index: 60;
 }
 /* Slide up on enter, slide back down on leave. */
 .cd-chatsheet-enter-active,

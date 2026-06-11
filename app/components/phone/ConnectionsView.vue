@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { NetworkConnection } from '~/composables/useConnections'
+import type { CdContact } from '~/types/directus'
 import { SOCIAL_KEYS } from '~/types/socials'
-import { industryColor } from '~/composables/useConstants'
+import { industryColor, cEmoji } from '~/composables/useConstants'
 import NetworkOrbit from './NetworkOrbit.vue'
 import Leaderboard from './Leaderboard.vue'
 
@@ -11,12 +12,42 @@ const { success, error: showError } = useToast()
 const { state: xp, earn } = useXp()
 const { profile } = useProfile()
 const { shareContact, shareUrl } = useShare()
-const { contacts, fetchContacts } = useContacts()
+const { contacts, fetchContacts, daysSince } = useContacts()
+const { goDetail } = useNavigation()
 
 const meCenter = computed(() => ({
   name: [profile.value.first_name, profile.value.last_name].filter(Boolean).join(' ') || 'You',
   level: xp.value?.level ?? 1,
 }))
+
+// Everyone you've met rides in the orbit as a dim dot (one network, two
+// states); the orbit itself dedupes contacts already linked to a connection.
+const orbitContacts = computed(() => contacts.value.filter((c) => !c.hibernated))
+
+// Tapped contact dot → the "light them up" sheet.
+const selectedContact = ref<CdContact | null>(null)
+function inviteContact() {
+  selectedContact.value = null
+  openShareSheet('invite')
+}
+function viewContact() {
+  const id = selectedContact.value?.id
+  selectedContact.value = null
+  if (id) goDetail(id)
+}
+// They already joined CardDesk (linked on invite redemption) — connect directly.
+const connectingLinked = ref(false)
+async function connectLinked() {
+  const c = selectedContact.value
+  if (!c?.linked_user || connectingLinked.value) return
+  connectingLinked.value = true
+  try {
+    await connect(c.linked_user)
+    success(`Request sent to ${c.name}`)
+    selectedContact.value = null
+  } catch { showError('Could not send request') }
+  finally { connectingLinked.value = false }
+}
 
 // Tapped orbit node → detail sheet
 const selected = ref<NetworkConnection | null>(null)
@@ -93,7 +124,9 @@ onMounted(async () => {
   } catch { /* silent */ }
 })
 
-const empty = computed(() => !loading.value && !accepted.value.length && !incoming.value.length && !outgoing.value.length)
+const empty = computed(() =>
+  !loading.value && !accepted.value.length && !incoming.value.length && !outgoing.value.length && !orbitContacts.value.length
+)
 
 function openInvite() {
   openShareSheet('invite')
@@ -200,11 +233,22 @@ async function remove(c: NetworkConnection) { await respond(c.id, 'remove') }
       </div>
     </template>
 
-    <!-- Accepted connections — the orbit + leaderboard -->
-    <template v-if="accepted.length">
-      <div class="cd-eyebrow" style="color: var(--cd-muted); margin: 14px 2px 0">Your orbit · {{ accepted.length }}</div>
-      <NetworkOrbit :connections="accepted" :me="meCenter" :me-avatar-url="meAvatarUrl" @select="selected = $event" />
-      <Leaderboard />
+    <!-- The orbit — connection planets + contact dots — and the leaderboard -->
+    <template v-if="accepted.length || orbitContacts.length">
+      <div class="cd-eyebrow" style="color: var(--cd-muted); margin: 14px 2px 0">Your orbit</div>
+      <NetworkOrbit
+        :connections="accepted"
+        :contacts="orbitContacts"
+        :me="meCenter"
+        :me-avatar-url="meAvatarUrl"
+        @select="selected = $event"
+        @select-contact="selectedContact = $event"
+      />
+      <div v-if="orbitContacts.length" class="orbit-hint">
+        <CdIcon icon="lucide:sparkles" :size="10" />
+        Dim dots are your contacts — tap one to light them up.
+      </div>
+      <Leaderboard v-if="accepted.length" />
     </template>
 
     <!-- Outgoing pending -->
@@ -283,6 +327,42 @@ async function remove(c: NetworkConnection) { await respond(c.id, 'remove') }
       </div>
     </div>
 
+    <!-- Contact-dot sheet — the "light them up" upgrade path -->
+    <div v-if="selectedContact" class="cd-invite-ov" @click.self="selectedContact = null">
+      <div class="cd-invite-card">
+        <button class="cd-invite-x" @click="selectedContact = null"><CdIcon emoji="×" icon="lucide:x" :size="18" /></button>
+        <div class="cd-cav" style="margin: 0 auto 10px; width: 54px; height: 54px; overflow: hidden">
+          <img v-if="selectedContact.imageUrl" :src="selectedContact.imageUrl" alt="" style="width: 100%; height: 100%; object-fit: cover">
+          <CdIcon v-else :emoji="cEmoji(selectedContact)" icon="lucide:user" :size="24" />
+        </div>
+        <div style="font-size: 18px; font-weight: 800; margin-bottom: 2px">{{ selectedContact.name }}</div>
+        <div style="font-size: 12px; color: var(--cd-dim); margin-bottom: 12px">
+          {{ [selectedContact.title, selectedContact.company].filter(Boolean).join(' · ') || 'In your contacts' }}
+          <template v-if="daysSince(selectedContact) != null"> · {{ daysSince(selectedContact) }}d quiet</template>
+        </div>
+
+        <button
+          v-if="selectedContact.linked_user"
+          class="cd-abtn g"
+          style="margin-bottom: 8px"
+          :disabled="connectingLinked"
+          @click="connectLinked"
+        ><CdIcon emoji="🪐" icon="lucide:orbit" :size="14" /> {{ connectingLinked ? 'Sending…' : "They're on CardDesk — connect" }}</button>
+        <button
+          v-else
+          class="cd-abtn g"
+          style="margin-bottom: 8px"
+          @click="inviteContact"
+        ><CdIcon emoji="✨" icon="lucide:sparkles" :size="14" /> Invite them — light them up</button>
+
+        <button
+          class="cd-abtn"
+          style="background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr)"
+          @click="viewContact"
+        ><CdIcon emoji="👤" icon="lucide:user" :size="14" /> View contact</button>
+      </div>
+    </div>
+
     </div>
 
     <CdBrandFooter />
@@ -290,6 +370,16 @@ async function remove(c: NetworkConnection) { await respond(c.id, 'remove') }
 </template>
 
 <style scoped>
+.orbit-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--cd-dim);
+  margin: 2px 0 10px;
+}
 .cd-invite-ov {
   position: absolute;
   inset: 0;

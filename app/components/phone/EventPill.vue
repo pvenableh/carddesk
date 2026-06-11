@@ -1,20 +1,19 @@
 <script setup lang="ts">
 /**
  * Ambient Event Mode indicator. Event Mode is a *state*, not a place — while an
- * event is live this slim banner rides under the header on every screen (except
- * the event screen itself), showing the live count and giving a one-tap way
- * back to the capture loop. Without it, leaving the event tab used to mean the
- * mode silently kept tagging contacts with no visible sign it was on.
+ * event is live this slim banner rides under the header on every screen (hidden
+ * while the Event Mode panel itself is up), showing the live count and giving a
+ * one-tap way back to the capture loop. Without it, dismissing the panel would
+ * mean the mode silently kept tagging contacts with no visible sign it was on.
  */
-const { active, name, count } = useEventMode()
-const { screen, nav } = useNavigation()
+const { active, name, count, panelOpen, openPanel } = useEventMode()
 
-const show = computed(() => active.value && screen.value !== 'event')
+const show = computed(() => active.value && !panelOpen.value)
 </script>
 
 <template>
   <Transition name="cd-eventpill">
-    <button v-if="show" class="cd-event-pill" type="button" @click="nav('event')">
+    <button v-if="show" class="cd-event-pill" type="button" @click="openPanel">
       <span class="cd-ep-live"></span>
       <span class="cd-ep-name">{{ name }}</span>
       <span class="cd-ep-count">{{ count }} met</span>

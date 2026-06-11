@@ -1,11 +1,13 @@
 <script setup lang="ts">
 /**
- * Event Mode — a focused capture surface for networking events. Reached from the
- * Vibe screen. While active it auto-tags every new contact with the event name,
- * shows a live count + the people met here, and keeps a one-tap "Scan a card"
- * loop going. Built on the shared liquid-glass surfaces + brand-tinted lucide.
+ * Event Mode — a focused capture surface for networking events, rendered as a
+ * slide-up panel over the app shell (same sheet pattern as the Earnest chat).
+ * While active it auto-tags every new contact with the event name, shows a live
+ * count + the people met here, and keeps a one-tap "Scan a card" loop going.
+ * Closing the panel doesn't end the event — the app-wide EventPill rides along
+ * until the user explicitly ends it here.
  */
-const { active, name, captured, count, pastEvents, start, saveAndEnd, loadPastEvents } = useEventMode()
+const { active, name, captured, count, pastEvents, start, closePanel, saveAndEnd, loadPastEvents } = useEventMode()
 const { nav, goDetail } = useNavigation()
 const { open: openChat } = useChat()
 const { state: xp } = useXp()
@@ -48,6 +50,11 @@ function startEvent() {
 function endEvent() {
   summary.value = true
 }
+// The scan loop lives on the Add screen underneath — drop the sheet, go there.
+function goScan() {
+  closePanel()
+  nav('add')
+}
 async function finish() {
   if (finishing.value) return
   finishing.value = true
@@ -55,7 +62,7 @@ async function finish() {
   await saveAndEnd()
   finishing.value = false
   summary.value = false
-  nav('vibe')
+  closePanel()
 }
 function initials(n: string): string {
   return n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('') || '?'
@@ -74,13 +81,16 @@ function eventCount(s: any): number {
 <template>
   <div class="cd-screen on">
     <div class="cd-shdr">
-      <button v-if="active" class="cd-back" @click="endEvent">
-        <CdIcon icon="lucide:flag" :size="13" /> End event
-      </button>
-      <!-- Pushed sub-screen (no nav tab anymore) — give the start screen a way back. -->
-      <button v-else class="cd-back" @click="nav('vibe')">
-        <CdIcon emoji="‹" icon="lucide:chevron-left" :size="14" /> Back
-      </button>
+      <div class="em-hdr-row">
+        <!-- Sheet close: while an event runs this just minimizes the panel
+             (the EventPill keeps the mode visible app-wide). -->
+        <button class="cd-back" type="button" aria-label="Close" @click="closePanel">
+          <CdIcon icon="lucide:chevron-down" :size="15" /> Close
+        </button>
+        <button v-if="active && !summary" class="cd-back em-end" type="button" @click="endEvent">
+          <CdIcon icon="lucide:flag" :size="13" /> End event
+        </button>
+      </div>
       <div class="cd-stitle">Event Mode <CdIcon icon="lucide:radio" :size="16" /></div>
     </div>
 
@@ -146,7 +156,7 @@ function eventCount(s: any): number {
         </div>
 
         <!-- primary capture loop -->
-        <button class="em-scan glass-surface" @click="nav('add')">
+        <button class="em-scan glass-surface" @click="goScan">
           <span class="em-scan-ico"><CdIcon icon="lucide:scan-line" :size="30" /></span>
           <span class="em-scan-copy">
             <span class="em-scan-title">Scan a card</span>
@@ -214,6 +224,10 @@ function eventCount(s: any): number {
   -webkit-backdrop-filter: blur(12px) saturate(150%);
   border: 1px solid hsl(var(--glass-h, 220) 30% 75% / 0.12);
 }
+
+/* header row: sheet close on the left, end-event on the right */
+.em-hdr-row { display: flex; align-items: center; justify-content: space-between; }
+.em-end { color: var(--cd-orange, #ff6b35); }
 
 /* start */
 .em-start { border-radius: 20px; padding: 26px 20px; text-align: center; }

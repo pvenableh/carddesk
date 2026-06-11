@@ -27,11 +27,21 @@ const earnGroups: { title: string; items: { icon: string; lucide: string; label:
     ],
   },
   {
+    title: 'Daily games',
+    items: [
+      { icon: '🧠', lucide: 'lucide:brain', label: 'Network IQ quiz — per correct answer', xp: '+15' },
+      { icon: '🏆', lucide: 'lucide:trophy', label: 'Network IQ perfect round bonus', xp: '+25' },
+      { icon: '🧩', lucide: 'lucide:puzzle', label: 'Network IQ — just finishing the round', xp: '+5' },
+      { icon: '🎰', lucide: 'lucide:dices', label: 'Reconnect Roulette — log the touch it dares you to', xp: '+25/50' },
+    ],
+  },
+  {
     title: 'Bonuses',
     items: [
       { icon: '🏆', lucide: 'lucide:trophy', label: 'Daily hype claim', xp: '+20' },
       { icon: '🔥', lucide: 'lucide:flame', label: '7-day streak bonus', xp: '+200' },
       { icon: '🏅', lucide: 'lucide:award', label: 'Unlock a badge', xp: '+75' },
+      { icon: '🎯', lucide: 'lucide:swords', label: 'Daily missions — completed by doing the real action', xp: '+25–100' },
       { icon: '🛡️', lucide: 'lucide:shield', label: 'Streak shield — earned at 7-day streaks & revivals, saves a missed day', xp: 'hold 2' },
     ],
   },

@@ -37,6 +37,12 @@ export const CREDIT_COSTS = {
   // flat 1 credit stays profitable even on long threads — worst-case ~2.5¢/turn
   // vs. a credit worth 3.3–5¢ depending on the pack.
   'ai-chat': 1,
+  // One short drafted message (Reconnect Roulette re-opener) — 300-token output cap.
+  'ai-reopener': 1,
+  // Daily Vibe pep-talk — cached per-day client-side, so at most one charge/day.
+  // (Was missing from this map entirely: cost resolved to undefined, which made
+  // `balance < cost` always false — the gate silently passed and charged 0.)
+  'ai-daily-vibe': 1,
 } as const
 
 export type AiEndpoint = keyof typeof CREDIT_COSTS

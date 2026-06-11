@@ -24,6 +24,10 @@ export function useEventMode() {
   const active = useState('cd-event-active', () => false)
   const name = useState('cd-event-name', () => '')
   const startedAt = useState('cd-event-started', () => '')
+  // Whether the Event Mode panel (a slide-up sheet over the app shell, same
+  // pattern as the Earnest chat) is open. The *mode* can stay active with the
+  // panel closed — that's what the app-wide EventPill is for.
+  const panelOpen = useState('cd-event-panel', () => false)
   // Cached list of past event sessions for the "recent events" history.
   const pastEvents = useState<CdSession[]>('cd-event-past', () => [])
 
@@ -44,6 +48,14 @@ export function useEventMode() {
 
   function end() {
     active.value = false
+  }
+
+  function openPanel() {
+    panelOpen.value = true
+  }
+
+  function closePanel() {
+    panelOpen.value = false
   }
 
   /**
@@ -92,5 +104,5 @@ export function useEventMode() {
     }
   }
 
-  return { active, name, startedAt, captured, count, pastEvents, start, end, saveAndEnd, loadPastEvents }
+  return { active, name, startedAt, panelOpen, captured, count, pastEvents, start, end, openPanel, closePanel, saveAndEnd, loadPastEvents }
 }

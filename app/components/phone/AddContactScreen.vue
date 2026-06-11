@@ -170,7 +170,7 @@ async function doSaveContact() {
   // In Event Mode, loop straight back for the next card; otherwise open the detail.
   if (eventMode.active.value) {
     addForm.value.metAt = eventMode.name.value
-    nav('event')
+    eventMode.openPanel()
   } else {
     goDetail(contact.id)
   }
@@ -216,7 +216,7 @@ async function doSaveContact() {
         v-if="scanStep === 'idle' && !scanning"
         type="button"
         style="display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 8px; padding: 8px; background: transparent; border: 1px dashed var(--cd-bdr); border-radius: 10px; font-size: 11px; font-weight: 700; color: var(--cd-dim); cursor: pointer; font-family: inherit"
-        @click="nav('event')"
+        @click="eventMode.openPanel()"
       >
         <CdIcon icon="lucide:radio" :size="12" />
         <template v-if="eventMode.active.value">

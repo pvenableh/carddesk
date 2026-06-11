@@ -29,6 +29,7 @@ export default defineEventHandler(async (event) => {
     completed_missions: body.completed_missions ?? [],
     missions_date: body.missions_date ?? null,
     hype_date: body.hype_date ?? null,
+    quiz_date: body.quiz_date ?? null,
   };
   try {
     const existing = await directus.request(

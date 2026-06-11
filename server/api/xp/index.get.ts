@@ -39,6 +39,7 @@ export default defineEventHandler(async (event) => {
       completed_missions: r.completed_missions ?? [],
       missions_date: r.missions_date ?? "",
       hype_date: r.hype_date ?? "",
+      quiz_date: r.quiz_date ?? "",
     };
   } catch (err: any) {
     console.error("[GET /api/xp] Directus error:", err?.errors ?? err?.message ?? err);

@@ -161,11 +161,14 @@ async function runExport() {
         </div>
       </div>
 
-      <!-- Sub-tabs: Contacts (rolodex) | Connections (user↔user orbit) -->
+      <!-- Sub-tabs: My Deck (cards you've collected — the rolodex) | Orbit
+           (user↔user connections). "Deck" vs "Contacts" keeps the two near-
+           synonyms from blurring: deck = people you've met, orbit = people
+           playing CardDesk with you. -->
       <CdTabs
         v-model="netTab"
         :items="[
-          { key: 'contacts', label: 'Contacts', emoji: '🃏', icon: 'lucide:credit-card' },
+          { key: 'contacts', label: 'My Deck', emoji: '🃏', icon: 'lucide:credit-card' },
           { key: 'connections', label: 'Orbit', emoji: '🪐', icon: 'lucide:orbit', count: incoming.length || null },
         ]"
         style="margin-bottom: 10px"
@@ -241,6 +244,7 @@ async function runExport() {
           </span>
           <span v-if="(c as any).is_client" style="font-size: 9px; color: var(--cd-green); font-weight: 700"><CdIcon emoji="💰" icon="lucide:badge-check" :size="9" /> client</span>
           <span v-else-if="followUpStatus(c) === 'overdue'" style="font-size: 9px; color: #ff6b35; font-weight: 700"><CdIcon emoji="⚡" icon="lucide:alert-triangle" :size="9" /> overdue</span>
+          <span v-if="c.linked_user" style="font-size: 9px; color: var(--cd-purple, #b87dff); font-weight: 700"><CdIcon emoji="🪐" icon="lucide:orbit" :size="9" /> joined</span>
         </div>
       </div>
       </div>

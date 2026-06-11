@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { getAct } from '~/composables/useConstants'
-import { fmtRelative } from '~/composables/useFormatters'
+import { MISSIONS } from '~/composables/useConstants'
+import type { Screen } from '~/composables/useNavigation'
 import type { CdActivity, CdContact } from '~/types/directus'
 
 const { contacts, followUpStatus, daysSince } = useContacts()
@@ -48,56 +48,35 @@ function claimHype() {
   earn(20, '🏆', 'Daily hype claimed!', { hype_date: today })
 }
 
-// XP chart — 7-day activity breakdown (reactive to contact/activity changes)
-const last7Days = computed(() => {
-  const days: { label: string; date: string; count: number; xp: number; types: Record<string, number> }[] = []
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(Date.now() - i * 86_400_000)
-    const dateStr = d.toISOString().slice(0, 10)
-    days.push({ label: dayNames[d.getDay()], date: dateStr, count: 0, xp: 0, types: {} })
-  }
+// Weekly rhythm — week_xp is tracked authoritatively on the XP state (resets
+// every Monday in useXp.earn), so the hero's goal bar can't drift from reality.
+const WEEK_GOAL = 500
+const weekXp = computed(() => xp.value.week_xp ?? 0)
+const weekPct = computed(() => Math.min(100, Math.round((weekXp.value / WEEK_GOAL) * 100)))
+const weekTotal = computed(() => {
+  const cutoff = Date.now() - 7 * 86_400_000
+  let n = 0
   for (const c of contacts.value) {
     for (const a of (c.activities as CdActivity[]) ?? []) {
-      const day = days.find((d) => d.date === a.date)
-      if (!day) continue
-      day.count++
-      day.types[a.type] = (day.types[a.type] || 0) + 1
-      // Estimate XP earned
-      if (a.type === 'converted_client') day.xp += 200
-      else if (a.is_response) day.xp += 100
-      else if (c.rating === 'hot') day.xp += 50
-      else if (!['contact_added', 'card_scanned'].includes(a.type)) day.xp += 25
-      else day.xp += 25
+      if (new Date(a.date).getTime() >= cutoff) n++
     }
   }
-  return days
+  return n
 })
 
-const maxDayCount = computed(() => Math.max(1, ...last7Days.value.map((d) => d.count)))
-const weekTotal = computed(() => last7Days.value.reduce((sum, d) => sum + d.count, 0))
-const weekXp = computed(() => last7Days.value.reduce((sum, d) => sum + d.xp, 0))
-
-// XP source breakdown (reactive)
-const xpSources = computed(() => {
-  const sources: { label: string; icon: string; lucide: string; count: number; xp: number; color: string }[] = [
-    { label: 'Follow-ups', icon: '✉️', lucide: 'lucide:send', count: 0, xp: 0, color: '#4da6ff' },
-    { label: 'Responses', icon: '🎉', lucide: 'lucide:party-popper', count: 0, xp: 0, color: '#00ff87' },
-    { label: 'Hot Leads', icon: '🔥', lucide: 'lucide:flame', count: 0, xp: 0, color: '#ff6b35' },
-    { label: 'Scans', icon: '📷', lucide: 'lucide:camera', count: 0, xp: 0, color: '#b87dff' },
-    { label: 'Clients', icon: '💰', lucide: 'lucide:badge-check', count: 0, xp: 0, color: '#ffd700' },
-  ]
-  for (const c of contacts.value) {
-    for (const a of (c.activities as CdActivity[]) ?? []) {
-      if (a.type === 'converted_client') { sources[4].count++; sources[4].xp += 200 }
-      else if (a.is_response) { sources[1].count++; sources[1].xp += 100 }
-      else if (a.type === 'card_scanned') { sources[3].count++; sources[3].xp += 25 }
-      else if (c.rating === 'hot' && !['contact_added'].includes(a.type)) { sources[2].count++; sources[2].xp += 50 }
-      else if (!['contact_added'].includes(a.type)) { sources[0].count++; sources[0].xp += 25 }
-    }
-  }
-  return sources.filter((s) => s.count > 0).sort((a, b) => b.xp - a.xp)
-})
+// Today's missions — verified, not self-reported (they complete from the real
+// actions via useXp.completeMission). Tapping one jumps to where it's done.
+const MISSION_GO: Record<string, Screen> = {
+  scan: 'add', followup: 'contacts', hot: 'contacts',
+  response: 'contacts', ai_session: 'session', ai_ideas: 'contacts',
+}
+const missionsToday = computed(() =>
+  MISSIONS.map((m) => ({
+    ...m,
+    done: xp.value.missions_date === today && xp.value.completed_missions.includes(m.key),
+  }))
+)
+const missionsDone = computed(() => missionsToday.value.filter((m) => m.done).length)
 
 function goDetail(id: string) {
   const { goDetail: gd } = useNavigation()
@@ -253,28 +232,12 @@ async function loadVibe() {
       <!-- Next-best-action queue: overdue follow-ups + a revival candidate.
            First thing you see — the follow-up half of the loop. -->
       <PhoneUpNext />
-      <!-- Event Mode: focused capture for networking events -->
-      <button
-        class="cd-abtn g"
-        style="width: 100%; display: flex; align-items: center; gap: 8px; justify-content: center; font-size: 14px; padding: 12px; margin-bottom: 8px"
-        @click="nav('event')"
-      >
-        <CdIcon icon="lucide:radio" :size="16" />
-        <span>{{ eventMode.active.value ? `Event Mode · ${eventMode.count.value} met` : 'Event Mode' }}</span>
-        <CdIcon icon="lucide:arrow-right" :size="14" />
-      </button>
-      <!-- Grow your network: share your card or invite -->
-      <div style="display: flex; gap: 8px; margin-bottom: 12px">
-        <button class="cd-abtn ice" style="font-size: 12px; padding: 10px" @click="openShareSheet('card')"><CdCardMark :size="15" :gradient="false" /> My Card</button>
-        <button class="cd-abtn b" style="font-size: 12px; padding: 10px" @click="openShareSheet('invite')"><CdIcon emoji="🔗" icon="lucide:user-plus" :size="14" /> Invite</button>
-      </div>
-      <div class="cd-vc" style="border-color: color-mix(in srgb, var(--cd-green) 22%, transparent); padding-bottom: 6px; position: relative">
-        <button
-          aria-label="Scoring guide"
-          style="position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-radius: 50%; background: var(--cd-bg2); border: 1px solid var(--cd-bdr); color: var(--cd-dim); font-size: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2"
-          @click.stop="openScoreGuide"
-        ><CdIcon emoji="?" icon="lucide:help-circle" :size="13" /></button>
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px">
+      <!-- XP hero — level, streak, shields, and the weekly goal in one glance -->
+      <div class="cd-vc vb-hero">
+        <button aria-label="Scoring guide" class="vb-help" @click.stop="openScoreGuide">
+          <CdIcon emoji="?" icon="lucide:help-circle" :size="13" />
+        </button>
+        <div class="vb-hero-top">
           <div style="position: relative; width: 56px; height: 56px; flex-shrink: 0">
             <svg viewBox="0 0 36 36" style="width: 56px; height: 56px; transform: rotate(-90deg)">
               <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--cd-bdr)" stroke-width="3" />
@@ -296,85 +259,87 @@ async function loadVibe() {
             <div v-if="nextLevel" style="font-size: 10px; color: var(--cd-muted); margin-top: 2px">
               {{ (nextLevel.xp - xp.total_xp).toLocaleString() }} XP to {{ nextLevel.title }}
             </div>
-            <div style="display: flex; gap: 8px; margin-top: 4px">
-              <span style="font-size: 10px; color: var(--cd-green); font-weight: 700">
-                <CdIcon emoji="🔥" icon="lucide:flame" :size="10" /> {{ xp.streak }}d streak
-              </span>
-              <span style="font-size: 10px; color: #4da6ff; font-weight: 700">
-                <CdIcon emoji="📊" icon="lucide:trending-up" :size="10" /> {{ weekXp }} XP this week
-              </span>
+            <div class="vb-chips">
+              <span class="vb-chip streak"><CdIcon emoji="🔥" icon="lucide:flame" :size="10" /> {{ xp.streak }}d streak</span>
+              <span v-if="xp.streak_shields" class="vb-chip shield"><CdIcon emoji="🛡️" icon="lucide:shield" :size="10" /> ×{{ xp.streak_shields }}</span>
+              <span class="vb-chip week"><CdIcon emoji="📊" icon="lucide:trending-up" :size="10" /> {{ weekTotal }} touch{{ weekTotal === 1 ? '' : 'es' }} this wk</span>
             </div>
           </div>
         </div>
 
-        <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim); margin-bottom: 6px">
-          <CdIcon emoji="📈" icon="lucide:bar-chart-3" :size="10" /> 7-Day Activity
-        </div>
-        <div style="display: flex; align-items: flex-end; gap: 4px; height: 60px; margin-bottom: 4px">
-          <div
-            v-for="day in last7Days"
-            :key="day.date"
-            style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%"
-          >
-            <div style="flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center">
-              <div
-                style="width: 100%; max-width: 20px; border-radius: 4px 4px 0 0; transition: height 0.4s ease; min-height: 2px"
-                :style="{
-                  height: day.count ? Math.max(12, (day.count / maxDayCount) * 100) + '%' : '4%',
-                  background: day.count === 0 ? 'var(--cd-bdr)' : day.count >= 3 ? 'var(--cd-green)' : day.count >= 2 ? '#4da6ff' : '#ffe033',
-                }"
-              >
-                <div v-if="day.count" style="text-align: center; font-size: 8px; font-weight: 800; color: #0a0e14; padding-top: 1px">
-                  {{ day.count }}
-                </div>
-              </div>
-            </div>
-            <div
-              style="font-size: 8px; font-weight: 700; margin-top: 3px; text-transform: uppercase"
-              :style="day.date === new Date().toISOString().slice(0, 10) ? 'color: var(--cd-green)' : 'color: var(--cd-dim)'"
-            >{{ day.label }}</div>
+        <!-- Weekly XP goal — a finish line, not a chart -->
+        <div class="vb-goal">
+          <div class="vb-goal-lbl">
+            <span><CdIcon emoji="🎯" icon="lucide:target" :size="10" /> Weekly goal</span>
+            <span :class="{ hit: weekPct >= 100 }">{{ weekXp.toLocaleString() }} / {{ WEEK_GOAL }} XP</span>
           </div>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--cd-dim); margin-bottom: 8px">
-          <span>{{ weekTotal }} touchpoints this week</span>
-          <span v-if="weekTotal">avg {{ (weekTotal / 7).toFixed(1) }}/day</span>
+          <div class="vb-goal-bar">
+            <div class="vb-goal-fill" :class="{ hit: weekPct >= 100 }" :style="{ width: weekPct + '%' }"></div>
+          </div>
+          <div v-if="weekPct >= 100" class="vb-goal-done">
+            <CdIcon emoji="🏁" icon="lucide:flag" :size="10" /> Goal smashed — everything else is victory laps
+          </div>
         </div>
 
         <!-- Daily hype claim — unlocked by doing one real action that day -->
-        <div v-if="hypeClaimed" style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; color: var(--cd-dim); margin-bottom: 8px; font-weight: 700">
+        <div v-if="hypeClaimed" style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; color: var(--cd-dim); font-weight: 700">
           <CdIcon emoji="✅" icon="lucide:check-circle" :size="12" /> Daily hype claimed — back tomorrow
         </div>
         <button
           v-else-if="didActionToday"
           class="cd-abtn g"
-          style="font-size: 12px; padding: 9px; margin-bottom: 8px"
+          style="font-size: 12px; padding: 9px"
           @click="claimHype"
         ><CdIcon emoji="🏆" icon="lucide:trophy" :size="13" /> Claim daily hype · +20 XP</button>
         <div
           v-else
-          style="display: flex; align-items: center; justify-content: center; gap: 7px; padding: 9px; margin-bottom: 8px; border: 1px dashed var(--cd-bdr); border-radius: 9999px; font-size: 11px; color: var(--cd-dim); font-weight: 700"
+          style="display: flex; align-items: center; justify-content: center; gap: 7px; padding: 9px; border: 1px dashed var(--cd-bdr); border-radius: 9999px; font-size: 11px; color: var(--cd-dim); font-weight: 700"
         >
           <CdIcon emoji="🔒" icon="lucide:lock" :size="12" /> Do one action today to unlock <span style="color: var(--cd-green)">+20 XP</span>
         </div>
+      </div>
 
-        <template v-if="xpSources.length">
-          <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim); margin-bottom: 5px">
-            <CdIcon emoji="⚡" icon="lucide:zap" :size="10" /> Points Breakdown
-          </div>
-          <div v-for="src in xpSources" :key="src.label" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px">
-            <CdIcon :emoji="src.icon" :icon="src.lucide" :size="12" />
-            <span style="font-size: 11px; font-weight: 700; width: 72px; flex-shrink: 0">{{ src.label }}</span>
-            <div style="flex: 1; height: 4px; background: var(--cd-bdr); border-radius: 2px; overflow: hidden">
-              <div
-                style="height: 100%; border-radius: 2px; transition: width 0.4s ease"
-                :style="'width:' + (xpSources[0].xp ? Math.round((src.xp / xpSources[0].xp) * 100) : 0) + '%;background:' + src.color"
-              ></div>
-            </div>
-            <span style="font-size: 10px; font-weight: 700; width: 42px; text-align: right; flex-shrink: 0" :style="'color:' + src.color">
-              {{ src.xp }} XP
-            </span>
-          </div>
-        </template>
+      <!-- Today's missions — verified quests; tap one to go do it -->
+      <div class="cd-vc vb-missions">
+        <div class="vb-m-hdr">
+          <CdIcon emoji="🎯" icon="lucide:swords" :size="12" />
+          <span>Today's missions</span>
+          <span class="vb-m-count">{{ missionsDone }}/{{ missionsToday.length }}</span>
+        </div>
+        <div class="vb-m-strip">
+          <button
+            v-for="m in missionsToday" :key="m.key"
+            class="vb-m-chip" :class="{ done: m.done }" type="button"
+            :disabled="m.done"
+            @click="nav(MISSION_GO[m.key] ?? 'home')"
+          >
+            <CdIcon :emoji="m.done ? '✅' : m.icon" :icon="m.done ? 'lucide:check-circle' : m.lucide" :size="14" />
+            <span class="vb-m-lbl">{{ m.label }}</span>
+            <span class="vb-m-xp">{{ m.done ? 'done' : `+${m.xp}` }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Network IQ — daily quiz built from your own contacts -->
+      <PhoneNetworkQuiz />
+
+      <!-- Reconnect Roulette — spin up a quiet contact, reach out, bank XP -->
+      <PhoneReconnectRoulette />
+
+      <!-- Event Mode: focused capture for networking events -->
+      <button
+        class="cd-abtn g"
+        style="width: 100%; display: flex; align-items: center; gap: 8px; justify-content: center; font-size: 14px; padding: 12px; margin-bottom: 8px"
+        @click="eventMode.openPanel()"
+      >
+        <CdIcon icon="lucide:radio" :size="16" />
+        <span>{{ eventMode.active.value ? `Event Mode · ${eventMode.count.value} met` : 'Event Mode' }}</span>
+        <CdIcon icon="lucide:arrow-right" :size="14" />
+      </button>
+      <!-- Grow your network: share your card or invite -->
+      <div style="display: flex; gap: 8px; margin-bottom: 12px">
+        <button class="cd-abtn ice" style="font-size: 12px; padding: 10px" @click="openShareSheet('card')"><CdCardMark :size="15" :gradient="false" /> My Card</button>
+        <button class="cd-abtn b" style="font-size: 12px; padding: 10px" @click="openShareSheet('invite')"><CdIcon emoji="🔗" icon="lucide:user-plus" :size="14" /> Invite</button>
       </div>
 
       <!-- Leaderboard snapshot — only renders if you have accepted connections -->
@@ -383,33 +348,9 @@ async function loadVibe() {
       <!-- Swipeable card stack: your network's activity (with reactions) + people -->
       <PhoneSwipeDeck />
 
-      <!-- Pipeline Health Card -->
-      <div v-if="pipelineStats.stageCounts && Object.values(pipelineStats.stageCounts).some((v: any) => v > 0)" class="cd-vc" style="border: 1px solid rgba(77,166,255,0.2)">
-        <div class="cd-vct">
-          <span class="cd-vci"><CdIcon emoji="📊" icon="lucide:git-branch" /></span>
-          <div>
-            <div class="cd-vch" style="color: #4da6ff">Pipeline Snapshot</div>
-            <div class="cd-vcb">
-              <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px">
-                <span v-for="(count, stage) in pipelineStats.stageCounts" :key="stage" v-show="count > 0" style="font-size: 10px; font-weight: 700; background: rgba(77,166,255,0.08); border: 1px solid rgba(77,166,255,0.15); border-radius: 6px; padding: 2px 6px">
-                  {{ stage }}: <strong>{{ count }}</strong>
-                </span>
-              </div>
-              <div v-if="pipelineStats.totalValue" style="margin-top: 6px; font-size: 11px; color: var(--cd-accent); font-weight: 700">
-                ${{ pipelineStats.totalValue.toLocaleString() }} total pipeline value
-              </div>
-            </div>
-          </div>
-        </div>
-        <div v-if="pipelineStats.stalledCount > 0" style="margin-top: 6px">
-          <button class="cd-abtn b" @click="pipelineStats.stalledContacts[0] && goDetail(pipelineStats.stalledContacts[0].id)">
-            <CdIcon emoji="⚠️" icon="lucide:alert-circle" :size="14" /> {{ pipelineStats.stalledCount }} stalled deal{{ pipelineStats.stalledCount > 1 ? 's' : '' }} — follow up
-          </button>
-        </div>
-      </div>
-
-      <!-- (The old single cold/overdue callouts were replaced by the Up next
-           queue at the top of this screen.) -->
+      <!-- (Pipeline snapshot, recent activity, and the old cold/overdue
+           callouts moved off this screen in the gamification pass — Vibe is
+           the play surface; analytics live on Score/Feed.) -->
 
       <div class="cd-vc" style="border-color: rgba(77, 166, 255, 0.2)">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px">
@@ -488,51 +429,6 @@ async function loadVibe() {
         </div>
       </div>
 
-      <div class="cd-feed">
-        <div class="cd-feed-hdr">
-          <CdIcon emoji="📡" icon="lucide:activity" :size="13" />
-          <span>Recent Activity</span>
-        </div>
-        <template v-if="recentActivity.length">
-          <div
-            v-for="(item, i) in recentActivity"
-            :key="item.act.id"
-            class="cd-feed-row"
-            @click="goDetail(item.contact.id)"
-          >
-            <div class="cd-feed-dot" :class="item.act.type">
-              <CdIcon :emoji="getAct(item.act.type).icon" :icon="getAct(item.act.type).lucide" :size="14" />
-            </div>
-            <div class="cd-feed-body">
-              <div class="cd-feed-top">
-                <span class="cd-feed-who">{{ item.contact.name }}</span>
-                <span class="cd-feed-when">{{ fmtRelative(item.act.date) }}</span>
-              </div>
-              <div class="cd-feed-what">
-                {{ item.act.label }}<template v-if="item.act.note"> — {{ item.act.note }}</template>
-              </div>
-              <div v-if="item.act.is_response" class="cd-feed-resp">
-                <CdIcon emoji="✓" icon="lucide:check" :size="10" /> replied
-              </div>
-            </div>
-          </div>
-        </template>
-        <div v-else class="cd-feed-empty">
-          <div class="cd-feed-empty-msg">No activity yet — get started!</div>
-          <div class="cd-feed-actions">
-            <button class="cd-feed-action" @click="nav('add')">
-              <CdIcon emoji="📷" icon="lucide:scan" :size="14" /> Scan a Card
-            </button>
-            <button class="cd-feed-action" @click="nav('contacts')">
-              <CdIcon emoji="👥" icon="lucide:users" :size="14" /> View Contacts
-            </button>
-            <button class="cd-feed-action" @click="nav('session')">
-              <CdIcon emoji="🎙" icon="lucide:mic" :size="14" /> Start Session
-            </button>
-          </div>
-        </div>
-      </div>
-
       <!-- Earnest AI Daily Vibe — a personalized pep-talk (was the mood rotator) -->
       <div class="cd-vibe" :class="vibe ? 'vibe-' + vibe.mood : ''">
         <template v-if="vibe">
@@ -557,24 +453,6 @@ async function loadVibe() {
         <div v-if="vibeError" class="cd-vibe-err">{{ vibeError }}</div>
       </div>
 
-      <!-- Who is Earnest? — context for the Earnest-powered backend/billing -->
-      <div class="cd-vc" style="border-color: rgba(77, 166, 255, 0.2)">
-        <div class="cd-vct">
-          <span class="cd-vci"><CdEarnestMark :size="18" /></span>
-          <div>
-            <div class="cd-vch" style="color: #4da6ff">Who is Earnest?</div>
-            <div class="cd-vcb">
-              CardDesk is part of <strong>Earnest</strong> — the platform that helps independent professionals
-              build genuine relationships. Your account, AI credits, and billing run on Earnest's engine, so
-              you'll occasionally see the Earnest name (like at checkout).
-            </div>
-          </div>
-        </div>
-        <a href="https://earnest.guru" target="_blank" rel="noopener" class="cd-abtn b" style="text-decoration: none; margin-top: 4px">
-          <CdIcon emoji="🌐" icon="lucide:external-link" :size="14" /> Learn about Earnest →
-        </a>
-      </div>
-
       </div>
 
       <CdBrandFooter />
@@ -583,6 +461,81 @@ async function loadVibe() {
 </template>
 
 <style scoped>
+/* ── XP hero ── */
+.vb-hero {
+  border-color: color-mix(in srgb, var(--cd-green) 22%, transparent);
+  position: relative;
+}
+.vb-help {
+  position: absolute; top: 10px; right: 10px; width: 22px; height: 22px;
+  border-radius: 50%; background: var(--cd-bg2); border: 1px solid var(--cd-bdr);
+  color: var(--cd-dim); font-size: 12px; font-weight: 800; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; z-index: 2;
+}
+.vb-hero-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.vb-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+.vb-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
+  border: 1px solid var(--cd-bdr); color: var(--cd-muted);
+}
+.vb-chip.streak { color: var(--cd-green); border-color: color-mix(in srgb, var(--cd-green) 30%, transparent); }
+.vb-chip.shield { color: var(--cd-gold, #ffd700); border-color: rgba(255, 215, 0, 0.3); }
+.vb-chip.week { color: #4da6ff; border-color: rgba(77, 166, 255, 0.3); }
+
+/* Weekly XP goal bar */
+.vb-goal { margin-bottom: 10px; }
+.vb-goal-lbl {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--cd-dim); margin-bottom: 5px;
+}
+.vb-goal-lbl .hit { color: var(--cd-green); }
+.vb-goal-bar {
+  height: 8px; border-radius: 999px; overflow: hidden;
+  background: var(--cd-bdr);
+}
+.vb-goal-fill {
+  height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, #4da6ff, var(--cd-green));
+  transition: width 0.5s ease;
+}
+.vb-goal-fill.hit { background: var(--cd-green); }
+.vb-goal-done {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 700; color: var(--cd-green); margin-top: 5px;
+}
+
+/* ── Today's missions strip ── */
+.vb-missions { border-color: color-mix(in srgb, var(--cd-orange, #ff6b35) 24%, transparent); }
+.vb-m-hdr {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--cd-dim); margin-bottom: 8px;
+}
+.vb-m-count {
+  margin-left: auto; min-width: 17px; padding: 0 6px; height: 17px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10px; color: #060810; background: var(--cd-orange, #ff6b35);
+}
+.vb-m-strip {
+  display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px;
+  scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.vb-m-strip::-webkit-scrollbar { display: none; }
+.vb-m-chip {
+  flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  width: 118px; padding: 9px 10px; border-radius: 12px; cursor: pointer; text-align: left;
+  background: var(--cd-bg2); border: 1px solid var(--cd-bdr);
+  color: var(--cd-text); font-family: inherit;
+  transition: transform 0.1s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+.vb-m-chip:active:not(:disabled) { transform: scale(0.97); }
+.vb-m-chip.done { opacity: 0.55; cursor: default; }
+.vb-m-lbl { font-size: 10.5px; font-weight: 700; line-height: 1.3; }
+.vb-m-xp { font-size: 9.5px; font-weight: 800; color: var(--cd-orange, #ff6b35); }
+.vb-m-chip.done .vb-m-xp { color: var(--cd-accent); }
+
 /* Earnest AI Daily Vibe — a personalized pep-talk card. Mood-tinted accent
    keeps the warm, emotional tone of the old mood rotator it replaced. */
 .cd-vibe {

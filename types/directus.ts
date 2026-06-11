@@ -142,6 +142,8 @@ export interface CdContact {
   earnest_lead_id?: string
   estimated_value?: number
   lost_reason?: string
+  /** Directus user id if this contact joined CardDesk (stamped on invite redemption). */
+  linked_user?: string | null
 }
 
 export interface CdActivity {
@@ -174,6 +176,8 @@ export interface CdXpState {
   completed_missions: string[]
   missions_date: string
   streak_shields?: number
+  hype_date?: string | null
+  quiz_date?: string | null
 }
 
 // Per-user AI credit balance for standalone (non-Earnest-org) users.
