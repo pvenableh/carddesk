@@ -30,7 +30,7 @@ const leaderboard = [
 
 // Hero deck — a small stack of cards that slowly flips through sample contacts.
 const heroCards = [
-  { name: 'Alex Rivera', role: 'Founder · Northwind', email: 'alex@northwind.co', phone: '(415) 555-0199', tint: 'var(--cd-palette-primary, #4da6ff)' },
+  { name: 'Sarah Johnson', role: 'Founder · Northwind', email: 'sarah@northwind.co', phone: '(415) 555-0199', tint: 'var(--cd-palette-primary, #4da6ff)' },
   { name: 'Maya Chen', role: 'Product Lead · Lumen', email: 'maya@lumen.io', phone: '(212) 555-0148', tint: 'var(--cd-green)' },
   { name: 'Devin Brooks', role: 'Designer · Foundry', email: 'devin@foundry.studio', phone: '(646) 555-0173', tint: 'var(--cd-gold)' },
   { name: 'Priya Nair', role: 'VP Sales · Beacon', email: 'priya@beacon.co', phone: '(312) 555-0186', tint: 'var(--cd-orange)' },
@@ -473,7 +473,7 @@ onUnmounted(() => {
 
     <!-- ═══ Closing CTA — giant ghost title parallaxes up from behind the card ═══ -->
     <div ref="ctaWrap" class="lp-cta-wrap">
-      <div class="lp-cta-ghost" data-parallax="380" aria-hidden="true">LET’S PLAY</div>
+      <div class="lp-cta-ghost" data-parallax="300" aria-hidden="true">LET’S PLAY</div>
       <section class="lp-cta-band lp-glass">
       <p class="lp-hand lp-cta-hand">go on — your network’s waiting</p>
       <h2 class="lp-cta-title">Networking, but&nbsp;make&nbsp;it a&nbsp;<span class="lp-grad">game</span>.</h2>
@@ -1338,14 +1338,22 @@ html[data-theme="glass"] .lp-gchip {
   position: relative;
   overflow: hidden;
   /* Extra runway above so the "LET'S PLAY" watermark has room to rise, and a tall
-   * gap below so the closing card isn't crowded by the footer. */
-  padding-top: clamp(104px, 17vw, 210px);
+   * gap below so the closing card isn't crowded by the footer. The 160px floor
+   * keeps a real runway on phones — at 104px the risen title never cleared the
+   * (much taller) stacked band. */
+  padding-top: clamp(160px, 17vw, 210px);
   margin-bottom: clamp(112px, 15vw, 190px);
 }
 .lp-cta-ghost {
   position: absolute;
   left: 50%;
-  top: 50%;
+  /* Anchored relative to the wrap's top RUNWAY (the padding-top clamp below),
+   * not a % of the wrap — on phones the stacked band is far taller than on
+   * desktop, so a percentage anchor left the risen title trapped behind the
+   * card. Resting just under the runway's midpoint means the title is already
+   * visible above the band when it's centred in the viewport (parallax shift
+   * ≈ 0), and the remaining travel won't clip it at the top on a full scroll. */
+  top: calc(clamp(160px, 17vw, 210px) / 2 + 30px);
   z-index: 0;
   transform: translate(-50%, calc(-50% + var(--lp-shift, 0px)));
   font-family: 'Bebas Neue', sans-serif;
