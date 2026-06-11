@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   const cards = (await admin.request(
     readItems('cd_cards' as any, {
       filter: { user: { _eq: id } } as any,
-      fields: ['display_name', 'title', 'company', 'email', 'phone', 'website', ...SOCIAL_KEYS, 'headline', 'image'],
+      fields: ['display_name', 'title', 'company', 'email', 'phone', 'website', ...SOCIAL_KEYS, 'headline', 'office_address', 'image'],
       limit: 1,
     }),
   )) as any[]
@@ -51,6 +51,7 @@ export default defineEventHandler(async (event) => {
     website: c.website ?? null,
     ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, c[k] ?? null])),
     headline: c.headline ?? null,
+    office_address: c.office_address ?? null,
     imageUrl: assetUrl(c.image),
   }
 })

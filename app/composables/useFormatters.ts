@@ -2,9 +2,16 @@ export function todayStr() {
   return new Date().toISOString().slice(0, 10)
 }
 
+// Accept both date-only strings ("YYYY-MM-DD") and full ISO timestamps
+// ("…T…Z", e.g. Directus date_created). Appending "T00:00:00" to a value that
+// already has a time component yields an Invalid Date.
+function toDate(d: string) {
+  return d.includes("T") ? new Date(d) : new Date(d + "T00:00:00")
+}
+
 export function fmtShort(d?: string) {
   if (!d) return ""
-  return new Date(d + "T00:00:00").toLocaleDateString("en-US", {
+  return toDate(d).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
   })
@@ -12,7 +19,7 @@ export function fmtShort(d?: string) {
 
 export function fmtFull(d?: string) {
   if (!d) return ""
-  return new Date(d + "T00:00:00").toLocaleDateString("en-US", {
+  return toDate(d).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",

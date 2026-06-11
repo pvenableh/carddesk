@@ -34,6 +34,7 @@ Contact:
 - Title: ${contact.title || "Unknown"}
 - Company: ${contact.company || "Unknown"}
 - Industry: ${contact.industry || "Unknown"}
+- Location: ${contact.location || "Unknown"}
 - Rating: ${contact.rating || "Unrated"}
 - Pipeline Stage: ${contact.pipeline_stage || "Not in pipeline"}
 - Estimated Value: ${contact.estimated_value ? "$" + contact.estimated_value.toLocaleString() : "N/A"}

@@ -38,6 +38,7 @@ export default defineEventHandler(async (event) => {
     const status = isClient ? "CLIENT" : isLead ? `LEAD (${rating})` : rating === "nurture" ? "NURTURE" : rating === "cold" ? "COLD" : "NEW CONTACT";
     let line = `- [ID:${c.id}] ${c.name}${c.company ? ` (${c.company})` : ""}${c.title ? ` — ${c.title}` : ""} [${status}]`;
     if (c.industry) line += ` | Industry: ${c.industry}`;
+    if (c.location) line += ` | Location: ${c.location}`;
     const channels: string[] = [];
     if (c.hasPhone) channels.push("phone");
     if (c.hasEmail) channels.push("email");

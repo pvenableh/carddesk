@@ -19,7 +19,9 @@ export function useProfile() {
   }
 
   async function saveProfile(updates: Partial<CdUserProfile>) {
-    const { organization, location, ...saveable } = updates
+    // `organization` is read-only here (managed in Earnest); everything else,
+    // including `location`, is user-writable on directus_users.
+    const { organization, ...saveable } = updates
     Object.assign(profile.value, updates)
     saved.value = false
     try {

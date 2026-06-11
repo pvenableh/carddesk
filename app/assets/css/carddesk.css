@@ -7,7 +7,7 @@
   --cd-bdr: #1c2330;
   --cd-text: #f0f4ff;
   --cd-muted: #8898b0;
-  --cd-dim: #3e4f68;
+  --cd-dim: #687a98;
   --cd-accent: #00ff87;
   /* CardDesk brand green — the mint that matches the logo "CARD" word and the
    * .cd-abtn.g buttons (chrome accent @ 72% L). Darkened on light themes for
@@ -68,7 +68,7 @@ html[data-theme="glass"][data-mode="dark"] {
   --cd-bdr: #262626;
   --cd-text: #ededed;
   --cd-muted: #8c8c8c;
-  --cd-dim: #555555;
+  --cd-dim: #757575;
   --cd-accent: #ededed;
   --cd-green: hsl(163 100% 72%);
   --cd-gold: #ffd700;

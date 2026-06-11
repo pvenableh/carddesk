@@ -22,6 +22,8 @@ export default defineEventHandler(async (event) => {
         ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, body[k] ?? null])),
         industry: body.industry ?? null,
         met_at: body.met_at ?? null,
+        location: body.location ?? null,
+        address: body.address ?? null,
         rating: body.rating ?? null,
         notes: body.notes ?? null,
         hibernated: false,

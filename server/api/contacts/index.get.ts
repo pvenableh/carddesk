@@ -22,6 +22,8 @@ export default defineEventHandler(async (event) => {
           ...SOCIAL_KEYS,
           "industry",
           "met_at",
+          "location",
+          "address",
           "rating",
           "hibernated",
           "hibernated_at",

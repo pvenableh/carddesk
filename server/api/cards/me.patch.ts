@@ -3,7 +3,7 @@ import { getUserClient } from '../../utils/auth'
 import { getOrCreateCard, assetUrl } from '../../utils/cards'
 import { SOCIAL_KEYS } from '~/types/socials'
 
-const EDITABLE = ['display_name', 'title', 'company', 'email', 'phone', 'website', ...SOCIAL_KEYS, 'headline', 'broadcast_activity']
+const EDITABLE = ['display_name', 'title', 'company', 'email', 'phone', 'website', ...SOCIAL_KEYS, 'headline', 'office_address', 'broadcast_activity']
 
 /** Update the signed-in user's card (written as the user; row is scoped to them). */
 export default defineEventHandler(async (event) => {

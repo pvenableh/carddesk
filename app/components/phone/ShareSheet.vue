@@ -61,6 +61,20 @@ async function shareInvite() {
   const res = await shareUrl({ url: invite.value.url, title: 'Join me on CardDesk', text: 'Connect with me on CardDesk 🎴' })
   if (res === 'copied') success('Invite link copied!')
 }
+
+// Prebuilt invite content for the email + message buttons. The recipient just
+// has to tap "send" — the subject, body, and link are all filled in.
+const inviteMsg = computed(() =>
+  invite.value
+    ? `Hey! I'm on CardDesk — it's how I keep my network organized. Let's connect so we stay in touch: ${invite.value.url}`
+    : ''
+)
+const inviteMailto = computed(() =>
+  'mailto:?subject=' + encodeURIComponent("Let's connect on CardDesk") + '&body=' + encodeURIComponent(
+    `Hey,\n\nI'm using CardDesk to keep my network organized, and I'd love to add you.\n\nTap here to connect with me:\n${invite.value?.url ?? ''}\n\nTalk soon!`
+  )
+)
+const inviteSms = computed(() => 'sms:?&body=' + encodeURIComponent(inviteMsg.value))
 </script>
 
 <template>
@@ -112,7 +126,11 @@ async function shareInvite() {
         </div>
         <template v-else>
           <div class="cd-sheet-qrbox"><img v-if="qr.invite" :src="qr.invite" alt="Invite QR" width="220" height="220" /></div>
-          <button class="cd-abtn g" @click="shareInvite"><CdIcon emoji="📤" icon="lucide:share" :size="14" /> Share invite link</button>
+          <button class="cd-abtn g" style="margin-bottom: 8px" @click="shareInvite"><CdIcon emoji="📤" icon="lucide:share" :size="14" /> Share invite link</button>
+          <div class="cd-invite-actions">
+            <a class="cd-abtn cd-invite-act" :href="inviteMailto"><CdIcon emoji="📧" icon="lucide:mail" :size="14" /> Email</a>
+            <a class="cd-abtn cd-invite-act" :href="inviteSms"><CdIcon emoji="💬" icon="lucide:message-circle" :size="14" /> Message</a>
+          </div>
         </template>
       </template>
     </div>
@@ -236,4 +254,15 @@ async function shareInvite() {
   color: var(--cd-muted);
 }
 .cd-sheet-err .cd-abtn { width: auto; }
+.cd-invite-actions {
+  display: flex;
+  gap: 8px;
+}
+.cd-invite-act {
+  flex: 1;
+  background: transparent;
+  color: var(--cd-muted);
+  border-color: var(--cd-bdr);
+  text-decoration: none;
+}
 </style>

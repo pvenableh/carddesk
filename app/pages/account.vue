@@ -23,7 +23,7 @@ const initial = computed(() => {
   return email.value.charAt(0).toUpperCase() || '?'
 })
 
-const profileForm = ref({ first_name: '', last_name: '', title: '', industry: '', networking_goal: '' })
+const profileForm = ref({ first_name: '', last_name: '', title: '', industry: '', location: '', networking_goal: '' })
 
 watch(profile, (p) => {
   profileForm.value = {
@@ -31,6 +31,7 @@ watch(profile, (p) => {
     last_name: p.last_name ?? '',
     title: p.title ?? '',
     industry: p.industry ?? '',
+    location: p.location ?? '',
     networking_goal: p.networking_goal ?? '',
   }
 }, { immediate: true })
@@ -57,7 +58,7 @@ const { data: card, refresh: refreshCard } = await useFetch<any>('/api/cards/me'
 
 const cardForm = reactive<Record<string, any>>({
   display_name: '', title: '', company: '', headline: '',
-  email: '', phone: '', website: '', broadcast_activity: true,
+  email: '', phone: '', website: '', office_address: '', broadcast_activity: true,
   ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, ''])),
 })
 const cardImageUrl = ref<string | null>(null)
@@ -71,6 +72,7 @@ watchEffect(() => {
   cardForm.email = card.value.email ?? ''
   cardForm.phone = card.value.phone ?? ''
   cardForm.website = card.value.website ?? ''
+  cardForm.office_address = card.value.office_address ?? ''
   for (const k of SOCIAL_KEYS) cardForm[k] = card.value[k] ?? ''
   cardForm.broadcast_activity = card.value.broadcast_activity ?? true
   cardImageUrl.value = card.value.imageUrl ?? null
@@ -314,6 +316,8 @@ async function suggestGoal() {
               <option value="">Select...</option>
               <option v-for="ind in INDUSTRIES" :key="ind" :value="ind">{{ ind }}</option>
             </select>
+            <label class="cd-lbl">Location <span style="color: var(--cd-dim); font-weight: 600; text-transform: none; letter-spacing: 0">· city / region, helps Earnest AI</span></label>
+            <input v-model="profileForm.location" class="cd-inp" placeholder="San Francisco, CA" />
             <div style="display: flex; justify-content: space-between; align-items: center">
               <label class="cd-lbl">Networking Goal</label>
               <button
@@ -438,6 +442,8 @@ async function suggestGoal() {
             <input v-model="cardForm.phone" class="cd-inp" type="tel" placeholder="+1 555 000 0000" />
             <label class="cd-lbl">Website</label>
             <input v-model="cardForm.website" class="cd-inp" placeholder="https://acme.com" />
+            <label class="cd-lbl">Office Address <span style="color: var(--cd-dim); font-weight: 600; text-transform: none; letter-spacing: 0">· shown on your shared card</span></label>
+            <textarea v-model="cardForm.office_address" class="cd-inp" style="min-height: 48px; resize: vertical" placeholder="123 Market St, Suite 400&#10;San Francisco, CA 94105"></textarea>
             <template v-for="s in SOCIALS" :key="s.key">
               <label class="cd-lbl">{{ s.label }}</label>
               <input v-model="cardForm[s.key]" class="cd-inp" :placeholder="s.placeholder" />

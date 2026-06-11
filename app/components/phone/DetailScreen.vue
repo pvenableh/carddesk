@@ -55,6 +55,10 @@ const showStageSheet = ref(false)
 const showLostReasonSheet = ref(false)
 const selectedLostReason = ref('')
 
+// Marking a client is a big, celebrated step (+200 XP, confetti) — gate it
+// behind a confirm so it can't happen on an accidental tap.
+const showClientConfirm = ref(false)
+
 async function doMoveStage(stage: PipelineStage) {
   if (!selContact.value) return
   if (stage === 'lost') {
@@ -108,7 +112,7 @@ function startEdit() {
   editForm.value = {
     name: c.name, title: c.title, company: c.company,
     email: c.email, phone: c.phone, industry: c.industry,
-    met_at: c.met_at, rating: c.rating, notes: c.notes,
+    met_at: c.met_at, location: c.location, address: c.address, rating: c.rating, notes: c.notes,
     ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, c[k]])),
   }
   editing.value = true
@@ -166,8 +170,18 @@ async function doHibernate(id: string) {
   nav('contacts')
 }
 
-// Mark as client
+// Quick temperature set — inline on the detail page, no edit mode needed.
+// Tapping the active rating again clears it. Persists immediately.
+async function quickSetRating(key: string) {
+  if (!selContact.value) return
+  const c = selContact.value as any
+  const next = c.rating === key ? null : key
+  await updateContact(c.id, { rating: next } as any)
+}
+
+// Mark as client (called from the confirm sheet, never directly from a tap).
 async function doMarkClient() {
+  showClientConfirm.value = false
   if (!selContact.value) return
   const c = selContact.value as any
   if (c.is_client) return
@@ -185,6 +199,17 @@ async function doMarkClient() {
   }
   earn(200, '💰', 'Client converted! You closed the deal.', { total_clients: (xp.value.total_clients ?? 0) + 1 })
   fireConfetti()
+}
+
+// Flip a client back to a regular contact — easy, one tap, no confetti. Backs
+// out the +200 XP so an accidental conversion leaves no trace, and updates the
+// client count. Forgiving on purpose: the dangerous direction is marking, not unmarking.
+async function doUnmarkClient() {
+  if (!selContact.value) return
+  const c = selContact.value as any
+  if (!c.is_client) return
+  await updateContact(c.id, { is_client: false, client_at: null } as any)
+  deduct(200, '↩️', 'Back to an active contact', { total_clients: Math.max(0, (xp.value.total_clients ?? 1) - 1) })
 }
 
 // Share contact — sends a real vCard (.vcf) through the system share sheet so
@@ -268,7 +293,7 @@ async function loadSuggestions() {
     const data = await $fetch<Array<{ icon: string; title: string; body: string }>>('/api/ai-suggestions', {
       method: 'POST',
       body: {
-        contact: { name: c.name, title: c.title, company: c.company, industry: c.industry, rating: c.rating, notes: c.notes },
+        contact: { name: c.name, title: c.title, company: c.company, industry: c.industry, location: c.location, rating: c.rating, notes: c.notes },
         activities: sortedActs.value.slice(0, 10).map((a: any) => ({ date: a.date, label: a.label, note: a.note, is_response: a.is_response })),
         daysSinceLastActivity: daysSince(c),
         profile: profile.value,
@@ -338,7 +363,7 @@ function contactContext() {
   return {
     name: c.name, title: c.title, company: c.company, industry: c.industry,
     rating: c.rating, pipeline_stage: c.pipeline_stage, estimated_value: c.estimated_value,
-    met_at: c.met_at, is_client: c.is_client, notes: c.notes,
+    met_at: c.met_at, location: c.location, is_client: c.is_client, notes: c.notes,
     days_since_last_activity: daysSince(c),
     recent_activities: sortedActs.value.slice(0, 8).map((a: any) => ({
       date: a.date, label: a.label, note: a.note, is_response: a.is_response,
@@ -422,6 +447,8 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
           </div>
           <label class="cd-lbl">Email</label><input v-model="editForm.email" class="cd-inp" type="email" />
           <label class="cd-lbl">Phone</label><input v-model="editForm.phone" class="cd-inp" />
+          <label class="cd-lbl">Location <span style="color: var(--cd-dim); font-weight: 600; text-transform: none; letter-spacing: 0">· city / region</span></label><input v-model="editForm.location" class="cd-inp" placeholder="Austin, TX" />
+          <label class="cd-lbl">Address</label><textarea v-model="editForm.address" class="cd-inp" style="min-height: 48px; resize: vertical"></textarea>
           <template v-for="s in SOCIALS" :key="s.key">
             <label class="cd-lbl">{{ s.label }}</label><input v-model="editForm[s.key]" class="cd-inp" :placeholder="s.placeholder" />
           </template>
@@ -467,9 +494,9 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
               <span v-if="selContact.rating" class="cd-rpill" :class="selContact.rating">
                 <CdIcon :emoji="getRating(selContact.rating)?.emoji ?? ''" :icon="getRating(selContact.rating)?.lucide" :size="10" /> {{ getRating(selContact.rating)?.label }}
               </span>
-              <span v-if="(selContact as any).is_client" style="background: rgba(0,255,135,0.12); border: 1px solid rgba(0,255,135,0.3); border-radius: 6px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: var(--cd-green)">
+              <button v-if="(selContact as any).is_client" type="button" title="Tap to revert to an active contact" style="background: rgba(0,255,135,0.12); border: 1px solid rgba(0,255,135,0.3); border-radius: 6px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: var(--cd-green); cursor: pointer; font-family: inherit" @click="doUnmarkClient">
                 <CdIcon emoji="💰" icon="lucide:badge-check" :size="10" /> Client
-              </span>
+              </button>
               <button
                 v-if="selContact.pipeline_stage"
                 class="cd-rpill"
@@ -485,6 +512,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
                 @click="showStageSheet = true"
               >+ Pipeline</button>
               <span v-if="(selContact as any).industry" class="cd-tag-ind">{{ (selContact as any).industry }}</span>
+              <span v-if="(selContact as any).location" class="cd-tag-ind"><CdIcon emoji="📍" icon="lucide:map-pin" :size="9" /> {{ (selContact as any).location }}</span>
               <span v-if="(selContact as any).met_at" class="cd-tag-ind">@ {{ (selContact as any).met_at }}</span>
             </div>
           </div>
@@ -497,7 +525,19 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             </div>
           </div>
 
-          <div v-if="(selContact as any).email || (selContact as any).phone" class="cd-info-grid">
+          <!-- Quick temperature set — tap to rate without opening edit mode. -->
+          <div style="display: flex; gap: 6px; margin-bottom: 14px">
+            <button
+              v-for="r in RATINGS"
+              :key="r.key"
+              type="button"
+              style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px 4px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: var(--cd-bg2); color: var(--cd-muted); font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.12s"
+              :style="(selContact as any).rating === r.key ? 'background:' + r.color + '22;border-color:' + r.color + ';color:' + r.color : ''"
+              @click="quickSetRating(r.key)"
+            ><CdIcon :emoji="r.emoji" :icon="r.lucide" :size="13" /> {{ r.label }}</button>
+          </div>
+
+          <div v-if="(selContact as any).email || (selContact as any).phone || (selContact as any).address" class="cd-info-grid">
             <div v-if="(selContact as any).email" class="cd-info-row">
               <span class="cd-info-k"><CdIcon emoji="📧" icon="lucide:mail" :size="11" /></span>
               <a :href="'mailto:' + (selContact as any).email" class="cd-info-v" style="color: #4da6ff">{{ (selContact as any).email }}</a>
@@ -505,6 +545,10 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             <div v-if="(selContact as any).phone" class="cd-info-row">
               <span class="cd-info-k"><CdIcon emoji="📞" icon="lucide:phone" :size="11" /></span>
               <a :href="'tel:' + (selContact as any).phone" class="cd-info-v" style="color: #4da6ff">{{ (selContact as any).phone }}</a>
+            </div>
+            <div v-if="(selContact as any).address" class="cd-info-row">
+              <span class="cd-info-k"><CdIcon emoji="📍" icon="lucide:map-pin" :size="11" /></span>
+              <a :href="'https://maps.google.com/?q=' + encodeURIComponent((selContact as any).address)" target="_blank" rel="noopener" class="cd-info-v" style="color: #4da6ff; white-space: pre-line">{{ (selContact as any).address }}</a>
             </div>
           </div>
 
@@ -516,18 +560,28 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
           </div>
 
           <div class="cd-log-sec" style="margin-bottom: 16px">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
-              <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim)">
-                Next Steps
-              </div>
+            <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim); margin-bottom: 10px">
+              Next Steps
+            </div>
+            <!-- Two AI actions, side by side: tactical ideas (blue) vs open chat (green).
+                 Equal columns + matched min-height keep the tiles the same size. -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px">
               <button
-                class="cd-abtn"
-                style="font-size: 11px; padding: 5px 10px; background: transparent; border-color: var(--cd-bdr); color: #4da6ff"
+                type="button"
+                style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; min-height: 78px; padding: 12px 8px; border-radius: 14px; border: 1px solid color-mix(in srgb, #4da6ff 38%, transparent); background: color-mix(in srgb, #4da6ff 12%, transparent); color: #4da6ff; font-size: 12px; font-weight: 700; line-height: 1.25; cursor: pointer; font-family: inherit"
                 :disabled="sugLoading"
                 @click="loadSuggestions"
               >
-                <CdEarnestMark :size="12" />
-                {{ sugLoading ? 'Thinking...' : suggestions.length ? 'Refresh' : 'Get Earnest AI Ideas' }}
+                <CdEarnestMark :size="18" />
+                <span>{{ sugLoading ? 'Thinking…' : suggestions.length ? 'Refresh AI ideas' : 'Get Earnest AI ideas' }}</span>
+              </button>
+              <button
+                type="button"
+                style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; min-height: 78px; padding: 12px 8px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--cd-accent) 32%, transparent); background: color-mix(in srgb, var(--cd-accent) 13%, transparent); color: var(--cd-accent); font-size: 12px; font-weight: 700; line-height: 1.25; cursor: pointer; font-family: inherit"
+                @click="askEarnest"
+              >
+                <CdEarnestMark :size="18" />
+                <span>Chat with Earnest about {{ selContact.name }}</span>
               </button>
             </div>
             <div v-if="sugError" style="font-size: 12px; color: #f87171; margin-bottom: 8px">{{ sugError }}</div>
@@ -548,15 +602,6 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             >
               <CdIcon :emoji="sugSaved ? '✅' : '💾'" :icon="sugSaved ? 'lucide:check' : 'lucide:bookmark'" :size="11" />
               {{ sugSaved ? 'Saved to history' : 'Save these to history' }}
-            </button>
-
-            <!-- Open-ended chat about this contact (continuable, 1 credit/turn) -->
-            <button
-              class="cd-abtn"
-              style="width: 100%; margin-top: 8px; padding: 11px; font-size: 13px; background: color-mix(in srgb, var(--cd-accent) 12%, transparent); border-color: color-mix(in srgb, var(--cd-accent) 30%, transparent); color: var(--cd-accent)"
-              @click="askEarnest"
-            >
-              <CdEarnestMark :size="14" /> Chat with Earnest about {{ selContact.name }}
             </button>
           </div>
 
@@ -697,8 +742,14 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             v-if="!(selContact as any).is_client"
             class="cd-abtn"
             style="width: 100%; margin: 8px 0; background: rgba(0,255,135,0.08); border-color: rgba(0,255,135,0.3); color: var(--cd-green); font-size: 14px; padding: 12px; font-weight: 800"
-            @click="doMarkClient"
+            @click="showClientConfirm = true"
           ><CdIcon emoji="💰" icon="lucide:badge-check" :size="14" /> Mark as Client +200 XP</button>
+          <button
+            v-else
+            class="cd-abtn"
+            style="width: 100%; margin: 8px 0; background: transparent; border-color: var(--cd-bdr); color: var(--cd-muted); font-size: 12px; padding: 10px"
+            @click="doUnmarkClient"
+          ><CdIcon emoji="↩️" icon="lucide:rotate-ccw" :size="13" /> This isn't a client — revert to contact</button>
 
           <div style="display: flex; gap: 7px; margin: 8px 0 20px">
             <button
@@ -769,6 +820,23 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             @click="doLogLostReason"
           ><CdIcon emoji="📝" icon="lucide:clipboard-check" :size="14" /> Log Lost Reason</button>
           <button style="width: 100%; padding: 10px; margin-top: 6px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showLostReasonSheet = false; showStageSheet = true">← Back</button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Mark-as-Client confirm — a deliberate gate on a big, hard-to-spot-undo step -->
+    <Transition name="cd-pop">
+      <div v-if="showClientConfirm" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showClientConfirm = false">
+        <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 18px 16px; width: 100%; max-width: 768px">
+          <div style="font-size: 30px; text-align: center; margin-bottom: 6px"><CdIcon emoji="💰" icon="lucide:badge-check" :size="30" /></div>
+          <div style="font-size: 16px; font-weight: 800; text-align: center; margin-bottom: 4px">Mark {{ selContact?.name }} as a client?</div>
+          <div style="font-size: 12px; color: var(--cd-muted); text-align: center; margin-bottom: 16px; line-height: 1.5">
+            This logs a “Converted to Client” milestone and awards +200 XP. You can revert later from this page.
+          </div>
+          <button class="cd-abtn g" style="font-size: 15px; padding: 13px" @click="doMarkClient">
+            <CdIcon emoji="💰" icon="lucide:badge-check" :size="14" /> Yes, they're a client
+          </button>
+          <button style="width: 100%; padding: 10px; margin-top: 8px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showClientConfirm = false">Cancel</button>
         </div>
       </div>
     </Transition>

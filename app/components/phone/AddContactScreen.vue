@@ -19,14 +19,16 @@ onMounted(() => {
 
 const addForm = ref<Record<string, any>>({
   firstName: '', lastName: '', title: '', company: '',
-  email: '', phone: '', industry: '', metAt: '', rating: '', notes: '',
+  email: '', phone: '', industry: '', metAt: '', location: '', address: '', rating: '', notes: '', howMet: '',
   ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, ''])),
 })
 const wasScanned = ref(false)
+const showSocials = ref(false)
 
 const addName = computed(() =>
   [addForm.value.firstName, addForm.value.lastName].filter(Boolean).join(' ')
 )
+const socialCount = computed(() => SOCIAL_KEYS.filter((k) => addForm.value[k]).length)
 
 function fireConfetti() {
   confettiLib({ particleCount: 60, spread: 70, origin: { y: 0.6 }, colors: ['#00ff87', '#ffd700', '#ff6b35', '#4da6ff', '#b87dff'] })
@@ -42,11 +44,16 @@ function applyResult(result: any) {
     phone: result.phone ?? '',
     industry: result.industry ?? '',
     metAt: addForm.value.metAt,
+    location: result.location ?? addForm.value.location ?? '',
+    address: result.address ?? '',
     rating: '',
-    notes: [result.website, result.address].filter(Boolean).join('\n'),
+    notes: result.website ?? '',
+    howMet: addForm.value.howMet,
     ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, result[k] ?? ''])),
   }
   wasScanned.value = true
+  // Reveal the socials section if the scan pulled any handles, so they're not hidden.
+  if (SOCIAL_KEYS.some((k) => addForm.value[k])) showSocials.value = true
   earn(50, '📷', 'Card scanned!', { total_scans: (xp.value.total_scans ?? 0) + 1 })
   completeMission('scan')
   useFeed().emit('card_scanned', { company: result.company || null })
@@ -125,6 +132,8 @@ async function doSaveContact() {
       industry: addForm.value.industry || undefined,
       ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, addForm.value[k] || undefined])),
       met_at: (eventMode.active.value ? eventMode.name.value : addForm.value.metAt) || undefined,
+      location: addForm.value.location || undefined,
+      address: addForm.value.address || undefined,
       rating: (addForm.value.rating as any) || undefined,
       notes: addForm.value.notes || undefined,
     })
@@ -133,6 +142,21 @@ async function doSaveContact() {
     showError(err?.data?.message || 'Couldn\'t save this contact — try again.')
     saving.value = false
     return
+  }
+  // Log the "how we met" starting point as the contact's first real touchpoint,
+  // so it lands in the timeline rather than getting buried in static notes.
+  if (addForm.value.howMet?.trim()) {
+    try {
+      await logActivity({
+        contact: contact.id,
+        type: 'meeting',
+        label: 'How we met',
+        date: new Date().toISOString().slice(0, 10),
+        note: addForm.value.howMet.trim(),
+      } as any)
+    } catch (err: any) {
+      console.error('[AddContact] Failed to log how-we-met touchpoint:', err?.data?.message ?? err)
+    }
   }
   if (wasScanned.value) {
     try {
@@ -162,7 +186,8 @@ async function doSaveContact() {
   earn(25, '💾', "They're in your network.", { total_contacts: contacts.value.length })
   addForm.value = {
     firstName: '', lastName: '', title: '', company: '',
-    email: '', phone: '', industry: '', metAt: '', rating: '', notes: '',
+    email: '', phone: '', industry: '', metAt: '', location: '', address: '', rating: '', notes: '', howMet: '',
+    ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, ''])),
   }
   wasScanned.value = false
   resetScan()
@@ -280,10 +305,11 @@ async function doSaveContact() {
       <label class="cd-lbl">Company</label><input v-model="addForm.company" class="cd-inp" placeholder="Acme Corp" />
       <label class="cd-lbl">Email</label><input v-model="addForm.email" class="cd-inp" type="email" placeholder="jane@acme.com" />
       <label class="cd-lbl">Phone</label><input v-model="addForm.phone" class="cd-inp" type="tel" placeholder="+1 555 000 0000" />
-      <template v-for="s in SOCIALS" :key="s.key">
-        <label class="cd-lbl">{{ s.label }}</label><input v-model="addForm[s.key]" class="cd-inp" :placeholder="s.placeholder" />
-      </template>
       <label class="cd-lbl">Where We Met</label><input v-model="addForm.metAt" class="cd-inp" placeholder="SaaS Summit NYC" />
+      <label class="cd-lbl">Location <span style="color: var(--cd-dim); font-weight: 600; text-transform: none; letter-spacing: 0">· city / region, helps Earnest AI</span></label>
+      <input v-model="addForm.location" class="cd-inp" placeholder="Austin, TX" />
+      <label class="cd-lbl">Address</label>
+      <textarea v-model="addForm.address" class="cd-inp" style="min-height: 48px; resize: vertical" placeholder="123 Main St, New York, NY 10001"></textarea>
       <label class="cd-lbl">Industry</label>
       <select v-model="addForm.industry" class="cd-inp" style="cursor: pointer">
         <option value="">Select...</option>
@@ -299,8 +325,29 @@ async function doSaveContact() {
           @click="addForm.rating = addForm.rating === r.key ? '' : r.key"
         ><CdIcon :emoji="r.emoji" :icon="r.lucide" :size="14" /> {{ r.label }}</button>
       </div>
+      <label class="cd-lbl">How We Met <span style="color: var(--cd-dim); font-weight: 600; text-transform: none; letter-spacing: 0">· saved as your first touchpoint</span></label>
+      <textarea v-model="addForm.howMet" class="cd-inp" style="min-height: 54px; resize: vertical" placeholder="The starting point — chatted at their booth about the rebrand, promised to send the deck"></textarea>
       <label class="cd-lbl">Notes</label>
       <textarea v-model="addForm.notes" class="cd-inp" style="min-height: 60px; resize: vertical" placeholder="Anything useful..."></textarea>
+
+      <!-- Socials are secondary at capture time — tuck them behind a toggle so the
+           core fields stay short. The dot shows when any handle is already filled. -->
+      <button
+        type="button"
+        :aria-expanded="showSocials"
+        style="display: flex; align-items: center; gap: 7px; width: 100%; margin-top: 14px; padding: 10px 12px; background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 10px; font-size: 12px; font-weight: 700; color: var(--cd-muted); cursor: pointer; font-family: inherit"
+        @click="showSocials = !showSocials"
+      >
+        <CdIcon icon="lucide:at-sign" :size="13" />
+        Social profiles
+        <span v-if="socialCount" style="display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px; padding: 0 5px; border-radius: 9999px; background: var(--cd-accent); color: #060810; font-size: 10px; font-weight: 800">{{ socialCount }}</span>
+        <CdIcon :icon="showSocials ? 'lucide:chevron-up' : 'lucide:chevron-down'" :size="14" style="margin-left: auto" />
+      </button>
+      <template v-if="showSocials">
+        <template v-for="s in SOCIALS" :key="s.key">
+          <label class="cd-lbl">{{ s.label }}</label><input v-model="addForm[s.key]" class="cd-inp" :placeholder="s.placeholder" />
+        </template>
+      </template>
     </div>
     <div class="cd-save-bar">
       <button

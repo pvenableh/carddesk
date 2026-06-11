@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
   if (body.title !== undefined) payload.title = body.title;
   if (body.industry !== undefined) payload.industry = body.industry;
   if (body.networking_goal !== undefined) payload.networking_goal = body.networking_goal;
+  if (body.location !== undefined) payload.location = body.location;
   // NOTE: `discoverable` is intentionally NOT written here. The CardDesk user
   // role lacks field-level update perms for it on directus_users, so it's
   // managed via the admin-token endpoints at /api/network/discoverable.

@@ -353,7 +353,7 @@ async function remove(c: NetworkConnection) { await respond(c.id, 'remove') }
           class="cd-abtn g"
           style="margin-bottom: 8px"
           @click="inviteContact"
-        ><CdIcon emoji="✨" icon="lucide:sparkles" :size="14" /> Invite them — light them up</button>
+        ><CdIcon emoji="✨" icon="lucide:sparkles" :size="14" /> Invite them</button>
 
         <button
           class="cd-abtn"

@@ -29,6 +29,7 @@ export interface CdCard {
   youtube?: string | null
   behance?: string | null
   headline?: string | null
+  office_address?: string | null
   image?: string | null
   broadcast_activity?: boolean
   date_created?: string
@@ -128,6 +129,10 @@ export interface CdContact {
   behance?: string
   industry?: string
   met_at?: string
+  /** Short city / region (e.g. "Austin, TX") — feeds AI analysis. */
+  location?: string
+  /** Full mailing address. */
+  address?: string
   rating: 'hot' | 'warm' | 'nurture' | 'cold' | null
   hibernated: boolean
   hibernated_at?: string

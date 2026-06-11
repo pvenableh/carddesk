@@ -3,11 +3,22 @@ import { RATINGS, RATING_ORDER, getRating, cEmoji } from '~/composables/useConst
 import { PIPELINE_STAGES } from '~/composables/usePipeline'
 import ConnectionsView from './ConnectionsView.vue'
 
-const { contacts, followUpStatus, loading: contactsLoading, error: contactsError, fetchContacts } = useContacts()
+const { contacts, updateContact, followUpStatus, loading: contactsLoading, error: contactsError, fetchContacts } = useContacts()
 const { nav, goDetail } = useNavigation()
 const { getContactsByStage, getStageInfo } = usePipeline()
 
 type RatingFilter = '' | 'hot' | 'warm' | 'nurture' | 'cold'
+
+// Inline rating quick-set: tapping a card's temperature chip opens this picker
+// (without navigating into the contact). Holds the contact being re-rated.
+const ratingFor = ref<any | null>(null)
+async function setListRating(key: string | null) {
+  const c = ratingFor.value
+  ratingFor.value = null
+  if (!c) return
+  const next = c.rating === key ? null : key
+  await updateContact(c.id, { rating: next } as any)
+}
 
 const cSearch = ref('')
 const cFilter = ref<RatingFilter>('')
@@ -239,9 +250,12 @@ async function runExport() {
           <div class="cd-csb">{{ [c.title, c.company].filter(Boolean).join(' · ') }}</div>
         </div>
         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0">
-          <span v-if="c.rating" class="cd-rpill" :class="c.rating">
+          <button v-if="c.rating" type="button" class="cd-rpill" :class="c.rating" style="cursor: pointer; font-family: inherit" title="Tap to change temperature" @click.stop="ratingFor = c">
             <CdIcon :emoji="getRating(c.rating)?.emoji ?? ''" :icon="getRating(c.rating)?.lucide" :size="10" /> {{ getRating(c.rating)?.label }}
-          </span>
+          </button>
+          <button v-else type="button" style="display: inline-flex; align-items: center; gap: 3px; font-size: 9px; font-weight: 700; color: var(--cd-dim); background: none; border: 1px dashed var(--cd-bdr); border-radius: 9999px; padding: 2px 8px; cursor: pointer; font-family: inherit" title="Set temperature" @click.stop="ratingFor = c">
+            <CdIcon emoji="🌡️" icon="lucide:thermometer" :size="9" /> Rate
+          </button>
           <span v-if="(c as any).is_client" style="font-size: 9px; color: var(--cd-green); font-weight: 700"><CdIcon emoji="💰" icon="lucide:badge-check" :size="9" /> client</span>
           <span v-else-if="followUpStatus(c) === 'overdue'" style="font-size: 9px; color: #ff6b35; font-weight: 700"><CdIcon emoji="⚡" icon="lucide:alert-triangle" :size="9" /> overdue</span>
           <span v-if="c.linked_user" style="font-size: 9px; color: var(--cd-purple, #b87dff); font-weight: 700"><CdIcon emoji="🪐" icon="lucide:orbit" :size="9" /> joined</span>
@@ -326,6 +340,29 @@ async function runExport() {
         </CdButton>
       </div>
     </div>
+
+    <!-- Inline rating picker — opened by tapping a card's temperature chip. -->
+    <Transition name="cd-pop">
+      <div v-if="ratingFor" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="ratingFor = null">
+        <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 16px; width: 100%; max-width: 768px">
+          <div style="font-size: 14px; font-weight: 800; margin-bottom: 2px">Set temperature</div>
+          <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">{{ ratingFor.name }}</div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <button
+              v-for="r in RATINGS"
+              :key="r.key"
+              style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-text); font-size: 13px; font-weight: 600; cursor: pointer; text-align: left"
+              :style="ratingFor.rating === r.key ? 'border-color:' + r.color + ';background:' + r.color + '14;color:' + r.color : ''"
+              @click="setListRating(r.key)"
+            >
+              <CdIcon :emoji="r.emoji" :icon="r.lucide" :size="16" /> {{ r.label }}
+              <span v-if="ratingFor.rating === r.key" style="margin-left: auto; font-size: 10px">current · tap to clear</span>
+            </button>
+          </div>
+          <button style="width: 100%; padding: 10px; margin-top: 10px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="ratingFor = null">Cancel</button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 

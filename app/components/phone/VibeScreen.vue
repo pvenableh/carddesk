@@ -141,6 +141,7 @@ async function loadLeadSuggestions() {
           company: c.company,
           title: c.title,
           industry: c.industry,
+          location: (c as any).location,
           rating: c.rating,
           isClient: (c as any).is_client,
           hasPhone: !!c.phone,

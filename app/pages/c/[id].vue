@@ -12,7 +12,7 @@ interface PublicCard {
   id: string; name: string; title: string | null; company: string | null
   email: string | null; phone: string | null; website: string | null
   linkedin: string | null; instagram: string | null; twitter: string | null; youtube: string | null; behance: string | null
-  headline: string | null; imageUrl: string | null
+  headline: string | null; office_address: string | null; imageUrl: string | null
 }
 const { data: card, error } = await useFetch<PublicCard>(() => `/api/cards/${id.value}`)
 
@@ -81,6 +81,14 @@ function addToContacts() {
         <a v-if="card.phone" :href="`tel:${card.phone}`"><CdIcon emoji="📞" icon="lucide:phone" :size="16" /></a>
         <a v-if="card.email" :href="`mailto:${card.email}`"><CdIcon emoji="✉️" icon="lucide:mail" :size="16" /></a>
       </div>
+
+      <a
+        v-if="card.office_address"
+        :href="`https://maps.google.com/?q=${encodeURIComponent(card.office_address)}`"
+        target="_blank"
+        rel="noopener"
+        style="display: inline-flex; align-items: flex-start; gap: 6px; margin-top: 12px; font-size: 12px; color: var(--cd-muted); text-decoration: none; white-space: pre-line; text-align: left; max-width: 280px"
+      ><CdIcon emoji="📍" icon="lucide:map-pin" :size="14" /> {{ card.office_address }}</a>
 
       <div class="cardpage-qrbox" style="margin-top: 18px"><img v-if="qr" :src="qr" alt="Scan to save contact" width="220" height="220" style="display: block" /></div>
       <div style="font-size: 11px; color: var(--cd-dim); margin: 10px 0 16px">Scan with your camera to save, or tap below.</div>
