@@ -42,6 +42,9 @@ const invitedEmail = ref<string | null>(null)
 
 async function emailInvite() {
   if (sending.value) return
+  // Confirm the recipient before sending an external email — one-click, but never
+  // a silent send to the wrong person.
+  if (!confirm(`Email a CardDesk invite to ${props.contact.name} at ${props.contact.email}?`)) return
   sending.value = true
   try {
     const r = await sendInvite(props.contact.id)
@@ -107,13 +110,13 @@ async function clearReferrer() {
     <div class="rf-invite">
       <div v-if="joined" class="rf-joined"><CdIcon icon="lucide:badge-check" :size="14" /> On CardDesk — connected</div>
       <template v-else>
-        <div class="rf-invite-row">
-          <button v-if="hasEmail" class="rf-btn primary" type="button" :disabled="sending" @click="emailInvite">
+        <div class="rf-invite-stack">
+          <button v-if="hasEmail" class="cd-abtn g" type="button" :disabled="sending" @click="emailInvite">
             <CdIcon :icon="sending ? 'lucide:loader-2' : 'lucide:mail'" :size="14" :class="{ 'rf-spin': sending }" />
             {{ invitedEmail ? 'Resend invite' : 'Invite to CardDesk' }}
           </button>
-          <button class="rf-btn ghost" type="button" @click="shareLink">
-            <CdIcon icon="lucide:link" :size="14" /> Share link
+          <button class="cd-abtn rf-ghost" type="button" @click="shareLink">
+            <CdIcon icon="lucide:link" :size="14" /> Share my link
           </button>
         </div>
         <div v-if="invitedEmail" class="rf-sent"><CdIcon icon="lucide:check" :size="12" /> Invite emailed to {{ invitedEmail }}</div>
@@ -127,30 +130,30 @@ async function clearReferrer() {
       <div class="rf-line">
         <span class="rf-k">Introduced by</span>
         <template v-if="referrer">
-          <button class="rf-chip link" type="button" @click="goDetail(referrer.id)">{{ referrer.name }}</button>
+          <button class="cd-pill on" type="button" @click="goDetail(referrer.id)">{{ referrer.name }}</button>
           <button class="rf-x" type="button" aria-label="Clear" @click="clearReferrer"><CdIcon icon="lucide:x" :size="12" /></button>
         </template>
         <template v-else-if="picking">
-          <select class="rf-select" :disabled="saving" @change="setReferrer">
+          <select class="cd-inp rf-select" :disabled="saving" @change="setReferrer">
             <option value="">Pick a contact…</option>
             <option v-for="c in pickable" :key="c.id" :value="c.id">{{ c.name }}</option>
           </select>
         </template>
-        <button v-else class="rf-add" type="button" @click="picking = true"><CdIcon icon="lucide:plus" :size="12" /> Set</button>
+        <button v-else class="cd-pill" type="button" @click="picking = true"><CdIcon icon="lucide:plus" :size="12" /> Set</button>
       </div>
 
       <!-- Referrals made -->
       <div v-if="referrals.length" class="rf-line">
         <span class="rf-k">Led to</span>
         <div class="rf-chips">
-          <button v-for="c in referrals" :key="c.id" class="rf-chip link" type="button" @click="goDetail(c.id)">{{ c.name }}</button>
+          <button v-for="c in referrals" :key="c.id" class="cd-pill on" type="button" @click="goDetail(c.id)">{{ c.name }}</button>
         </div>
       </div>
 
       <!-- Source -->
       <div v-if="sourceMeta" class="rf-line">
         <span class="rf-k">Source</span>
-        <span class="rf-chip"><CdIcon :icon="sourceMeta.icon" :size="11" /> {{ sourceMeta.label }}</span>
+        <span class="cd-pill"><CdIcon :icon="sourceMeta.icon" :size="11" /> {{ sourceMeta.label }}</span>
       </div>
     </div>
   </div>
@@ -166,39 +169,19 @@ async function clearReferrer() {
   color: var(--cd-green, #00ff87); background: color-mix(in srgb, var(--cd-green, #00ff87) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--cd-green, #00ff87) 30%, transparent); border-radius: 9999px; padding: 6px 12px;
 }
-.rf-invite-row { display: flex; gap: 8px; flex-wrap: wrap; }
-.rf-btn {
-  display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 10px; cursor: pointer;
-  font-family: inherit; font-size: 12px; font-weight: 700; border: 1px solid var(--cd-bdr);
-}
-.rf-btn.primary { background: var(--cd-accent); color: var(--cd-bg); border-color: var(--cd-accent); }
-.rf-btn.primary:disabled { opacity: 0.55; cursor: default; }
-.rf-btn.ghost { background: var(--cd-bg2); color: var(--cd-text); }
+/* Two stacked pill buttons — matches the app's cd-abtn stacking (e.g. ShareSheet). */
+.rf-invite-stack { display: flex; flex-direction: column; gap: 8px; }
+.rf-ghost { background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr); }
 .rf-spin { animation: rf-spin 0.8s linear infinite; }
 @keyframes rf-spin { to { transform: rotate(360deg); } }
-.rf-sent { display: flex; align-items: center; gap: 5px; margin-top: 7px; font-size: 11.5px; color: var(--cd-green, #00ff87); }
-.rf-hint { margin-top: 7px; font-size: 11.5px; color: var(--cd-muted); }
+.rf-sent { display: flex; align-items: center; gap: 5px; margin-top: 8px; font-size: 11.5px; color: var(--cd-green, #00ff87); }
+.rf-hint { margin-top: 8px; font-size: 11.5px; color: var(--cd-muted); }
 
 .rf-prov { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--cd-bdr); padding-top: 12px; }
 .rf-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .rf-k { font-size: 11px; color: var(--cd-dim); min-width: 86px; }
 .rf-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.rf-chip {
-  display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 9999px;
-  background: var(--cd-bg2); border: 1px solid var(--cd-bdr); color: var(--cd-text);
-  font-family: inherit; font-size: 12px;
-}
-.rf-chip.link { cursor: pointer; color: var(--cd-accent); border-color: color-mix(in srgb, var(--cd-accent) 30%, transparent); background: color-mix(in srgb, var(--cd-accent) 10%, transparent); }
 .rf-x { background: none; border: 0; color: var(--cd-dim); cursor: pointer; padding: 2px; }
 .rf-x:hover { color: #e5484d; }
-.rf-add {
-  display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 9999px; cursor: pointer;
-  background: none; border: 1px dashed var(--cd-bdr); color: var(--cd-muted); font-family: inherit; font-size: 12px;
-}
-.rf-add:hover { border-color: var(--cd-accent); color: var(--cd-accent); }
-.rf-select {
-  flex: 1; min-width: 160px; padding: 7px 10px; border-radius: 9px; border: 1px solid var(--cd-bdr);
-  background: var(--cd-bg2); color: var(--cd-text); font-family: inherit; font-size: 12px; outline: none;
-}
-.rf-select:focus { border-color: var(--cd-accent); }
+.rf-select { flex: 1; min-width: 160px; margin-bottom: 0; }
 </style>

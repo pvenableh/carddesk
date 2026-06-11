@@ -1,4 +1,4 @@
-export type Screen = "vibe" | "session" | "cold" | "home" | "contacts" | "detail" | "add" | "feed" | "chat"
+export type Screen = "vibe" | "session" | "cold" | "home" | "contacts" | "detail" | "add" | "feed" | "chat" | "history"
 
 // Bottom-nav screens animate as tabs (slide by their bar position). `add` (the
 // scan button) sits in the middle of the bar, so it's a tab here too —
@@ -7,7 +7,7 @@ export type Screen = "vibe" | "session" | "cold" | "home" | "contacts" | "detail
 // Session left the bar in the 7→5 nav consolidation and is reached from the
 // Vibe screen. Event Mode is a slide-up panel (like chat) owned by
 // useEventMode.panelOpen, not a screen here.
-const PUSH_SCREENS = new Set<Screen>(["detail", "cold", "chat", "session"])
+const PUSH_SCREENS = new Set<Screen>(["detail", "cold", "chat", "session", "history"])
 const TAB_INDEX: Record<string, number> = {
   vibe: 0, home: 1, add: 2, feed: 3, contacts: 4,
 }

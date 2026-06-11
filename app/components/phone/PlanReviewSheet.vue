@@ -117,39 +117,39 @@ async function save() {
         <div class="pr-scroll">
           <label class="pr-field pr-name">
             <span class="pr-lbl">Plan name</span>
-            <input v-model="planTitle" class="pr-input" type="text" placeholder="Follow-up sequence" />
+            <input v-model="planTitle" class="cd-inp" type="text" placeholder="Follow-up sequence" />
           </label>
 
           <div v-for="(r, i) in rows" :key="i" class="pr-task">
             <div class="pr-task-top">
               <span class="pr-step">{{ i + 1 }}</span>
-              <input v-model="r.title" class="pr-input pr-task-title" type="text" placeholder="What to do…" />
+              <input v-model="r.title" class="cd-inp pr-task-title" type="text" placeholder="What to do…" />
               <button class="pr-del" type="button" aria-label="Remove" @click="removeRow(i)"><CdIcon icon="lucide:trash-2" :size="14" /></button>
             </div>
             <div class="pr-task-row">
-              <input v-model="(r as any)._due" class="pr-input pr-due" type="datetime-local" />
+              <input v-model="(r as any)._due" class="cd-inp pr-due" type="datetime-local" />
             </div>
             <div class="pr-chips">
               <button
                 v-for="c in CHANNELS"
                 :key="c.value"
                 type="button"
-                class="pr-chip"
+                class="cd-pill"
                 :class="{ on: r.channel === c.value }"
                 @click="r.channel = r.channel === c.value ? null : c.value"
               >
                 <CdIcon :icon="c.icon" :size="12" /> {{ c.label }}
               </button>
             </div>
-            <input v-model="r.note" class="pr-input pr-note" type="text" placeholder="Note — what to reference (optional)" />
+            <input v-model="r.note" class="cd-inp pr-note" type="text" placeholder="Note — what to reference (optional)" />
           </div>
 
-          <button class="pr-add" type="button" @click="addRow"><CdIcon icon="lucide:plus" :size="14" /> Add a task</button>
+          <button class="cd-pill pr-add" type="button" @click="addRow"><CdIcon icon="lucide:plus" :size="14" /> Add a task</button>
         </div>
 
         <div class="pr-foot">
-          <button class="pr-cancel" type="button" @click="emit('close')">Cancel</button>
-          <button class="pr-save" type="button" :disabled="!canSave || saving" @click="save">
+          <button class="cd-abtn pr-ghost" type="button" @click="emit('close')">Cancel</button>
+          <button class="cd-abtn g pr-savebtn" type="button" :disabled="!canSave || saving" @click="save">
             <CdIcon v-if="saving" icon="lucide:loader-2" :size="15" class="pr-spin" />
             <span v-else>Save plan</span>
           </button>
@@ -180,11 +180,8 @@ async function save() {
 .pr-scroll { flex: 1; overflow-y: auto; padding: 12px var(--cd-gutter); display: flex; flex-direction: column; gap: 12px; }
 .pr-field { display: flex; flex-direction: column; gap: 4px; }
 .pr-lbl { font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; color: var(--cd-muted); }
-.pr-input {
-  width: 100%; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--cd-bdr);
-  background: var(--cd-bg2); color: var(--cd-text); font-family: inherit; font-size: 0.88rem; outline: none;
-}
-.pr-input:focus { border-color: var(--cd-accent); }
+/* inputs use the app's cd-inp; kill its default bottom margin inside our flex rows */
+.pr-scroll .cd-inp { margin-bottom: 0; }
 
 .pr-task { border: 1px solid var(--cd-bdr); border-radius: 14px; background: var(--cd-bg2); padding: 10px; display: flex; flex-direction: column; gap: 8px; }
 .pr-task-top { display: flex; align-items: center; gap: 8px; }
@@ -199,38 +196,15 @@ async function save() {
 .pr-del:hover { color: #e5484d; }
 .pr-due { color-scheme: dark; }
 .pr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.pr-chip {
-  display: inline-flex; align-items: center; gap: 4px; padding: 5px 9px; border-radius: 999px; cursor: pointer;
-  background: var(--cd-bg); border: 1px solid var(--cd-bdr); color: var(--cd-muted);
-  font-family: inherit; font-size: 0.72rem; transition: all 0.12s;
-}
-.pr-chip.on {
-  background: color-mix(in srgb, var(--cd-accent) 16%, transparent);
-  border-color: color-mix(in srgb, var(--cd-accent) 36%, transparent); color: var(--cd-accent);
-}
 .pr-note { font-size: 0.82rem; }
-
-.pr-add {
-  align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; padding: 7px 12px;
-  border-radius: 10px; border: 1px dashed var(--cd-bdr); background: none; color: var(--cd-muted);
-  font-family: inherit; font-size: 0.8rem; cursor: pointer;
-}
-.pr-add:hover { border-color: var(--cd-accent); color: var(--cd-accent); }
+.pr-add { align-self: flex-start; border-style: dashed; }
 
 .pr-foot {
   flex-shrink: 0; display: flex; gap: 10px; padding: 10px var(--cd-gutter) calc(env(safe-area-inset-bottom, 8px) + 10px);
   border-top: 1px solid var(--cd-bdr);
 }
-.pr-cancel {
-  flex: 0 0 auto; padding: 11px 18px; border-radius: 12px; border: 1px solid var(--cd-bdr);
-  background: var(--cd-bg2); color: var(--cd-text); font-family: inherit; font-size: 0.88rem; cursor: pointer;
-}
-.pr-save {
-  flex: 1; padding: 11px; border-radius: 12px; border: 0; cursor: pointer;
-  background: var(--cd-accent); color: var(--cd-bg); font-family: inherit; font-weight: 700; font-size: 0.9rem;
-  display: flex; align-items: center; justify-content: center;
-}
-.pr-save:disabled { opacity: 0.45; cursor: not-allowed; }
+.pr-ghost { flex: 0 0 auto; width: auto; padding-left: 20px; padding-right: 20px; background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr); }
+.pr-savebtn { flex: 1; }
 .pr-spin { animation: pr-spin 0.8s linear infinite; }
 @keyframes pr-spin { to { transform: rotate(360deg); } }
 

@@ -14,11 +14,31 @@ export interface SendInviteResult {
   email: string
 }
 
+export interface ContactInviteLink {
+  sent: false
+  url: string
+  code: string
+  email: string | null
+  phone: string | null
+  name: string | null
+  firstName: string | null
+  linked_user: string | null
+}
+
 export function useInvites() {
   async function sendInvite(contactId: string, note?: string) {
     return await $fetch<SendInviteResult>('/api/invite/send', {
       method: 'POST',
       body: { contactId, note: note ?? null },
+    })
+  }
+
+  /** Mint (or reuse) a contact-targeted invite link WITHOUT sending an email —
+   *  for QR / share / mailto / sms the user sends themselves. */
+  async function mintContactInvite(contactId: string) {
+    return await $fetch<ContactInviteLink>('/api/invite/send', {
+      method: 'POST',
+      body: { contactId, send: false },
     })
   }
 
@@ -40,5 +60,5 @@ export function useInvites() {
     }
   }
 
-  return { sendInvite, link, share }
+  return { sendInvite, mintContactInvite, link, share }
 }

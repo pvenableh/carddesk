@@ -12,6 +12,11 @@ const { profile } = useProfile()
 const { getPipelineStats } = usePipeline()
 const eventMode = useEventMode()
 
+// Vibe is split into focused tabs so "what's next" isn't buried under games and
+// coaching. Persists for the session (VibeScreen is kept-alive). Default: Next.
+const vibeTab = useState<'next' | 'play' | 'coach'>('cd-vibe-tab', () => 'next')
+const tabIndex = computed(() => ({ next: 0, play: 1, coach: 2 })[vibeTab.value])
+
 const pipelineStats = computed(() => getPipelineStats())
 
 const coldCs = computed(() =>
@@ -227,12 +232,118 @@ async function loadVibe() {
 
 <template>
   <div class="cd-screen on">
-    <div class="cd-shdr"><div class="cd-stitle">Your Vibe <CdIcon emoji="⚡" icon="lucide:zap" /></div></div>
+    <div class="cd-shdr vb-shdr">
+      <div class="cd-stitle">Your Vibe <CdIcon emoji="⚡" icon="lucide:zap" /></div>
+      <div class="vb-shdr-right">
+        <!-- Always-visible momentum: level + streak. Tap to jump to Play (full hero). -->
+        <button class="vb-status" type="button" aria-label="Level and streak" @click="vibeTab = 'play'">
+          <span class="vb-status-lvl">Lv {{ xp.level }}</span>
+          <span class="vb-status-streak"><CdIcon emoji="🔥" icon="lucide:flame" :size="11" />{{ xp.streak }}</span>
+        </button>
+        <button class="vb-history" type="button" aria-label="Chat history" @click="nav('history')">
+          <CdIcon emoji="🕑" icon="lucide:history" :size="15" />
+        </button>
+      </div>
+    </div>
     <div class="cd-scrl cd-pad">
       <div class="cd-foot-fill">
-      <!-- Next-best-action queue: overdue follow-ups + a revival candidate.
-           First thing you see — the follow-up half of the loop. -->
+      <!-- Focused tabs so "what's next" isn't buried under games + coaching. -->
+      <!-- Sliding segmented control: Next / Play / Coach -->
+      <div class="vb-tabs">
+        <div class="vb-tabs-ind" :style="{ transform: `translateX(${tabIndex * 100}%)` }"></div>
+        <button type="button" :class="{ on: vibeTab === 'next' }" @click="vibeTab = 'next'"><CdIcon emoji="⚡" icon="lucide:zap" :size="13" /> Next</button>
+        <button type="button" :class="{ on: vibeTab === 'play' }" @click="vibeTab = 'play'"><CdIcon emoji="🎮" icon="lucide:gamepad-2" :size="13" /> Play</button>
+        <button type="button" :class="{ on: vibeTab === 'coach' }" @click="vibeTab = 'coach'"><CdIcon emoji="🎙" icon="lucide:mic" :size="13" /> Coach</button>
+      </div>
+
+      <div class="vb-panes">
+      <!-- ── NEXT: what to do now ── -->
+      <Transition name="vb-fade">
+      <div v-show="vibeTab === 'next'" class="vb-pane">
+      <!-- Next-best-action queue: overdue follow-ups + a revival candidate. -->
       <PhoneUpNext />
+      <!-- Plans & tasks — list + calendar of everything coming up -->
+      <PhoneTaskBoard />
+      <!-- Event Mode: focused capture for networking events -->
+      <button
+        class="cd-abtn g"
+        style="width: 100%; display: flex; align-items: center; gap: 8px; justify-content: center; font-size: 14px; padding: 12px; margin-bottom: 8px"
+        @click="eventMode.openPanel()"
+      >
+        <CdIcon icon="lucide:radio" :size="16" />
+        <span>{{ eventMode.active.value ? `Event Mode · ${eventMode.count.value} met` : 'Event Mode' }}</span>
+        <CdIcon icon="lucide:arrow-right" :size="14" />
+      </button>
+      <!-- Grow your network: share your card or invite -->
+      <div style="display: flex; gap: 8px; margin-bottom: 12px">
+        <button class="cd-abtn ice" style="font-size: 12px; padding: 10px" @click="openShareSheet('card')"><CdCardMark :size="15" :gradient="false" /> My Card</button>
+        <button class="cd-abtn b" style="font-size: 12px; padding: 10px" @click="openShareSheet('invite')"><CdIcon emoji="🔗" icon="lucide:user-plus" :size="14" /> Invite</button>
+      </div>
+      <!-- What should I do next? (AI lead suggestions) -->
+      <div class="cd-vc" style="border-color: rgba(77, 166, 255, 0.2)">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px">
+          <div style="display: flex; align-items: center; gap: 6px">
+            <CdEarnestMark :size="15" />
+            <span style="font-size: 13px; font-weight: 800; color: #4da6ff">What should I do next?</span>
+          </div>
+          <button
+            class="cd-abtn"
+            style="font-size: 10px; padding: 4px 10px; background: transparent; border-color: var(--cd-bdr); color: #4da6ff; width: auto; flex-shrink: 0; white-space: nowrap"
+            :disabled="leadSugLoading"
+            @click="loadLeadSuggestions"
+          >
+            <CdEarnestMark :size="12" />
+            {{ leadSugLoading ? 'Thinking...' : leadSuggestions.length ? 'Refresh' : 'Get Earnest AI Ideas' }}
+          </button>
+        </div>
+        <div v-if="leadSugError" style="font-size: 12px; color: #f87171; margin-bottom: 6px">{{ leadSugError }}</div>
+        <div v-if="!leadSuggestions.length && !leadSugLoading && !leadSugError" style="font-size: 11px; color: var(--cd-dim); line-height: 1.5">
+          Tap <strong style="color: #4da6ff">Get Earnest AI Ideas</strong> for personalized suggestions on growing your leads.
+        </div>
+        <div v-if="leadSugLoading" style="text-align: center; padding: 10px 0">
+          <div style="font-size: 12px; color: var(--cd-muted); animation: cd-pulse 1.5s ease-in-out infinite">Analyzing your network...</div>
+        </div>
+        <div
+          v-for="(s, i) in leadSuggestions"
+          :key="i"
+          style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 10px; padding: 9px 11px; margin-bottom: 6px"
+        >
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px">
+            <div style="font-size: 13px; font-weight: 700">{{ s.icon }} {{ s.title }}</div>
+            <span
+              v-if="s.contactId && getContact(s.contactId)?.pipeline_stage"
+              style="font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(77,166,255,0.1); border: 1px solid rgba(77,166,255,0.2); border-radius: 4px; padding: 1px 5px; color: #4da6ff; flex-shrink: 0"
+            >{{ getContact(s.contactId)?.pipeline_stage?.replace('_', ' ') }}</span>
+          </div>
+          <div style="font-size: 11px; color: var(--cd-muted); line-height: 1.5">{{ s.body }}</div>
+          <div v-if="s.contactId" style="display: flex; gap: 6px; margin-top: 7px">
+            <button
+              v-if="s.action && SUG_ACTIONS[s.action]"
+              class="cd-abtn"
+              style="font-size: 10px; padding: 4px 10px; width: auto; flex-shrink: 0"
+              :style="'border-color:' + SUG_ACTIONS[s.action].color + '44; color:' + SUG_ACTIONS[s.action].color"
+              @click="doSugAction(s)"
+            >
+              <CdIcon :emoji="SUG_ACTIONS[s.action].icon" :icon="SUG_ACTIONS[s.action].lucide" :size="11" />
+              {{ SUG_ACTIONS[s.action].label }}{{ s.action !== 'view' && getContact(s.contactId)?.name ? ' ' + getContact(s.contactId)!.name.split(' ')[0] : '' }}
+            </button>
+            <button
+              v-if="s.action !== 'view'"
+              class="cd-abtn"
+              style="font-size: 10px; padding: 4px 10px; width: auto; flex-shrink: 0; background: transparent; border-color: var(--cd-bdr); color: var(--cd-dim)"
+              @click="goDetail(s.contactId!)"
+            >
+              <CdIcon emoji="👤" icon="lucide:user" :size="11" /> View
+            </button>
+          </div>
+        </div>
+      </div>
+      </div>
+      </Transition>
+
+      <!-- ── PLAY: games & momentum ── -->
+      <Transition name="vb-fade">
+      <div v-show="vibeTab === 'play'" class="vb-pane">
       <!-- XP hero — level, streak, shields, and the weekly goal in one glance -->
       <div class="cd-vc vb-hero">
         <button aria-label="Scoring guide" class="vb-help" @click.stop="openScoreGuide">
@@ -299,10 +410,6 @@ async function loadVibe() {
           <CdIcon emoji="🔒" icon="lucide:lock" :size="12" /> Do one action today to unlock <span style="color: var(--cd-green)">+20 XP</span>
         </div>
       </div>
-
-      <!-- On deck — real follow-up tasks due today / overdue (hidden when empty) -->
-      <PhoneVibeOnDeck />
-
       <!-- Today's missions — verified quests; tap one to go do it -->
       <div class="cd-vc vb-missions">
         <div class="vb-m-hdr">
@@ -323,98 +430,20 @@ async function loadVibe() {
           </button>
         </div>
       </div>
-
       <!-- Network IQ — daily quiz built from your own contacts -->
       <PhoneNetworkQuiz />
-
       <!-- Reconnect Roulette — spin up a quiet contact, reach out, bank XP -->
       <PhoneReconnectRoulette />
-
-      <!-- Event Mode: focused capture for networking events -->
-      <button
-        class="cd-abtn g"
-        style="width: 100%; display: flex; align-items: center; gap: 8px; justify-content: center; font-size: 14px; padding: 12px; margin-bottom: 8px"
-        @click="eventMode.openPanel()"
-      >
-        <CdIcon icon="lucide:radio" :size="16" />
-        <span>{{ eventMode.active.value ? `Event Mode · ${eventMode.count.value} met` : 'Event Mode' }}</span>
-        <CdIcon icon="lucide:arrow-right" :size="14" />
-      </button>
-      <!-- Grow your network: share your card or invite -->
-      <div style="display: flex; gap: 8px; margin-bottom: 12px">
-        <button class="cd-abtn ice" style="font-size: 12px; padding: 10px" @click="openShareSheet('card')"><CdCardMark :size="15" :gradient="false" /> My Card</button>
-        <button class="cd-abtn b" style="font-size: 12px; padding: 10px" @click="openShareSheet('invite')"><CdIcon emoji="🔗" icon="lucide:user-plus" :size="14" /> Invite</button>
-      </div>
-
       <!-- Leaderboard snapshot — only renders if you have accepted connections -->
       <PhoneLeaderboardCallout />
-
       <!-- Swipeable card stack: your network's activity (with reactions) + people -->
       <PhoneSwipeDeck />
-
-      <!-- (Pipeline snapshot, recent activity, and the old cold/overdue
-           callouts moved off this screen in the gamification pass — Vibe is
-           the play surface; analytics live on Score/Feed.) -->
-
-      <div class="cd-vc" style="border-color: rgba(77, 166, 255, 0.2)">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px">
-          <div style="display: flex; align-items: center; gap: 6px">
-            <CdEarnestMark :size="15" />
-            <span style="font-size: 13px; font-weight: 800; color: #4da6ff">What should I do next?</span>
-          </div>
-          <button
-            class="cd-abtn"
-            style="font-size: 10px; padding: 4px 10px; background: transparent; border-color: var(--cd-bdr); color: #4da6ff; width: auto; flex-shrink: 0; white-space: nowrap"
-            :disabled="leadSugLoading"
-            @click="loadLeadSuggestions"
-          >
-            <CdEarnestMark :size="12" />
-            {{ leadSugLoading ? 'Thinking...' : leadSuggestions.length ? 'Refresh' : 'Get Earnest AI Ideas' }}
-          </button>
-        </div>
-        <div v-if="leadSugError" style="font-size: 12px; color: #f87171; margin-bottom: 6px">{{ leadSugError }}</div>
-        <div v-if="!leadSuggestions.length && !leadSugLoading && !leadSugError" style="font-size: 11px; color: var(--cd-dim); line-height: 1.5">
-          Tap <strong style="color: #4da6ff">Get Earnest AI Ideas</strong> for personalized suggestions on growing your leads.
-        </div>
-        <div v-if="leadSugLoading" style="text-align: center; padding: 10px 0">
-          <div style="font-size: 12px; color: var(--cd-muted); animation: cd-pulse 1.5s ease-in-out infinite">Analyzing your network...</div>
-        </div>
-        <div
-          v-for="(s, i) in leadSuggestions"
-          :key="i"
-          style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 10px; padding: 9px 11px; margin-bottom: 6px"
-        >
-          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px">
-            <div style="font-size: 13px; font-weight: 700">{{ s.icon }} {{ s.title }}</div>
-            <span
-              v-if="s.contactId && getContact(s.contactId)?.pipeline_stage"
-              style="font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(77,166,255,0.1); border: 1px solid rgba(77,166,255,0.2); border-radius: 4px; padding: 1px 5px; color: #4da6ff; flex-shrink: 0"
-            >{{ getContact(s.contactId)?.pipeline_stage?.replace('_', ' ') }}</span>
-          </div>
-          <div style="font-size: 11px; color: var(--cd-muted); line-height: 1.5">{{ s.body }}</div>
-          <div v-if="s.contactId" style="display: flex; gap: 6px; margin-top: 7px">
-            <button
-              v-if="s.action && SUG_ACTIONS[s.action]"
-              class="cd-abtn"
-              style="font-size: 10px; padding: 4px 10px; width: auto; flex-shrink: 0"
-              :style="'border-color:' + SUG_ACTIONS[s.action].color + '44; color:' + SUG_ACTIONS[s.action].color"
-              @click="doSugAction(s)"
-            >
-              <CdIcon :emoji="SUG_ACTIONS[s.action].icon" :icon="SUG_ACTIONS[s.action].lucide" :size="11" />
-              {{ SUG_ACTIONS[s.action].label }}{{ s.action !== 'view' && getContact(s.contactId)?.name ? ' ' + getContact(s.contactId)!.name.split(' ')[0] : '' }}
-            </button>
-            <button
-              v-if="s.action !== 'view'"
-              class="cd-abtn"
-              style="font-size: 10px; padding: 4px 10px; width: auto; flex-shrink: 0; background: transparent; border-color: var(--cd-bdr); color: var(--cd-dim)"
-              @click="goDetail(s.contactId!)"
-            >
-              <CdIcon emoji="👤" icon="lucide:user" :size="11" /> View
-            </button>
-          </div>
-        </div>
       </div>
+      </Transition>
 
+      <!-- ── COACH: sessions & daily vibe ── -->
+      <Transition name="vb-fade">
+      <div v-show="vibeTab === 'coach'" class="vb-pane">
       <div class="cd-sess-entry" @click="nav('session')">
         <div class="cd-se-top">
           <span style="font-size: 26px"><CdIcon emoji="🎙" icon="lucide:mic" :size="26" /></span>
@@ -456,6 +485,9 @@ async function loadVibe() {
         </button>
         <div v-if="vibeError" class="cd-vibe-err">{{ vibeError }}</div>
       </div>
+      </div>
+      </Transition>
+      </div>
 
       </div>
 
@@ -465,6 +497,54 @@ async function loadVibe() {
 </template>
 
 <style scoped>
+/* header row: title left, history entry right */
+.vb-shdr { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.vb-shdr-right { display: flex; align-items: center; gap: 7px; }
+.vb-history {
+  display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;
+  border-radius: 9999px; cursor: pointer;
+  background: color-mix(in srgb, var(--cd-accent) 11%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-accent) 28%, transparent);
+  color: var(--cd-accent);
+}
+/* Always-on momentum chip (level + streak) */
+.vb-status {
+  display: inline-flex; align-items: center; gap: 7px; padding: 5px 5px 5px 10px; border-radius: 9999px; cursor: pointer;
+  background: var(--cd-bg2); border: 1px solid var(--cd-bdr); font-family: inherit;
+}
+.vb-status-lvl { font-size: 11px; font-weight: 800; letter-spacing: 0.02em; color: var(--cd-green); }
+.vb-status-streak {
+  display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 800; color: var(--cd-text);
+  background: color-mix(in srgb, #ff6b35 16%, transparent); border-radius: 9999px; padding: 2px 8px 2px 6px;
+}
+.vb-status-streak :deep(svg) { color: #ff6b35; }
+
+/* Segmented Next / Play / Coach control with a sliding active-tab background */
+.vb-tabs {
+  position: relative; display: flex; gap: 0; background: var(--cd-bg2); border: 1px solid var(--cd-bdr);
+  border-radius: 9999px; padding: 4px; margin-bottom: 14px;
+}
+.vb-tabs-ind {
+  position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / 3);
+  /* Use --cd-green (the mint the nav highlight + CARDDESK wordmark use) — NOT
+     --cd-accent, which is near-white in the glass theme and washed the tab out. */
+  border-radius: 9999px; background: var(--cd-green); z-index: 0;
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.vb-tabs button {
+  position: relative; z-index: 1; flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  border: 0; background: none; color: var(--cd-muted); font-family: inherit;
+  font-size: 12px; font-weight: 800; letter-spacing: 0.02em; padding: 9px 8px; border-radius: 9999px;
+  cursor: pointer; text-transform: uppercase; transition: color 0.2s;
+}
+.vb-tabs button.on { color: #060810; }
+
+/* Cross-fade between panes (leaving pane goes absolute so no layout jump) */
+.vb-panes { position: relative; }
+.vb-fade-enter-active, .vb-fade-leave-active { transition: opacity 0.22s ease; }
+.vb-fade-leave-active { position: absolute; top: 0; left: 0; right: 0; }
+.vb-fade-enter-from, .vb-fade-leave-to { opacity: 0; }
+
 /* ── XP hero ── */
 .vb-hero {
   border-color: color-mix(in srgb, var(--cd-green) 22%, transparent);

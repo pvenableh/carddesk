@@ -361,3 +361,19 @@ async function doSaveContact() {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Scan/add-contact form: the label and the input's placeholder were close in
+   brightness, so empty fields read as just placeholder text and the label got
+   lost. Fix the hierarchy here only (global .cd-lbl + .cd-inp untouched):
+   make the label the bright, dominant text and push the placeholder way back. */
+.cd-lbl {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--cd-text);
+  margin-bottom: 5px;
+}
+.cd-inp::placeholder {
+  color: color-mix(in srgb, var(--cd-dim) 42%, transparent);
+}
+</style>

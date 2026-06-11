@@ -167,7 +167,7 @@ watch(() => props.contactId, () => { loadedOnce.value = false; load() })
   <div class="cd-log-sec cp">
     <div class="cp-hd">
       <span>Plan of attack</span>
-      <button v-if="hasAnything" class="cp-add-btn" type="button" @click="adding ? cancelAdd() : openAdd()">
+      <button v-if="hasAnything" class="cd-pill cp-add-btn" type="button" @click="adding ? cancelAdd() : openAdd()">
         <CdIcon :icon="adding ? 'lucide:x' : 'lucide:plus'" :size="13" /> {{ adding ? 'Cancel' : 'Task' }}
       </button>
     </div>
@@ -177,22 +177,22 @@ watch(() => props.contactId, () => { loadedOnce.value = false; load() })
     <template v-else>
       <!-- Inline add form -->
       <div v-if="adding" class="cp-form">
-        <input v-model="form.title" class="cp-input" type="text" placeholder="What to do…" @keydown.enter="saveTask" />
-        <input v-model="form.due" class="cp-input cp-due-in" type="datetime-local" />
+        <input v-model="form.title" class="cd-inp" type="text" placeholder="What to do…" @keydown.enter="saveTask" />
+        <input v-model="form.due" class="cd-inp cp-due-in" type="datetime-local" />
         <div class="cp-chips">
           <button
             v-for="c in CHANNELS"
             :key="c.value"
             type="button"
-            class="cp-chip"
+            class="cd-pill"
             :class="{ on: form.channel === c.value }"
             @click="form.channel = form.channel === c.value ? null : c.value"
           ><CdIcon :icon="c.icon" :size="11" /> {{ c.label }}</button>
         </div>
-        <input v-model="form.note" class="cp-input cp-note-in" type="text" placeholder="Note — what to reference (optional)" />
+        <input v-model="form.note" class="cd-inp cp-note-in" type="text" placeholder="Note — what to reference (optional)" />
         <div class="cp-form-foot">
-          <button class="cp-cancel" type="button" @click="cancelAdd">Cancel</button>
-          <button class="cp-save" type="button" :disabled="!form.title.trim() || saving" @click="saveTask">
+          <button class="cd-abtn cp-ghost" type="button" @click="cancelAdd">Cancel</button>
+          <button class="cd-abtn g" type="button" :disabled="!form.title.trim() || saving" @click="saveTask">
             <CdIcon v-if="saving" icon="lucide:loader-2" :size="14" class="cp-spin" /><span v-else>Add task</span>
           </button>
         </div>
@@ -204,8 +204,8 @@ watch(() => props.contactId, () => { loadedOnce.value = false; load() })
         <div class="cp-empty-t">No plan yet</div>
         <div class="cp-empty-s">Ask Earnest for next steps with timing and tap <strong>Make a plan</strong> — or add a task yourself.</div>
         <div class="cp-empty-actions">
-          <button class="cp-ask" type="button" @click="emit('ask')"><CdEarnestMark :size="14" /> Ask Earnest</button>
-          <button class="cp-ask ghost" type="button" @click="openAdd"><CdIcon icon="lucide:plus" :size="13" /> Add task</button>
+          <button class="cd-abtn g cp-ask" type="button" @click="emit('ask')"><CdEarnestMark :size="14" /> Ask Earnest</button>
+          <button class="cd-abtn cp-ghost cp-ask" type="button" @click="openAdd"><CdIcon icon="lucide:plus" :size="13" /> Add task</button>
         </div>
       </div>
 
@@ -276,40 +276,18 @@ watch(() => props.contactId, () => { loadedOnce.value = false; load() })
   display: flex; align-items: center; justify-content: space-between;
   font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim); margin-bottom: 10px;
 }
-.cp-add-btn {
-  display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 999px; cursor: pointer;
-  background: color-mix(in srgb, var(--cd-accent) 11%, transparent); border: 1px solid color-mix(in srgb, var(--cd-accent) 28%, transparent);
-  color: var(--cd-accent); font-family: inherit; font-size: 10.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase;
-}
+.cp-add-btn { font-size: 11px; }
 .cp-dim { font-size: 12px; color: var(--cd-muted); }
 
-/* add form */
-.cp-form { background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px; padding: 11px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
-.cp-input {
-  width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--cd-bdr);
-  background: var(--cd-bg); color: var(--cd-text); font-family: inherit; font-size: 13px; outline: none;
-}
-.cp-input:focus { border-color: var(--cd-accent); }
+/* add form — inputs/chips/buttons use the app's canonical cd-inp / cd-pill / cd-abtn */
+.cp-form { background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 16px; padding: 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
+.cp-form .cd-inp { margin-bottom: 0; }
 .cp-due-in { color-scheme: dark; }
 .cp-note-in { font-size: 12px; }
 .cp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.cp-chip {
-  display: inline-flex; align-items: center; gap: 4px; padding: 5px 9px; border-radius: 999px; cursor: pointer;
-  background: var(--cd-bg); border: 1px solid var(--cd-bdr); color: var(--cd-muted);
-  font-family: inherit; font-size: 11px; transition: all 0.12s;
-}
-.cp-chip.on { background: color-mix(in srgb, var(--cd-accent) 16%, transparent); border-color: color-mix(in srgb, var(--cd-accent) 36%, transparent); color: var(--cd-accent); }
 .cp-form-foot { display: flex; gap: 8px; }
-.cp-cancel {
-  flex: 0 0 auto; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--cd-bdr);
-  background: var(--cd-bg); color: var(--cd-muted); font-family: inherit; font-size: 12px; cursor: pointer;
-}
-.cp-save {
-  flex: 1; padding: 8px; border-radius: 10px; border: 0; cursor: pointer; min-height: 34px;
-  background: var(--cd-accent); color: var(--cd-bg); font-family: inherit; font-weight: 700; font-size: 13px;
-  display: flex; align-items: center; justify-content: center;
-}
-.cp-save:disabled { opacity: 0.45; cursor: not-allowed; }
+.cp-form-foot .cd-abtn { flex: 1; }
+.cp-ghost { background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr); }
 .cp-spin { animation: cp-spin 0.8s linear infinite; }
 @keyframes cp-spin { to { transform: rotate(360deg); } }
 
@@ -320,13 +298,8 @@ watch(() => props.contactId, () => { loadedOnce.value = false; load() })
 .cp-empty :deep(svg) { color: var(--cd-accent); }
 .cp-empty-t { font-weight: 700; color: var(--cd-text); font-size: 13px; margin-top: 2px; }
 .cp-empty-s { font-size: 12px; line-height: 1.45; max-width: 250px; }
-.cp-empty-actions { display: flex; gap: 8px; margin-top: 8px; }
-.cp-ask {
-  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; cursor: pointer;
-  background: color-mix(in srgb, var(--cd-accent) 13%, transparent); border: 1px solid color-mix(in srgb, var(--cd-accent) 30%, transparent);
-  color: var(--cd-accent); font-family: inherit; font-weight: 700; font-size: 12px;
-}
-.cp-ask.ghost { background: var(--cd-bg2); border-color: var(--cd-bdr); color: var(--cd-muted); }
+.cp-empty-actions { display: flex; gap: 8px; margin-top: 10px; align-self: stretch; }
+.cp-ask { flex: 1; }
 
 .cp-plan { background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px; padding: 11px 12px; margin-bottom: 10px; }
 .cp-plan-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }

@@ -6,23 +6,27 @@ import { inviteEmail } from '../../utils/emails/invite'
 import { sendEmail } from '../../utils/email-send'
 
 /**
- * POST /api/invite/send — send a CONTACT-TARGETED invitation email.
- * Body: { contactId, note? }
+ * POST /api/invite/send — mint a CONTACT-TARGETED invite (and, by default, email it).
+ * Body: { contactId, note?, send? }
  *
  * Mints (or reuses) an invite tied to this specific contact, so when they join
  * via the link, redeem can deterministically bridge them back to the source
- * contact (and credit the referral) instead of guessing by email. The email is
- * best-effort; the personalized URL is always returned so the UI can fall back
- * to copy/share if SendGrid is unavailable.
+ * contact (and credit the referral) instead of guessing by email.
+ *
+ * `send` (default true): when false, this is LINK-ONLY — no email is sent (and a
+ * missing email / already-joined contact is allowed), just the personalized URL
+ * is returned. The Orbit invite sheet uses this to build QR / share / mailto /
+ * sms options that the user sends themselves.
  *
  * Admin-token + explicit owner scoping (like the credit/XP paths): we never
  * trust the client for ownership — the contact read is filtered on user_created.
  */
 export default defineEventHandler(async (event) => {
   const me = await getCurrentUserId(event)
-  const { contactId, note } = await readBody(event)
+  const { contactId, note, send } = await readBody(event)
   if (!contactId || typeof contactId !== 'string')
     throw createError({ statusCode: 400, message: 'contactId is required' })
+  const doSend = send !== false
 
   const config = useRuntimeConfig()
   const admin = getDirectus()
@@ -31,14 +35,14 @@ export default defineEventHandler(async (event) => {
   const contacts = (await admin.request(
     readItems('cd_contacts' as any, {
       filter: { _and: [{ id: { _eq: contactId } }, { user_created: { _eq: me } }] } as any,
-      fields: ['id', 'name', 'first_name', 'email', 'linked_user'],
+      fields: ['id', 'name', 'first_name', 'email', 'phone', 'linked_user'],
       limit: 1,
     }),
   )) as any[]
   const contact = contacts?.[0]
   if (!contact) throw createError({ statusCode: 404, message: 'Contact not found' })
-  if (!contact.email) throw createError({ statusCode: 400, message: 'This contact has no email to invite.' })
-  if (contact.linked_user)
+  if (doSend && !contact.email) throw createError({ statusCode: 400, message: 'This contact has no email to invite.' })
+  if (doSend && contact.linked_user)
     throw createError({ statusCode: 409, message: `${contact.name || 'They'} is already on CardDesk.` })
 
   // Reuse an existing, still-open invite for this contact; otherwise mint one.
@@ -61,12 +65,27 @@ export default defineEventHandler(async (event) => {
         inviter: me,
         code,
         contact: contactId,
-        target_email: String(contact.email).toLowerCase(),
+        target_email: contact.email ? String(contact.email).toLowerCase() : null,
       } as any),
     )
   }
 
   const url = `${config.public.appUrl}/i/${code}`
+
+  // Link-only: return the personalized URL (+ contact email/phone for the client
+  // to compose mailto/sms) without sending anything.
+  if (!doSend) {
+    return {
+      sent: false,
+      url,
+      code,
+      email: contact.email ?? null,
+      phone: contact.phone ?? null,
+      name: contact.name ?? null,
+      firstName: contact.first_name ?? null,
+      linked_user: contact.linked_user ?? null,
+    }
+  }
 
   // Inviter display name for the email.
   const meUsers = (await admin.request(

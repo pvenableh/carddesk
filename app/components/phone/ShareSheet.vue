@@ -108,7 +108,8 @@ const inviteSms = computed(() => 'sms:?&body=' + encodeURIComponent(inviteMsg.va
               <a v-for="s in cardSocials" :key="s.key" :href="socialUrl(s.key, (card as any)[s.key])" target="_blank" rel="noopener" :aria-label="s.label"><Icon :name="s.icon" :size="20" /></a>
             </div>
           </div>
-          <button class="cd-abtn g" style="margin-bottom: 8px" @click="shareMyCard"><CdIcon emoji="📤" icon="lucide:share" :size="14" /> Share my card</button>
+          <a v-if="card" class="cd-abtn g" style="margin-bottom: 8px; text-decoration: none" :href="card.url" target="_blank" rel="noopener"><CdIcon emoji="👁" icon="lucide:external-link" :size="14" /> View my card</a>
+          <button class="cd-abtn" style="background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr); margin-bottom: 8px" @click="shareMyCard"><CdIcon emoji="📤" icon="lucide:share" :size="14" /> Share my card</button>
           <button class="cd-abtn" style="background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr)" @click="editCard"><CdIcon emoji="✏️" icon="lucide:pencil" :size="13" /> Edit my card</button>
         </template>
       </template>

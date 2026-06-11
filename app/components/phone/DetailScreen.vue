@@ -12,13 +12,41 @@ const { success, error: showError } = useToast()
 const { selectedId, editing, nav } = useNavigation()
 
 // ── Contact photo upload (downscaled client-side, filed in Contact Photos) ──
-const contactPhotoEl = ref<HTMLInputElement | null>(null)
+// Three sources, device-appropriate: camera (capture), photo library, and a
+// generic file picker. On touch devices we present a small menu; on desktop
+// (no camera/library distinction) tapping goes straight to the file dialog.
+const camInputEl = ref<HTMLInputElement | null>(null)
+const libInputEl = ref<HTMLInputElement | null>(null)
+const fileInputEl = ref<HTMLInputElement | null>(null)
+const photoMenuOpen = ref(false)
+const isCoarse = ref(false)
+onMounted(() => { isCoarse.value = window.matchMedia?.('(pointer: coarse)').matches ?? false })
+
+function openPhotoPicker() {
+  if (photoUploading.value) return
+  // Always offer the source menu; the camera option is gated to touch devices
+  // (where capture actually opens a camera) — see the v-if on "Take a photo".
+  photoMenuOpen.value = true
+}
+function pickPhoto(kind: 'cam' | 'lib' | 'file' | 'remove') {
+  photoMenuOpen.value = false
+  if (kind === 'cam') camInputEl.value?.click()
+  else if (kind === 'lib') libInputEl.value?.click()
+  else if (kind === 'file') fileInputEl.value?.click()
+  else if (kind === 'remove') onRemovePhoto()
+}
+
 const photoUploading = ref(false)
 async function onContactPhoto(e: Event) {
   const input = e.target as HTMLInputElement
   const f = input.files?.[0]
   const c = selContact.value as any
   if (!f || !c) return
+  if (!f.type.startsWith('image/')) {
+    showError('Please choose an image file.')
+    input.value = ''
+    return
+  }
   photoUploading.value = true
   try {
     await uploadContactImage(c.id, f)
@@ -311,6 +339,15 @@ const { claimRewards } = useCredits()
 const aiHistory = ref<any[]>([])
 const historyLoading = ref(false)
 const expandedSession = ref<string | null>(null)
+const historySearch = ref('')
+const filteredHistory = computed(() => {
+  const term = historySearch.value.trim().toLowerCase()
+  if (!term) return aiHistory.value
+  return aiHistory.value.filter((s) => {
+    const text = [s.title, s.type, ...sessionLines(s).map((l) => `${l.title} ${l.body}`)].join(' ').toLowerCase()
+    return text.includes(term)
+  })
+})
 const sugSaved = ref(false)
 
 async function loadHistory() {
@@ -473,7 +510,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
           <div class="cd-det-hero">
             <div style="display: flex; align-items: center; gap: 11px; margin-bottom: 10px">
               <div class="cd-det-av-wrap">
-                <button class="cd-det-av cd-det-av-btn" type="button" :disabled="photoUploading" :title="(selContact as any).imageUrl ? 'Change photo' : 'Add a photo'" @click="contactPhotoEl?.click()">
+                <button class="cd-det-av cd-det-av-btn" type="button" :disabled="photoUploading" :title="(selContact as any).imageUrl ? 'Change photo' : 'Add a photo'" @click="openPhotoPicker">
                   <img v-if="(selContact as any).imageUrl" :src="(selContact as any).imageUrl" alt="" />
                   <CdIcon v-else :emoji="cEmoji(selContact)" icon="lucide:user" :size="24" />
                   <span class="cd-det-av-cam"><CdIcon :icon="photoUploading ? 'lucide:loader-circle' : 'lucide:camera'" :size="11" /></span>
@@ -481,8 +518,23 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
                 <button v-if="(selContact as any).imageUrl" class="cd-det-av-rm" type="button" :disabled="photoUploading" title="Remove photo" aria-label="Remove photo" @click="onRemovePhoto">
                   <CdIcon icon="lucide:x" :size="11" />
                 </button>
+                <!-- Photo-source picker as a bottom sheet, teleported to <body> so it
+                     can't be clipped/stacked under the glass cards below the hero. -->
+                <Teleport to="body">
+                  <div v-if="photoMenuOpen" class="cd-ph-backdrop" @click="photoMenuOpen = false"></div>
+                  <div v-if="photoMenuOpen" class="cd-ph-menu" role="menu">
+                    <div class="cd-ph-title">{{ (selContact as any).imageUrl ? 'Change photo' : 'Add a photo' }}</div>
+                    <button v-if="isCoarse" type="button" @click="pickPhoto('cam')"><CdIcon icon="lucide:camera" :size="16" /> Take a photo</button>
+                    <button type="button" @click="pickPhoto('lib')"><CdIcon icon="lucide:image" :size="16" /> Photo library</button>
+                    <button type="button" @click="pickPhoto('file')"><CdIcon icon="lucide:folder" :size="16" /> Browse files</button>
+                    <button v-if="(selContact as any).imageUrl" type="button" class="rm" @click="pickPhoto('remove')"><CdIcon icon="lucide:trash-2" :size="16" /> Remove photo</button>
+                    <button type="button" class="cd-ph-cancel" @click="photoMenuOpen = false">Cancel</button>
+                  </div>
+                </Teleport>
               </div>
-              <input ref="contactPhotoEl" type="file" accept="image/*" hidden @change="onContactPhoto" />
+              <input ref="camInputEl" type="file" accept="image/*" capture="environment" hidden @change="onContactPhoto" />
+              <input ref="libInputEl" type="file" accept="image/*" hidden @change="onContactPhoto" />
+              <input ref="fileInputEl" type="file" hidden @change="onContactPhoto" />
               <div>
                 <div style="font-family: 'Bebas Neue', sans-serif; font-size: 26px; line-height: 1; margin-bottom: 3px">{{ selContact.name }}</div>
                 <div style="font-size: 12px; color: var(--cd-muted)">
@@ -614,18 +666,30 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
               Earnest AI History
             </div>
             <div v-if="historyLoading" style="font-size: 12px; color: var(--cd-muted)">Loading…</div>
+            <input
+              v-if="aiHistory.length > 2"
+              v-model="historySearch"
+              class="cd-inp"
+              type="search"
+              placeholder="Search this history…"
+              style="margin-bottom: 8px"
+            />
+            <div v-if="!historyLoading && !filteredHistory.length" style="font-size: 12px; color: var(--cd-muted)">No matches for “{{ historySearch }}”.</div>
             <div
-              v-for="s in aiHistory"
+              v-for="s in filteredHistory"
               :key="s.id"
               style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px"
             >
               <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px">
                 <button
                   style="flex: 1; text-align: left; background: none; border: none; cursor: pointer; color: var(--cd-text); padding: 0"
-                  @click="expandedSession = expandedSession === s.id ? null : s.id"
+                  :title="s.type === 'chat' ? 'Continue this conversation' : 'Show details'"
+                  @click="s.type === 'chat' ? continueChat(s) : (expandedSession = expandedSession === s.id ? null : s.id)"
                 >
                   <div style="font-size: 13px; font-weight: 700">{{ s.title }}</div>
-                  <div style="font-size: 10px; color: var(--cd-dim); font-family: monospace">{{ fmtFull(s.date_created) }} · {{ s.type }}</div>
+                  <div style="font-size: 10px; color: var(--cd-dim); font-family: monospace">
+                    {{ fmtFull(s.date_created) }} · {{ s.type }}<span v-if="s.type === 'chat'" style="color: var(--cd-accent)"> · tap to continue</span>
+                  </div>
                 </button>
                 <div style="display: flex; align-items: center; gap: 4px">
                   <button v-if="s.type === 'chat'" style="background:none;border:none;cursor:pointer;padding:3px;color:var(--cd-accent)" title="Continue chat" @click="continueChat(s)"><CdIcon emoji="💬" icon="lucide:message-circle" :size="13" /></button>

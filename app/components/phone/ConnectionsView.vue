@@ -26,10 +26,6 @@ const orbitContacts = computed(() => contacts.value.filter((c) => !c.hibernated)
 
 // Tapped contact dot → the "light them up" sheet.
 const selectedContact = ref<CdContact | null>(null)
-function inviteContact() {
-  selectedContact.value = null
-  openShareSheet('invite')
-}
 function viewContact() {
   const id = selectedContact.value?.id
   selectedContact.value = null
@@ -348,12 +344,7 @@ async function remove(c: NetworkConnection) { await respond(c.id, 'remove') }
           :disabled="connectingLinked"
           @click="connectLinked"
         ><CdIcon emoji="🪐" icon="lucide:orbit" :size="14" /> {{ connectingLinked ? 'Sending…' : "They're on CardDesk — connect" }}</button>
-        <button
-          v-else
-          class="cd-abtn g"
-          style="margin-bottom: 8px"
-          @click="inviteContact"
-        ><CdIcon emoji="✨" icon="lucide:sparkles" :size="14" /> Invite them</button>
+        <PhoneContactInviteOptions v-else :contact="selectedContact" style="margin-bottom: 10px" />
 
         <button
           class="cd-abtn"

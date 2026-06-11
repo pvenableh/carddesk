@@ -286,6 +286,10 @@ async function suggestGoal() {
         </div>
 
         <div class="acct-section">
+          <PhoneUsageCard />
+        </div>
+
+        <div class="acct-section">
           <div class="acct-section-title">Your Profile</div>
           <div class="acct-earnest-note" style="margin-bottom: 10px">
             <CdIcon icon="lucide:link" :size="12" />

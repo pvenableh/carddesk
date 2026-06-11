@@ -1,53 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!-- Aurora circle badge (fills the tab so the mark reads at 16px) with a
-       translucent glass background, plus a bold white card glyph on top. -->
+  <!-- Transparent background; a single bold card glyph enlarged to fill the
+       frame so it reads at 16px. The stroke gradient is theme-aware:
+       • light mode (default) — the darker, more saturated icon.svg palette,
+         so the mark holds up against the light-grey browser chrome bar.
+       • dark mode — the bright .lp-grad (cd-green → palette-primary → cd-ice). -->
+  <style>
+    /* light mode default — darker gradient, imitating icon.svg's blob tints */
+    #s0 { stop-color: hsl(163 100% 34%); }
+    #s1 { stop-color: hsl(213 64% 42%); }
+    #s2 { stop-color: hsl(190 80% 44%); }
+    @media (prefers-color-scheme: dark) {
+      /* dark mode — bright .lp-grad */
+      #s0 { stop-color: #70FFD7; }
+      #s1 { stop-color: #4da6ff; }
+      #s2 { stop-color: #a8d8ea; }
+    }
+  </style>
   <defs>
-    <radialGradient id="fb-A">
-      <stop offset="0%" stop-color="hsl(163 100% 42%)" stop-opacity="1"/>
-      <stop offset="75%" stop-color="hsl(163 100% 42%)" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="fb-B">
-      <stop offset="0%" stop-color="hsl(213 80% 55%)" stop-opacity="1"/>
-      <stop offset="80%" stop-color="hsl(213 80% 55%)" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="fb-C">
-      <stop offset="0%" stop-color="hsl(278 85% 56%)" stop-opacity="1"/>
-      <stop offset="78%" stop-color="hsl(278 85% 56%)" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="fb-D">
-      <stop offset="0%" stop-color="hsl(190 90% 55%)" stop-opacity="0.9"/>
-      <stop offset="78%" stop-color="hsl(190 90% 55%)" stop-opacity="0"/>
-    </radialGradient>
-    <filter id="fb-soften" x="-60%" y="-60%" width="220%" height="220%">
-      <feGaussianBlur stdDeviation="60"/>
-    </filter>
-    <!-- perfect circle that clips the aurora to a round badge -->
-    <clipPath id="fb-circle">
-      <circle cx="256" cy="256" r="248"/>
-    </clipPath>
+    <!-- linear-gradient(100deg, ...) ≈ left→right tilted ~10° downward.
+         userSpaceOnUse so horizontal lines (zero-height bbox) still get the
+         full gradient; coords are in the translated glyph space below. -->
+    <linearGradient id="fb-grad" gradientUnits="userSpaceOnUse"
+                    x1="-216" y1="-60" x2="216" y2="60">
+      <stop id="s0" offset="0%"/>
+      <stop id="s1" offset="55%"/>
+      <stop id="s2" offset="100%"/>
+    </linearGradient>
   </defs>
 
-  <!-- translucent glass background: a soft tint inside the circle -->
-  <circle cx="256" cy="256" r="248" fill="hsl(213 80% 55%)" fill-opacity="0.16"/>
-
-  <!-- aurora blobs, clipped to the perfect circle -->
-  <g clip-path="url(#fb-circle)" opacity="0.92">
-    <g filter="url(#fb-soften)">
-      <ellipse cx="120" cy="120" rx="320" ry="300" fill="url(#fb-A)"/>
-      <ellipse cx="256" cy="256" rx="340" ry="360" fill="url(#fb-B)"/>
-      <ellipse cx="330" cy="430" rx="320" ry="300" fill="url(#fb-C)"/>
-      <ellipse cx="90" cy="360" rx="260" ry="280" fill="url(#fb-D)"/>
-    </g>
-  </g>
-
-  <!-- crisp ring to define the circle edge -->
-  <circle cx="256" cy="256" r="246" fill="none" stroke="#ffffff" stroke-opacity="0.22" stroke-width="4"/>
-
-  <!-- bold white card glyph, enlarged to fill the badge -->
-  <g transform="translate(256 256)" fill="none" stroke="#ffffff"
+  <!-- bold card glyph, gradient stroke, enlarged to fill the badge -->
+  <g transform="translate(256 256)" fill="none" stroke="url(#fb-grad)"
      stroke-linecap="round" stroke-linejoin="round">
-    <rect x="-156" y="-112" width="312" height="224" rx="38" stroke-width="30"/>
-    <line x1="-116" y1="-54" x2="74" y2="-54" stroke-width="30"/>
-    <line x1="-116" y1="10" x2="6" y2="10" stroke-width="28"/>
+    <rect x="-216" y="-150" width="432" height="300" rx="52" stroke-width="38"/>
+    <line x1="-160" y1="-74" x2="104" y2="-74" stroke-width="38"/>
+    <line x1="-160" y1="16" x2="8" y2="16" stroke-width="36"/>
   </g>
 </svg>

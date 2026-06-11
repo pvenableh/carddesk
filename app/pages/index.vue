@@ -10,6 +10,7 @@ import PhoneAddContactScreen from '~/components/phone/AddContactScreen.vue'
 import PhoneEventModeScreen from '~/components/phone/EventModeScreen.vue'
 import PhoneFeedScreen from '~/components/phone/FeedScreen.vue'
 import PhoneChatScreen from '~/components/phone/ChatScreen.vue'
+import PhoneHistoryScreen from '~/components/phone/HistoryScreen.vue'
 
 // No auth middleware here: logged-out visitors get the marketing landing at the
 // bare domain instead of a redirect to /login. The app shell only renders when a
@@ -19,7 +20,7 @@ const { loggedIn } = useUserSession()
 const { fetchContacts, followUpStatus, contacts } = useContacts()
 const { toast, loadXp, earn } = useXp()
 const { loadProfile } = useProfile()
-const { screen, nav, transitionName } = useNavigation()
+const { screen, selectedId, nav, transitionName } = useNavigation()
 const { isOpen: chatOpen } = useChat()
 const { panelOpen: eventOpen } = useEventMode()
 const { theme } = useTheme()
@@ -73,6 +74,7 @@ const screenComponents: Record<Screen, Component> = {
   add: PhoneAddContactScreen,
   feed: PhoneFeedScreen,
   chat: PhoneChatScreen,
+  history: PhoneHistoryScreen,
 }
 
 const currentScreen = computed(() => screenComponents[screen.value])
@@ -123,9 +125,13 @@ onMounted(async () => {
 
     <!-- Screens with iOS-like transitions -->
     <div class="cd-screens">
+      <!-- Contact-bound screens are keyed by the selected contact, so a cached
+           instance can never serve a stale contact to its children. (Keying by
+           screen name alone let the cached DetailScreen subtree send an invite to
+           the previously-viewed contact.) -->
       <Transition :name="transitionName" mode="out-in">
         <KeepAlive>
-          <component :is="currentScreen" :key="screen" />
+          <component :is="currentScreen" :key="screen === 'detail' || screen === 'cold' ? screen + ':' + selectedId : screen" />
         </KeepAlive>
       </Transition>
     </div>
