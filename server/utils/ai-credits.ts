@@ -43,6 +43,9 @@ export const CREDIT_COSTS = {
   // (Was missing from this map entirely: cost resolved to undefined, which made
   // `balance < cost` always false — the gate silently passed and charged 0.)
   'ai-daily-vibe': 1,
+  // Turn an Earnest chat reply into a structured "plan of attack" (tasks with
+  // dates). One short tool-use call with a tight output — flat 1 credit.
+  'ai-extract-plan': 1,
 } as const
 
 export type AiEndpoint = keyof typeof CREDIT_COSTS

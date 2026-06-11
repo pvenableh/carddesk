@@ -79,6 +79,7 @@ export const BADGES = [
   { key: "networker", emoji: "🌐", lucide: "lucide:globe", label: "Networker", desc: "Add 10 contacts" },
   { key: "dealmaker", emoji: "💎", lucide: "lucide:gem", label: "Dealmaker", desc: "Response from Hot lead" },
   { key: "connector", emoji: "🌉", lucide: "lucide:git-merge", label: "Connector", desc: "Make 3 intros" },
+  { key: "recruiter", emoji: "📣", lucide: "lucide:megaphone", label: "Recruiter", desc: "Get 3 invites accepted" },
   { key: "closer", emoji: "💰", lucide: "lucide:badge-check", label: "Closer", desc: "Convert a client" },
   { key: "legend", emoji: "👑", lucide: "lucide:crown", label: "Legend", desc: "Reach Level 9" },
   { key: "pipeline_builder", emoji: "🏗️", lucide: "lucide:building", label: "Pipeline Builder", desc: "10+ contacts with a pipeline stage" },

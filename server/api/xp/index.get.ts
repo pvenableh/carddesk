@@ -27,6 +27,9 @@ export default defineEventHandler(async (event) => {
       fast_followups: r.fast_followups ?? 0,
       hot_responses: r.hot_responses ?? 0,
       intros: r.intros ?? 0,
+      // Server-authoritative: incremented on invite redemption (see invite/redeem),
+      // never written back by POST /api/xp, so it can't be clobbered by the client.
+      invites_accepted: r.invites_accepted ?? 0,
       pipeline_contacts: r.pipeline_contacts ?? 0,
       qualified_count: r.qualified_count ?? 0,
       proposals_sent: r.proposals_sent ?? 0,

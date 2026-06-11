@@ -26,6 +26,10 @@ export default defineEventHandler(async (event) => {
         address: body.address ?? null,
         rating: body.rating ?? null,
         notes: body.notes ?? null,
+        // Provenance: how this contact was acquired, and (for referrals) which
+        // existing contact introduced them. Defaults to a manual add.
+        source: ['scan', 'manual', 'referral', 'import', 'event'].includes(body.source) ? body.source : 'manual',
+        referred_by: body.referred_by ?? null,
         hibernated: false,
       }),
     );

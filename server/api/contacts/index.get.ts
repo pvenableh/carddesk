@@ -32,6 +32,8 @@ export default defineEventHandler(async (event) => {
           "notes",
           "image",
           "linked_user",
+          "source",
+          "referred_by",
           "date_created",
           {
             activities: [

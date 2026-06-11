@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
   const invites = (await admin.request(
     readItems('cd_invites' as any, {
       filter: { code: { _eq: code } } as any,
-      fields: ['id', 'inviter', 'expires_at'],
+      fields: ['id', 'inviter', 'expires_at', 'contact'],
       limit: 1,
     }),
   )) as any[]
@@ -72,30 +72,50 @@ export default defineEventHandler(async (event) => {
     .request(updateItem('cd_invites' as any, invite.id, { accepted_by: me, accepted_at: new Date().toISOString() } as any))
     .catch(() => {})
 
-  // Contact ↔ user bridge: if the inviter saved this person as a contact
-  // before they joined, link the records (matched on the new user's email).
+  // Contact ↔ user bridge: link the inviter's contact record to the new user so
+  // the same human stops being two unrelated rows. A contact-targeted invite
+  // (invite.contact) links that EXACT contact — deterministic, no guessing. A
+  // generic invite falls back to matching the inviter's contacts by email.
   // Best-effort — a failure here shouldn't block the connection.
   try {
-    const meUsers = (await admin.request(
-      readUsers({ filter: { id: { _eq: me } } as any, fields: ['id', 'email'], limit: 1 }),
-    )) as any[]
-    const myEmail = meUsers?.[0]?.email?.toLowerCase()
-    if (myEmail) {
-      const matches = (await admin.request(
+    if (invite.contact) {
+      // Deterministic: only if it's the inviter's contact and not already linked.
+      const owned = (await admin.request(
         readItems('cd_contacts' as any, {
           filter: {
             _and: [
+              { id: { _eq: invite.contact } },
               { user_created: { _eq: inviter } },
-              { email: { _ieq: myEmail } },
               { linked_user: { _null: true } },
             ],
           } as any,
           fields: ['id'],
-          limit: 5,
+          limit: 1,
         }),
       )) as any[]
-      for (const c of matches ?? [])
-        await admin.request(updateItem('cd_contacts' as any, c.id, { linked_user: me } as any))
+      if (owned?.[0]) await admin.request(updateItem('cd_contacts' as any, owned[0].id, { linked_user: me } as any))
+    } else {
+      const meUsers = (await admin.request(
+        readUsers({ filter: { id: { _eq: me } } as any, fields: ['id', 'email'], limit: 1 }),
+      )) as any[]
+      const myEmail = meUsers?.[0]?.email?.toLowerCase()
+      if (myEmail) {
+        const matches = (await admin.request(
+          readItems('cd_contacts' as any, {
+            filter: {
+              _and: [
+                { user_created: { _eq: inviter } },
+                { email: { _ieq: myEmail } },
+                { linked_user: { _null: true } },
+              ],
+            } as any,
+            fields: ['id'],
+            limit: 5,
+          }),
+        )) as any[]
+        for (const c of matches ?? [])
+          await admin.request(updateItem('cd_contacts' as any, c.id, { linked_user: me } as any))
+      }
     }
   } catch (err) {
     console.error('[invite/redeem] contact link failed:', err)
@@ -103,8 +123,9 @@ export default defineEventHandler(async (event) => {
 
   await emitFeedEvent(me, 'joined', {})
   await emitFeedEvent(inviter, 'connected', {})
-  // The inviter is typically offline when their link converts — credit them server-side.
-  await awardServerXp(inviter, 75)
+  // The inviter is typically offline when their link converts — credit them
+  // server-side and bump their accepted-invite counter (drives the Recruiter badge).
+  await awardServerXp(inviter, 75, { invites_accepted: 1 })
 
   return {
     connected: true,

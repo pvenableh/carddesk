@@ -136,6 +136,8 @@ async function doSaveContact() {
       address: addForm.value.address || undefined,
       rating: (addForm.value.rating as any) || undefined,
       notes: addForm.value.notes || undefined,
+      // Provenance: scanned card > captured during an event > typed by hand.
+      source: wasScanned.value ? 'scan' : eventMode.active.value ? 'event' : 'manual',
     })
   } catch (err: any) {
     console.error('[AddContact] Failed to save contact:', err?.data?.message ?? err)

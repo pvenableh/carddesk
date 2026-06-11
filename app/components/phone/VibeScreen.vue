@@ -300,6 +300,9 @@ async function loadVibe() {
         </div>
       </div>
 
+      <!-- On deck — real follow-up tasks due today / overdue (hidden when empty) -->
+      <PhoneVibeOnDeck />
+
       <!-- Today's missions — verified quests; tap one to go do it -->
       <div class="cd-vc vb-missions">
         <div class="vb-m-hdr">

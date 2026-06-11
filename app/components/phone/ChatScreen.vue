@@ -6,8 +6,51 @@
  * replies, and a composer at the bottom. Each send is a metered turn
  * (1 credit). Reached via the contextual helpers (contact / events / score).
  */
-const { scope, title, messages, loading, suggestions, send, context, close } = useChat()
+const { scope, title, messages, loading, suggestions, send, context, contactId, sessionId, close } = useChat()
 const { profile } = useProfile()
+const { extractPlan, resolveDrafts } = usePlans()
+const { info } = useToast()
+
+// Best-effort contact name for nicer plan titles (only meaningful in contact scope).
+const contactName = computed<string>(
+  () => (context.value as any)?.name || (context.value as any)?.contact?.name || (scope.value === 'contact' ? title.value : ''),
+)
+
+// "Make this a plan" — turn an assistant reply containing a follow-up sequence
+// into saveable, dated tasks. We only surface the button on substantive replies
+// (a heuristic) and the server still decides is_plan; non-plans just toast.
+function looksActionable(content: string): boolean {
+  if (!content || content.length < 130) return false
+  return /(^|\n)\s*[-*\d]/.test(content) || /\b(follow[- ]?up|email|linkedin|connect|message|call|coffee|wait|day|week|tuesday|monday|tonight|tomorrow)\b/i.test(content)
+}
+
+const extractingIdx = ref<number | null>(null)
+const reviewOpen = ref(false)
+const reviewTitle = ref('')
+const reviewDrafts = ref<any[]>([])
+
+async function makePlan(content: string, idx: number) {
+  if (extractingIdx.value !== null) return
+  extractingIdx.value = idx
+  try {
+    const plan = await extractPlan({
+      message: content,
+      contactId: contactId.value,
+      contactName: contactName.value || null,
+      sessionId: sessionId.value,
+    })
+    if (!plan) return // 402 handled upstream
+    if (!plan.is_plan || !plan.tasks.length) {
+      info('No clear step-by-step plan in that reply — try asking for next steps with timing.')
+      return
+    }
+    reviewTitle.value = plan.title
+    reviewDrafts.value = resolveDrafts(plan)
+    reviewOpen.value = true
+  } finally {
+    extractingIdx.value = null
+  }
+}
 
 // Once the user has sent a turn, drop the priming hints.
 const started = computed(() => messages.value.some((m) => m.role === 'user'))
@@ -147,7 +190,19 @@ onMounted(scrollToBottom)
           :class="m.role === 'user' ? 'is-user' : 'is-ai'"
         >
           <div v-if="m.role === 'assistant'" class="chat-ai-badge"><CdEarnestMark :size="13" /></div>
-          <div class="chat-bubble" v-html="render(m.content)" />
+          <div class="chat-bubble-wrap">
+            <div class="chat-bubble" v-html="render(m.content)" />
+            <button
+              v-if="m.role === 'assistant' && looksActionable(m.content)"
+              class="chat-planbtn"
+              type="button"
+              :disabled="extractingIdx !== null"
+              @click="makePlan(m.content, i)"
+            >
+              <CdIcon :icon="extractingIdx === i ? 'lucide:loader-2' : 'lucide:flag'" :size="12" :class="{ 'chat-spin': extractingIdx === i }" />
+              {{ extractingIdx === i ? 'Building plan…' : 'Make a plan' }}
+            </button>
+          </div>
         </div>
         <div v-if="loading" class="chat-msg is-ai">
           <div class="chat-ai-badge"><CdEarnestMark :size="13" /></div>
@@ -169,6 +224,16 @@ onMounted(scrollToBottom)
         <CdIcon icon="lucide:arrow-up" :size="18" />
       </button>
     </div>
+
+    <PhonePlanReviewSheet
+      :open="reviewOpen"
+      :title="reviewTitle"
+      :drafts="reviewDrafts"
+      :contact-id="contactId"
+      :source-session="sessionId"
+      @close="reviewOpen = false"
+      @saved="reviewOpen = false"
+    />
   </div>
 </template>
 
@@ -276,10 +341,25 @@ onMounted(scrollToBottom)
   background: color-mix(in srgb, var(--cd-accent) 16%, transparent);
   border: 1px solid color-mix(in srgb, var(--cd-accent) 30%, transparent);
 }
+.chat-bubble-wrap { display: flex; flex-direction: column; gap: 5px; max-width: 80%; }
+.is-user .chat-bubble-wrap { align-items: flex-end; }
 .chat-bubble {
-  max-width: 80%; padding: 10px 14px; border-radius: 16px; font-size: 0.92rem; line-height: 1.5;
+  max-width: 100%; padding: 10px 14px; border-radius: 16px; font-size: 0.92rem; line-height: 1.5;
   overflow-wrap: anywhere;
 }
+/* "Make a plan" — subtle action tucked under an actionable assistant reply */
+.chat-planbtn {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 999px; cursor: pointer;
+  background: color-mix(in srgb, var(--cd-accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-accent) 28%, transparent);
+  color: var(--cd-accent); font-family: inherit; font-size: 0.72rem; font-weight: 700;
+  transition: background 0.14s;
+}
+.chat-planbtn:hover:not(:disabled) { background: color-mix(in srgb, var(--cd-accent) 18%, transparent); }
+.chat-planbtn:disabled { opacity: 0.55; cursor: default; }
+.chat-spin { animation: chat-spin 0.8s linear infinite; }
+@keyframes chat-spin { to { transform: rotate(360deg); } }
 .is-ai .chat-bubble {
   background: var(--cd-bg2); border: 1px solid var(--cd-bdr); color: var(--cd-text);
   border-bottom-left-radius: 5px;

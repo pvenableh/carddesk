@@ -559,6 +559,8 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             </a>
           </div>
 
+          <PhoneContactReferral :contact="(selContact as any)" />
+
           <div class="cd-log-sec" style="margin-bottom: 16px">
             <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim); margin-bottom: 10px">
               Next Steps
@@ -604,6 +606,8 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
               {{ sugSaved ? 'Saved to history' : 'Save these to history' }}
             </button>
           </div>
+
+          <PhoneContactPlans :contact-id="(selContact as any).id" @ask="askEarnest" />
 
           <div v-if="aiHistory.length || historyLoading" class="cd-log-sec" style="margin-bottom: 16px">
             <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim); margin-bottom: 8px">

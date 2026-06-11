@@ -6,6 +6,8 @@ export interface DirectusSchema {
   cd_credit_accounts: CdCreditAccount[]
   cd_credit_purchases: CdCreditPurchase[]
   cd_sessions: CdSession[]
+  cd_plans: CdPlan[]
+  cd_tasks: CdTask[]
   cd_feedback: CdFeedback[]
   cd_connections: CdConnection[]
   cd_invites: CdInvite[]
@@ -75,6 +77,10 @@ export interface CdInvite {
   accepted_by?: string | null
   accepted_at?: string | null
   expires_at?: string | null
+  /** cd_contacts id this invite was aimed at (contact-targeted invite). */
+  contact?: string | null
+  /** Email the invite was sent to (contact-targeted invites). */
+  target_email?: string | null
 }
 
 export interface CdSessionMessage {
@@ -94,6 +100,59 @@ export interface CdSession {
   summary?: string | null
   messages: CdSessionMessage[]
   is_pinned?: boolean
+}
+
+export type PlanStatus = 'active' | 'done' | 'archived'
+
+/**
+ * A "plan of attack" — a named, ordered group of follow-up tasks for advancing
+ * one contact. Usually generated from an Earnest AI chat (see source_session),
+ * but can be created by hand. The plan is a thin grouping; the tasks carry the
+ * dates and get checked off.
+ */
+export interface CdPlan {
+  id: string
+  /** Owner (directus_users id). Set server-side; every read is scoped to it. */
+  user: string
+  /** cd_contacts id this plan is for. Null = general / portfolio-wide. */
+  contact?: string | null
+  title: string
+  status: PlanStatus
+  /** cd_sessions id (chat) this plan was generated from, if any. */
+  source_session?: string | null
+  date_created?: string
+  date_updated?: string
+  /** Hydrated client-side when a plan is loaded with its tasks. */
+  tasks?: CdTask[]
+}
+
+export type TaskChannel = 'email' | 'linkedin' | 'call' | 'meet' | 'other'
+export type TaskStatus = 'pending' | 'done' | 'skipped'
+
+/**
+ * A single follow-up task — the durable, checkable unit. Belongs to an optional
+ * plan. `due_at` + `user` drive the contact widget, the Vibe "On deck" agenda,
+ * and a future union into Earnest's calendar.
+ */
+export interface CdTask {
+  id: string
+  user: string
+  /** cd_plans id this task belongs to. Null = standalone one-off task. */
+  plan?: string | null
+  /** cd_contacts id this task is about. Null = general. */
+  contact?: string | null
+  title: string
+  channel?: TaskChannel | null
+  note?: string | null
+  /** When this task is due (ISO). Null = someday / no date. */
+  due_at?: string | null
+  status: TaskStatus
+  completed_at?: string | null
+  /** Order within the plan. */
+  sort?: number | null
+  source_session?: string | null
+  date_created?: string
+  date_updated?: string
 }
 
 export interface CdFeedback {
@@ -149,6 +208,10 @@ export interface CdContact {
   lost_reason?: string
   /** Directus user id if this contact joined CardDesk (stamped on invite redemption). */
   linked_user?: string | null
+  /** How this contact was acquired. */
+  source?: 'scan' | 'manual' | 'referral' | 'import' | 'event' | null
+  /** cd_contacts id of the contact who introduced/spawned this one (referral graph). */
+  referred_by?: string | null
 }
 
 export interface CdActivity {
@@ -183,6 +246,8 @@ export interface CdXpState {
   streak_shields?: number
   hype_date?: string | null
   quiz_date?: string | null
+  /** Count of this user's invites that were accepted (someone joined via their link). */
+  invites_accepted?: number
 }
 
 // Per-user AI credit balance for standalone (non-Earnest-org) users.

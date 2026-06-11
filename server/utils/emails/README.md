@@ -1,7 +1,8 @@
 # CardDesk transactional emails
 
-Branded HTML emails (welcome, password reset) **designed in MJML** and rendered
-with a tiny built-in token engine — **no `mjml` or `handlebars` npm packages**.
+Branded HTML emails (welcome, password reset, invite) **designed in MJML** and
+rendered with a tiny built-in token engine — **no `mjml` or `handlebars` npm
+packages**.
 
 > ⚠️ **Don't `pnpm add mjml handlebars`, and don't paste the compiled HTML into a
 > `.ts` file.** Either one ends up in the Nitro server bundle and **breaks the
@@ -17,7 +18,7 @@ with a tiny built-in token engine — **no `mjml` or `handlebars` npm packages**
 | `mjml/*.mjml` | **Design source — local-only (gitignored).** Edit in the MJML desktop app; keep your own copies. Not in the repo, since the committed artifact is the compiled HTML below. |
 | `../../assets/emails/*.html` | **Compiled HTML**, one file per email. Read at runtime via `useStorage('assets:emails')`. Registered in `nuxt.config.ts → nitro.serverAssets`. |
 | `shell.ts` | `renderEmail(html, text, data)` fills `{{tokens}}`; `loadEmailHtml(name)` reads the asset. |
-| `welcome.ts` / `password-reset.ts` | Per-email modules: copy + data → `{ subject, html, text }` (async). |
+| `welcome.ts` / `password-reset.ts` / `invite.ts` | Per-email modules: copy + data → `{ subject, html, text }` (async). |
 
 ## How to change an email design
 
@@ -30,6 +31,7 @@ with a tiny built-in token engine — **no `mjml` or `handlebars` npm packages**
 4. **Save it over the matching asset** — paste the raw HTML, no escaping needed:
    - welcome  →  `server/assets/emails/welcome.html`
    - password reset  →  `server/assets/emails/password-reset.html`
+   - invite  →  `server/assets/emails/invite.html`
 5. **Verify:** `pnpm build` should complete clean. (If you add a *new* email,
    also add its `.html` here — `nitro.serverAssets` picks up the whole folder.)
 
@@ -49,6 +51,7 @@ Available per email (the `data` passed in each module):
 |---|---|
 | **welcome** | `{{firstName}}`, `{{appUrl}}`, `{{preheader}}` |
 | **password-reset** | `{{firstName}}`, `{{resetUrl}}`, `{{expiresIn}}`, `{{preheader}}` |
+| **invite** | `{{inviterName}}`, `{{firstName}}`, `{{#if personalNote}}{{personalNote}}{{/if}}`, `{{inviteUrl}}`, `{{preheader}}` |
 
 Greeting pattern: `Hey {{#if firstName}}{{firstName}}{{else}}there{{/if}},`
 
