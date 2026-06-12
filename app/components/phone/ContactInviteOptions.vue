@@ -62,6 +62,10 @@ watch(() => props.contact.id, load)
   <div class="civ">
     <div v-if="loading" class="civ-dim">Preparing invite…</div>
     <template v-else-if="url">
+      <div class="civ-target">
+        <CdIcon emoji="🎯" icon="lucide:target" :size="12" />
+        <span>Personalized for <strong>{{ contact.name || firstName || 'this contact' }}</strong><template v-if="contact.email"> · {{ contact.email }}</template> — links them to this contact when they join.</span>
+      </div>
       <div class="civ-sub">Scan in person, or send it their way 👇</div>
       <div class="civ-qr"><img v-if="qr" :src="qr" alt="Invite QR" width="200" height="200" /></div>
       <button class="cd-abtn g" style="margin-bottom: 8px" @click="shareLink"><CdIcon emoji="📤" icon="lucide:share" :size="14" /> Share invite link</button>
@@ -79,6 +83,13 @@ watch(() => props.contact.id, load)
 .civ { display: flex; flex-direction: column; }
 .civ-dim { font-size: 12px; color: var(--cd-muted); padding: 14px 0; text-align: center; }
 .civ-retry { background: none; border: 0; color: var(--cd-accent); cursor: pointer; font-family: inherit; text-decoration: underline; }
+.civ-target {
+  display: flex; align-items: flex-start; gap: 6px; font-size: 11.5px; line-height: 1.35;
+  color: var(--cd-accent); background: color-mix(in srgb, var(--cd-accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-accent) 28%, transparent);
+  border-radius: 10px; padding: 7px 10px; margin-bottom: 10px;
+}
+.civ-target strong { font-weight: 700; }
 .civ-sub { font-size: 12px; color: var(--cd-dim); margin-bottom: 10px; }
 .civ-qr {
   background: #fff; border-radius: 14px; padding: 10px; display: inline-block; margin: 0 auto 12px;

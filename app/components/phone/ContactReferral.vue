@@ -119,6 +119,10 @@ async function clearReferrer() {
             <CdIcon icon="lucide:link" :size="14" /> Share my link
           </button>
         </div>
+        <div v-if="hasEmail && !invitedEmail" class="rf-target">
+          <CdIcon icon="lucide:target" :size="11" />
+          <span><strong>Invite to CardDesk</strong> is personalized for {{ contact.name }} — links them to this contact when they join. <em>Share my link</em> is your general invite.</span>
+        </div>
         <div v-if="invitedEmail" class="rf-sent"><CdIcon icon="lucide:check" :size="12" /> Invite emailed to {{ invitedEmail }}</div>
         <div v-else-if="!hasEmail" class="rf-hint">Add an email to send a one-click invite — or share your link.</div>
       </template>
@@ -174,6 +178,12 @@ async function clearReferrer() {
 .rf-ghost { background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr); }
 .rf-spin { animation: rf-spin 0.8s linear infinite; }
 @keyframes rf-spin { to { transform: rotate(360deg); } }
+.rf-target {
+  display: flex; align-items: flex-start; gap: 6px; margin-top: 8px;
+  font-size: 11px; line-height: 1.35; color: var(--cd-accent);
+}
+.rf-target strong { font-weight: 700; }
+.rf-target em { font-style: normal; font-weight: 600; color: var(--cd-muted); }
 .rf-sent { display: flex; align-items: center; gap: 5px; margin-top: 8px; font-size: 11.5px; color: var(--cd-green, #00ff87); }
 .rf-hint { margin-top: 8px; font-size: 11.5px; color: var(--cd-muted); }
 
