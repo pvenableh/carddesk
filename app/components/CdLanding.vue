@@ -29,12 +29,17 @@ const leaderboard = [
 ]
 
 // Hero deck — a small stack of cards that slowly flips through sample contacts.
+// Each card carries a level + XP so the hero visual reads as "a gamified card",
+// echoing the headline without leaning on the Orbit (saved for its own section).
 const heroCards = [
-  { name: 'Sarah Johnson', role: 'Founder · Northwind', email: 'sarah@northwind.co', phone: '(415) 555-0199', tint: 'var(--cd-palette-primary, #4da6ff)' },
-  { name: 'Maya Chen', role: 'Product Lead · Lumen', email: 'maya@lumen.io', phone: '(212) 555-0148', tint: 'var(--cd-green)' },
-  { name: 'Devin Brooks', role: 'Designer · Foundry', email: 'devin@foundry.studio', phone: '(646) 555-0173', tint: 'var(--cd-gold)' },
-  { name: 'Emily Carter', role: 'VP Sales · Beacon', email: 'emily@beacon.co', phone: '(312) 555-0186', tint: 'var(--cd-orange)' },
+  { name: 'Sarah Johnson', role: 'Founder · Northwind', email: 'sarah@northwind.co', phone: '(415) 555-0199', tint: 'var(--cd-palette-primary, #4da6ff)', level: 7, xp: 820, xpMax: 1000 },
+  { name: 'Maya Chen', role: 'Product Lead · Lumen', email: 'maya@lumen.io', phone: '(212) 555-0148', tint: 'var(--cd-green)', level: 9, xp: 410, xpMax: 1100 },
+  { name: 'Devin Brooks', role: 'Designer · Foundry', email: 'devin@foundry.studio', phone: '(646) 555-0173', tint: 'var(--cd-gold)', level: 5, xp: 660, xpMax: 800 },
+  { name: 'Emily Carter', role: 'VP Sales · Beacon', email: 'emily@beacon.co', phone: '(312) 555-0186', tint: 'var(--cd-orange)', level: 8, xp: 940, xpMax: 1000 },
 ]
+// First two initials of a name, for the card avatar (richer than a generic icon).
+const initials = (name: string) =>
+  name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
 const activeHero = ref(0)
 let heroTimer: ReturnType<typeof setInterval> | undefined
 onMounted(() => {
@@ -149,8 +154,20 @@ onUnmounted(() => {
         <p class="lp-hand">no credit card — your first 25 tokens are on us ✨</p>
       </div>
 
-      <!-- Hero visual: a slow flip-through deck of cards + floating chips -->
+      <!-- Hero visual: a slow flip-through deck of cards + floating chips, set
+           against a faint orbit-ring halo that hints at the Orbit system. -->
       <div class="lp-hero-art" aria-hidden="true">
+        <!-- Faint concentric rings + drifting dots — a whisper of the Orbit
+             section below, kept low-contrast so the card stays the hero. -->
+        <svg class="lp-hero-rings" viewBox="-160 -160 320 320" preserveAspectRatio="xMidYMid meet">
+          <circle class="lp-ring" r="58" />
+          <circle class="lp-ring" r="104" />
+          <circle class="lp-ring" r="150" />
+          <g class="lp-ring-orbit lp-ring-orbit-1"><circle class="lp-ring-dot" cx="104" cy="0" r="4.5" /></g>
+          <g class="lp-ring-orbit lp-ring-orbit-2"><circle class="lp-ring-dot" cx="-58" cy="0" r="3.5" /></g>
+          <g class="lp-ring-orbit lp-ring-orbit-3"><circle class="lp-ring-dot" cx="150" cy="0" r="3.5" /></g>
+        </svg>
+
         <div class="lp-deck">
           <!-- static cards peeking out behind, for depth -->
           <div class="lp-card lp-card-ghost lp-card-ghost-2" />
@@ -158,23 +175,40 @@ onUnmounted(() => {
           <!-- front card slowly flips through sample contacts -->
           <Transition name="lp-flip" mode="out-in">
             <div :key="activeHero" class="lp-card lp-card-front">
+              <!-- tint accent strip keyed to the active contact -->
+              <span
+                class="lp-card-accent"
+                :style="{ background: heroCards[activeHero].tint }"
+              />
               <div class="lp-card-top">
                 <div
                   class="lp-card-avatar"
                   :style="{ background: `color-mix(in srgb, ${heroCards[activeHero].tint} 18%, transparent)`, color: heroCards[activeHero].tint }"
-                >
-                  <CdIcon emoji="🙂" icon="lucide:user-round" :size="26" />
-                </div>
-                <div>
+                >{{ initials(heroCards[activeHero].name) }}</div>
+                <div class="lp-card-id">
                   <div class="lp-card-name">{{ heroCards[activeHero].name }}</div>
                   <div class="lp-card-role">{{ heroCards[activeHero].role }}</div>
+                </div>
+                <div class="lp-card-level" :style="{ color: heroCards[activeHero].tint }">
+                  Lv {{ heroCards[activeHero].level }}
                 </div>
               </div>
               <div class="lp-card-rows">
                 <div class="lp-card-line"><CdIcon emoji="✉️" icon="lucide:mail" :size="13" /> {{ heroCards[activeHero].email }}</div>
                 <div class="lp-card-line"><CdIcon emoji="📞" icon="lucide:phone" :size="13" /> {{ heroCards[activeHero].phone }}</div>
               </div>
-              <div class="lp-card-qr"><CdIcon emoji="🔳" icon="lucide:qr-code" :size="40" /></div>
+              <div class="lp-card-foot">
+                <div class="lp-card-qr"><CdIcon emoji="🔳" icon="lucide:qr-code" :size="34" /></div>
+                <div class="lp-card-xp">
+                  <div class="lp-card-xp-head"><span>XP</span><span>{{ heroCards[activeHero].xp }} / {{ heroCards[activeHero].xpMax }}</span></div>
+                  <div class="lp-card-xp-track">
+                    <div
+                      class="lp-card-xp-fill"
+                      :style="{ width: (heroCards[activeHero].xp / heroCards[activeHero].xpMax * 100) + '%', background: heroCards[activeHero].tint }"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </Transition>
         </div>
@@ -731,11 +765,42 @@ html[data-theme="glass"] .lp-token-badge {
 /* The deck tilts as a whole; the cards stack/overlay inside it. */
 .lp-deck {
   position: relative;
+  z-index: 1;
   width: 300px;
   height: 240px;
   transform: rotate(-5deg);
   perspective: 1200px;
 }
+/* ── Faint orbit-ring halo behind the deck ── */
+.lp-hero-rings {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.lp-ring {
+  fill: none;
+  stroke: color-mix(in srgb, var(--cd-palette-primary, #4da6ff) 20%, transparent);
+  stroke-width: 1;
+}
+.lp-ring-dot {
+  fill: color-mix(in srgb, var(--cd-palette-primary, #4da6ff) 55%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* Each dot's <g> spins around the viewBox origin (the visual centre). */
+  .lp-ring-orbit {
+    transform-box: view-box;
+    transform-origin: 0px 0px;
+    animation: lp-ring-spin 30s linear infinite;
+  }
+  .lp-ring-orbit-1 { animation-duration: 26s; }
+  .lp-ring-orbit-2 { animation-duration: 38s; animation-direction: reverse; }
+  .lp-ring-orbit-3 { animation-duration: 50s; }
+}
+@keyframes lp-ring-spin { to { transform: rotate(360deg); } }
 .lp-card {
   position: absolute;
   inset: 0;
@@ -779,23 +844,62 @@ html[data-theme="glass"][data-mode="light"] .lp-card {
   border: 1px solid hsl(var(--glass-h) 40% 78% / 0.4);
   box-shadow: var(--glass-inset), var(--glass-shadow-pop);
 }
+/* Tint accent strip across the top edge, faded at both ends. */
+.lp-card-accent {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  border-radius: 20px 20px 0 0;
+  -webkit-mask: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
+  mask: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
+}
 .lp-card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.lp-card-id { flex: 1; min-width: 0; }
 .lp-card-avatar {
   width: 46px; height: 46px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-weight: 800; font-size: 1rem; letter-spacing: 0.02em;
   background: color-mix(in srgb, var(--cd-blue) 18%, transparent);
   color: var(--cd-blue);
 }
 .lp-card-name { font-weight: 800; font-size: 1.05rem; }
 .lp-card-role { font-size: 0.8rem; color: var(--cd-muted); }
-.lp-card-rows { display: flex; flex-direction: column; gap: 7px; margin-bottom: 18px; }
-.lp-card-line { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--cd-muted); }
-.lp-card-qr {
-  display: flex; justify-content: center; padding-top: 14px;
-  border-top: 1px solid var(--cd-bdr); color: var(--cd-text);
+/* Level pill — colour is set inline to the active contact's tint. */
+.lp-card-level {
+  flex-shrink: 0;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 0.92rem;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  background: color-mix(in srgb, currentColor 12%, transparent);
 }
+.lp-card-rows { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; }
+.lp-card-line { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--cd-muted); }
+/* Footer: QR signature on the left, a live XP meter on the right. */
+.lp-card-foot {
+  display: flex; align-items: center; gap: 14px;
+  padding-top: 14px; border-top: 1px solid var(--cd-bdr);
+}
+.lp-card-qr { display: flex; flex-shrink: 0; color: var(--cd-text); }
+.lp-card-xp { flex: 1; min-width: 0; }
+.lp-card-xp-head {
+  display: flex; justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 0.66rem; font-weight: 800; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--cd-muted);
+}
+.lp-card-xp-track {
+  height: 6px; border-radius: 999px; overflow: hidden;
+  background: color-mix(in srgb, var(--cd-text) 10%, transparent);
+}
+.lp-card-xp-fill { height: 100%; border-radius: 999px; transition: width 0.6s ease; }
 .lp-chip {
   position: absolute;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -815,9 +919,11 @@ html[data-theme="glass"] .lp-chip {
   border: 1px solid hsl(var(--glass-h) 40% 78% / 0.28);
   box-shadow: var(--glass-shadow-pop);
 }
-.lp-chip-xp { top: 8px; right: 18px; color: var(--cd-green); animation-delay: 0s; }
-.lp-chip-streak { bottom: 60px; left: 0; color: var(--cd-orange); animation-delay: 0.8s; }
-.lp-chip-orbit { bottom: 6px; right: 30px; color: var(--cd-blue); animation-delay: 1.6s; }
+/* Chips frame the card's outer edges rather than covering its (now denser)
+ * content — XP off the top-right, streak + Orbit floating below the card. */
+.lp-chip-xp { top: 4px; right: 14px; color: var(--cd-green); animation-delay: 0s; }
+.lp-chip-streak { bottom: 2px; left: 24px; color: var(--cd-orange); animation-delay: 0.8s; }
+.lp-chip-orbit { bottom: -8px; right: 24px; color: var(--cd-blue); animation-delay: 1.6s; }
 @keyframes lp-float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-7px); }
