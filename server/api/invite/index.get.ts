@@ -3,9 +3,13 @@ import { readItems, createItem } from '@directus/sdk'
 import { getUserClient } from '../../utils/auth'
 
 /**
- * Returns the caller's evergreen personal invite link, creating it on first
- * use. Sharing the URL and having someone sign up / redeem it creates an
+ * Returns the caller's evergreen GENERIC personal invite link, creating it on
+ * first use. Sharing the URL and having someone sign up / redeem it creates an
  * accepted connection both ways (see invite/redeem.post.ts).
+ *
+ * Must exclude contact-targeted invites (invite/send.post.ts) — those also have
+ * no expiry, so without the contact/target_email guards this query would pick up
+ * the most recent one and hand out a link minted for a specific contact.
  */
 export default defineEventHandler(async (event) => {
   const { me, directus } = await getUserClient(event)
@@ -13,7 +17,12 @@ export default defineEventHandler(async (event) => {
 
   const existing = (await directus.request(
     readItems('cd_invites' as any, {
-      filter: { inviter: { _eq: me }, expires_at: { _null: true } } as any,
+      filter: {
+        inviter: { _eq: me },
+        expires_at: { _null: true },
+        contact: { _null: true },
+        target_email: { _null: true },
+      } as any,
       fields: ['code'],
       limit: 1,
       sort: ['-date_created'],
