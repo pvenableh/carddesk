@@ -9,7 +9,7 @@ import { ensureCardDeskAccess } from '../../utils/carddesk-access'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
-  const { email, password, first_name, last_name, industry } = body
+  const { email, password, first_name, last_name, industry, title, location } = body
 
   if (!email || !password)
     throw createError({ statusCode: 400, message: 'Email and password are required' })
@@ -50,6 +50,8 @@ export default defineEventHandler(async (event) => {
         first_name: first_name || undefined,
         last_name: last_name || undefined,
         industry: industry || undefined,
+        title: title || undefined,
+        location: location || undefined,
         status: 'active',
         role: config.public.directusRoleUser || undefined,
       })

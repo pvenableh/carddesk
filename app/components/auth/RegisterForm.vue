@@ -16,8 +16,10 @@ const schema = toTypedSchema(
     .object({
       first_name: z.string().optional(),
       last_name: z.string().optional(),
+      title: z.string().optional(),
       email: z.string().min(1, 'Email is required').email('Enter a valid email'),
       industry: z.string().min(1, 'Please select your industry'),
+      location: z.string().optional(),
       password: z.string().min(8, 'Password must be at least 8 characters'),
       confirmPassword: z.string().min(1, 'Please confirm your password'),
     })
@@ -31,12 +33,14 @@ const { handleSubmit, errors, defineField } = useForm({
   validationSchema: schema,
   // Start fields as '' (not undefined) so zod's .min() messages show instead of
   // the generic "Required".
-  initialValues: { first_name: '', last_name: '', email: '', industry: '', password: '', confirmPassword: '' },
+  initialValues: { first_name: '', last_name: '', title: '', email: '', industry: '', location: '', password: '', confirmPassword: '' },
 })
 const [firstName, firstNameAttrs] = defineField('first_name')
 const [lastName, lastNameAttrs] = defineField('last_name')
+const [title, titleAttrs] = defineField('title')
 const [email, emailAttrs] = defineField('email')
 const [industry, industryAttrs] = defineField('industry')
+const [location, locationAttrs] = defineField('location')
 const [password, passwordAttrs] = defineField('password')
 const [confirmPassword, confirmAttrs] = defineField('confirmPassword')
 
@@ -60,7 +64,9 @@ const onSubmit = handleSubmit(async (values) => {
       password: values.password,
       first_name: values.first_name || undefined,
       last_name: values.last_name || undefined,
+      title: values.title || undefined,
       industry: values.industry,
+      location: values.location || undefined,
     })
   } catch {
     // server-side error is surfaced via useAuth's `error`
@@ -85,6 +91,10 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
       </div>
       <div>
+        <label class="auth-label">Title</label>
+        <input v-model="title" v-bind="titleAttrs" class="auth-input" placeholder="Founder, Designer, etc." />
+      </div>
+      <div>
         <label class="auth-label">Email</label>
         <input v-model="email" v-bind="emailAttrs" type="email" class="auth-input" placeholder="you@example.com" />
         <span v-if="errors.email" class="auth-field-error">{{ errors.email }}</span>
@@ -96,6 +106,10 @@ const onSubmit = handleSubmit(async (values) => {
           <option v-for="ind in INDUSTRIES" :key="ind" :value="ind">{{ ind }}</option>
         </select>
         <span v-if="errors.industry" class="auth-field-error">{{ errors.industry }}</span>
+      </div>
+      <div>
+        <label class="auth-label">Location</label>
+        <input v-model="location" v-bind="locationAttrs" class="auth-input" placeholder="New York, NY" />
       </div>
       <div>
         <label class="auth-label">Password</label>
