@@ -36,7 +36,7 @@ const channelStats = computed(() => {
   const map = new Map<string, { count: number; responses: number }>()
   for (const c of contacts.value) {
     for (const a of (c.activities as CdActivity[]) ?? []) {
-      if (['contact_added', 'card_scanned', 'converted_client'].includes(a.type)) continue
+      if (['contact_added', 'card_scanned', 'converted_client', 'converted_partner', 'stage_change'].includes(a.type)) continue
       const entry = map.get(a.type) || { count: 0, responses: 0 }
       entry.count++
       if (a.is_response) entry.responses++
@@ -65,7 +65,7 @@ const responseRate = computed(() => {
   let total = 0; let responded = 0
   for (const c of contacts.value) {
     for (const a of (c.activities as CdActivity[]) ?? []) {
-      if (['contact_added', 'card_scanned', 'converted_client'].includes(a.type)) continue
+      if (['contact_added', 'card_scanned', 'converted_client', 'converted_partner', 'stage_change'].includes(a.type)) continue
       total++
       if (a.is_response) responded++
     }

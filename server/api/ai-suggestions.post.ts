@@ -37,6 +37,7 @@ Contact:
 - Location: ${contact.location || "Unknown"}
 - Rating: ${contact.rating || "Unrated"}
 - Pipeline Stage: ${contact.pipeline_stage || "Not in pipeline"}
+- Goal: ${contact.opportunity_goal === "partner" ? "Become a referral/collaboration PARTNER (trade work, co-bid)" : contact.opportunity_goal === "client" ? "Win them as a CLIENT (they hire us)" : "Not set yet"}
 - Estimated Value: ${contact.estimated_value ? "$" + contact.estimated_value.toLocaleString() : "N/A"}
 - Notes: ${contact.notes || "None"}
 

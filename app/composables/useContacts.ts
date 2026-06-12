@@ -77,6 +77,10 @@ export function useContacts() {
       if (c.id !== payload.contact) return c
       return { ...c, activities: [activity, ...((c.activities as CdActivity[]) ?? [])] }
     })
+    // Auto-advance New → Warming the first time real outreach is logged.
+    if (payload.type && (OUTREACH_TYPES as readonly string[]).includes(payload.type)) {
+      await usePipeline().maybeAutoWarm(payload.contact)
+    }
     return activity
   }
 

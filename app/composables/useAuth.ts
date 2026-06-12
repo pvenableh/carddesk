@@ -11,7 +11,10 @@ export function useAuth() {
       await $fetch('/api/auth/login', { method: 'POST', body: { email, password } })
       await fetchSession()
       analytics.login()
-      await router.push('/')
+      // replace, not push: leaving /login in history means the browser back
+      // button bounces the just-authenticated user straight back to the login
+      // screen. Replacing it drops /login from the stack.
+      await router.replace('/')
     } catch (err: any) {
       error.value = err?.data?.message ?? 'Login failed'
       throw err
@@ -24,13 +27,14 @@ export function useAuth() {
       await $fetch('/api/auth/register', { method: 'POST', body: data })
       await fetchSession()
       analytics.signUp()
-      await router.push('/')
+      // replace so the registration screen doesn't sit in history behind the app.
+      await router.replace('/')
     } catch (err: any) {
       // Email already on the shared instance but the password didn't match —
       // send them to sign in (a pending invite redeems after login) instead of
       // dead-ending on an error.
       if (err?.data?.data?.reason === 'account_exists') {
-        await router.push({ path: '/login', query: { email: data.email, exists: '1' } })
+        await router.replace({ path: '/login', query: { email: data.email, exists: '1' } })
         throw err
       }
       error.value = err?.data?.message ?? 'Registration failed'
@@ -77,7 +81,9 @@ export function useAuth() {
       await $fetch('/api/auth/logout', { method: 'POST' })
       analytics.logout()
       await clearSession()
-      await router.push('/login')
+      // replace: the logged-out user shouldn't be able to "back" into the
+      // now-dead authenticated app shell.
+      await router.replace('/login')
     } finally { loading.value = false }
   }
 

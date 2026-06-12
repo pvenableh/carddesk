@@ -10,7 +10,7 @@
  */
 withDefaults(defineProps<{
   label?: string | null
-  placement?: 'top' | 'bottom' | 'bottom-end' | 'left'
+  placement?: 'top' | 'bottom' | 'bottom-start' | 'bottom-end' | 'left'
   wrap?: boolean
 }>(), { placement: 'bottom', wrap: false })
 </script>
@@ -62,6 +62,18 @@ withDefaults(defineProps<{
 .cd-tt--bottom:focus-within .cd-tt-bub {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+/* ── Bottom, left-aligned to the trigger (for left-edge buttons) ── */
+.cd-tt--bottom-start .cd-tt-bub {
+  top: calc(100% + 8px);
+  left: 0;
+  transform: translateY(-4px);
+}
+.cd-tt--bottom-start:hover .cd-tt-bub,
+.cd-tt--bottom-start:focus-within .cd-tt-bub {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ── Bottom, right-aligned to the trigger (for edge-of-screen buttons) ── */

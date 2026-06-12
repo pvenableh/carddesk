@@ -32,8 +32,8 @@ const tutorials = [
   },
   {
     icon: 'lucide:trending-up',
-    title: 'Work your pipeline',
-    body: 'Open any contact to log activity, set a rating, and move them through your pipeline stages. Earnest AI can suggest follow-ups and coaching to keep momentum — and your activity feeds your Earnest Score.',
+    title: 'Graduate contacts to clients & partners',
+    body: 'Every contact climbs a simple ladder: New → Warming (automatic when you reach out) → Opportunity, where you set the goal — a client who hires you, or a partner you trade work with. Closed it? Graduate them and pick up the project or contract in Earnest. Earnest AI suggests the next move along the way.',
   },
 ]
 

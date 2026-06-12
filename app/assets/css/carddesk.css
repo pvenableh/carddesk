@@ -1164,13 +1164,29 @@ select.cd-inp {
   white-space: nowrap;
 }
 .cd-rpill {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   padding: 2px 9px;
   border-radius: 9999px;
   border: 1px solid;
   text-transform: uppercase;
   letter-spacing: 0.18em;
+}
+/* Mini status pill — secondary contact-card tags (client/partner/goal/overdue/joined).
+   Lighter than .cd-rpill; color + border-color + background are set inline per tag. */
+.cd-mpill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  /* Match .cd-rpill sizing so the goal/status pills read the same as the rating pill. */
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 9999px;
+  border: 1px solid var(--cd-bdr);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  white-space: nowrap;
 }
 .cd-rpill.hot {
   color: #ff6b35;
@@ -1338,14 +1354,14 @@ select.cd-inp {
   border: 2px solid var(--cd-bg);
 }
 .cd-tag-ind {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
-  padding: 3px 10px;
+  padding: 2px 9px;
   border-radius: 9999px;
   border: 1px solid var(--cd-bdr);
   color: var(--cd-dim);
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.18em;
 }
 .cd-fu-banner {
   border-radius: 14px;
@@ -1985,17 +2001,19 @@ html[data-theme="glass"] .cd-tabs {
 
 /* ── Chrome: frosted header dropdown menu ── */
 html[data-theme="glass"][data-mode="light"] .cd-dropdown {
-  background: rgba(255, 255, 255, 0.82);
+  /* Near-opaque + heavier blur: the menu floats over scrolling content on
+     mobile, so legibility wins over translucency here. */
+  background: rgba(255, 255, 255, 0.95);
   border-color: rgba(0, 0, 0, 0.06);
-  backdrop-filter: saturate(180%) blur(24px);
-  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  backdrop-filter: saturate(180%) blur(32px);
+  -webkit-backdrop-filter: saturate(180%) blur(32px);
   box-shadow: var(--glass-inset), var(--glass-shadow-pop);
 }
 html[data-theme="glass"][data-mode="dark"] .cd-dropdown {
-  background: rgba(28, 28, 32, 0.82);
+  background: rgba(20, 21, 26, 0.96);
   border-color: rgba(255, 255, 255, 0.08);
-  backdrop-filter: saturate(180%) blur(24px);
-  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  backdrop-filter: saturate(180%) blur(32px);
+  -webkit-backdrop-filter: saturate(180%) blur(32px);
   box-shadow: var(--glass-inset), var(--glass-shadow-pop);
 }
 

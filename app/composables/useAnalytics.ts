@@ -47,8 +47,8 @@ export function useAnalytics() {
     // ── Pipeline ─────────────────────────────────────────────────────────
     pipelineMove: (from: string, to: string) =>
       track('pipeline_stage_move', { from_stage: from, to_stage: to }),
-    pipelineWon: (value?: number) =>
-      track('pipeline_won', { value: value ?? 0, currency: 'USD' }),
+    pipelineGraduate: (goal: string, reason?: string, value?: number) =>
+      track('pipeline_graduate', { goal, reason: reason ?? 'unspecified', value: value ?? 0, currency: 'USD' }),
     pipelineLost: (reason?: string) =>
       track('pipeline_lost', { reason: reason ?? 'unspecified' }),
 

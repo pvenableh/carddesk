@@ -121,6 +121,8 @@ export default defineNuxtConfig({
       websocketUrl: process.env.DIRECTUS_WEBSOCKET_URL || 'ws://localhost:8055/websocket',
       directusRoleUser: process.env.NUXT_PUBLIC_DIRECTUS_ROLE_USER || '',
       appUrl: process.env.APP_URL || 'http://localhost:3000',
+      // Earnest app for pipeline graduation hand-offs (deep-links + sign-up nudge).
+      earnestAppUrl: process.env.EARNEST_APP_URL || 'https://app.earnest.guru',
       vapidPublicKey: process.env.VAPID_PUBLIC_KEY || '',
       // Resolved test/live to mirror the secret key selection (NODE_ENV).
       stripePublishableKey: process.env.NODE_ENV === 'production'

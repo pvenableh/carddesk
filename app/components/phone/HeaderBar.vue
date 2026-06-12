@@ -66,7 +66,7 @@ function onClickOutside(e: MouseEvent) {
 <template>
   <div class="cd-sbar">
     <div class="cd-sbar-left">
-      <CdTooltip :label="eventMode.active.value ? `Event Mode · ${eventMode.count.value} met` : 'Event Mode — rapid capture at events'" placement="bottom">
+      <CdTooltip :label="eventMode.active.value ? `Event Mode · ${eventMode.count.value} met` : 'Event Mode — rapid capture at events'" placement="bottom-start">
         <button
           class="cd-sbar-btn cd-sbar-event"
           :class="{ on: eventMode.active.value }"
@@ -78,7 +78,7 @@ function onClickOutside(e: MouseEvent) {
           <span v-if="eventMode.active.value" class="cd-sbar-event-dot"></span>
         </button>
       </CdTooltip>
-      <CdTooltip label="Share your card or invite someone" placement="bottom">
+      <CdTooltip label="Share your card or invite someone" placement="bottom-start">
         <button class="cd-sbar-btn cd-sbar-share" type="button" aria-label="Share card or invite" @click="openShareSheet('card')"><CdCardMark :size="17" :gradient="false" /></button>
       </CdTooltip>
     </div>

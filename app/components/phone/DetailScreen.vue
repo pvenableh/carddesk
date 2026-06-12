@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { RATINGS, ACT_TYPES, getRating, getAct, cEmoji } from '~/composables/useConstants'
+import { RATINGS, ACT_TYPES, getRating, getAct, cEmoji, industryTagStyle } from '~/composables/useConstants'
 import { todayStr, fmtFull } from '~/composables/useFormatters'
-import { PIPELINE_STAGES, LOST_REASONS } from '~/composables/usePipeline'
+import { PIPELINE_STAGES, LOST_REASONS, GOAL_OPTIONS, CONVERSION_REASONS } from '~/composables/usePipeline'
 import { SOCIALS, SOCIAL_KEYS, socialUrl } from '~/types/socials'
-import type { PipelineStage } from '~/types/directus'
+import type { PipelineStage, OpportunityGoal } from '~/types/directus'
 import confettiLib from 'canvas-confetti'
 
 const { contacts, updateContact, uploadContactImage, removeContactImage, hibernate, logActivity, markResponded, updateActivity, deleteActivity, lastActivity, daysSince, followUpStatus } = useContacts()
@@ -74,7 +74,7 @@ async function onRemovePhoto() {
   }
 }
 const { profile } = useProfile()
-const { moveToStage, getStageInfo } = usePipeline()
+const { moveToStage, setOpportunityGoal, setGoalTag, graduate, revertGraduation, getStageInfo } = usePipeline()
 
 const selContact = computed(() => contacts.value.find((c) => c.id === selectedId.value) ?? null)
 
@@ -83,10 +83,27 @@ const showStageSheet = ref(false)
 const showLostReasonSheet = ref(false)
 const selectedLostReason = ref('')
 
-// Marking a client is a big, celebrated step (+200 XP, confetti) — gate it
-// behind a confirm so it can't happen on an accidental tap.
-const showClientConfirm = ref(false)
+// Goal picker (shown when entering the Opportunity stage) and the unified
+// Graduate sheet (replaces the old "Mark as Client" confirm).
+const showGoalSheet = ref(false)
+const showGraduateSheet = ref(false)
+const graduateGoal = ref<OpportunityGoal>('client')
+const selectedConversionReason = ref('')
+const conversionNote = ref('')
+const estimatedValue = ref<number | null>(null)
 
+// Earnest hand-off, opened after a successful graduation.
+const showEarnestHandoff = ref(false)
+
+// Optional goal tag — "what am I going for with this contact" — independent of stage.
+const showGoalTagSheet = ref(false)
+const goalInfo = computed(() => GOAL_OPTIONS.find((g) => g.key === (selContact.value as any)?.opportunity_goal) ?? null)
+async function doSetGoalTag(goal: OpportunityGoal | null) {
+  if (selContact.value) await setGoalTag(selContact.value.id, goal)
+  showGoalTagSheet.value = false
+}
+
+// Move to a plain forward step, or branch to the goal/lost sub-sheets.
 async function doMoveStage(stage: PipelineStage) {
   if (!selContact.value) return
   if (stage === 'lost') {
@@ -94,9 +111,43 @@ async function doMoveStage(stage: PipelineStage) {
     showLostReasonSheet.value = true
     return
   }
+  if (stage === 'opportunity') {
+    showStageSheet.value = false
+    showGoalSheet.value = true
+    return
+  }
   await moveToStage(selContact.value.id, stage, {})
-  if (stage === 'won') fireConfetti()
   showStageSheet.value = false
+}
+
+// Pick the goal at the Opportunity stage (client vs partner).
+async function doPickGoal(goal: OpportunityGoal) {
+  if (!selContact.value) return
+  await setOpportunityGoal(selContact.value.id, goal)
+  showGoalSheet.value = false
+}
+
+// Open the Graduate sheet, pre-seeded with the existing goal/value.
+function openGraduate() {
+  const c = selContact.value as any
+  if (!c) return
+  graduateGoal.value = (c.opportunity_goal as OpportunityGoal) || 'client'
+  selectedConversionReason.value = c.conversion_reason || ''
+  conversionNote.value = c.conversion_note || ''
+  estimatedValue.value = c.estimated_value ?? null
+  showGraduateSheet.value = true
+}
+
+async function doGraduate() {
+  if (!selContact.value) return
+  await graduate(selContact.value.id, graduateGoal.value, {
+    reason: selectedConversionReason.value || undefined,
+    note: conversionNote.value.trim() || undefined,
+    estimated_value: estimatedValue.value ?? undefined,
+  })
+  showGraduateSheet.value = false
+  fireConfetti()
+  showEarnestHandoff.value = true
 }
 
 async function doLogLostReason() {
@@ -207,37 +258,13 @@ async function quickSetRating(key: string) {
   await updateContact(c.id, { rating: next } as any)
 }
 
-// Mark as client (called from the confirm sheet, never directly from a tap).
-async function doMarkClient() {
-  showClientConfirm.value = false
+// Undo a graduation — drops the client/partner status, parks back at Opportunity,
+// backs out the XP. Forgiving on purpose: graduating is the deliberate step.
+async function doRevertGraduation() {
   if (!selContact.value) return
   const c = selContact.value as any
-  if (c.is_client) return
-  await updateContact(c.id, { is_client: true, client_at: new Date().toISOString().slice(0, 10) } as any)
-  try {
-    await logActivity({
-      contact: c.id,
-      type: 'converted_client',
-      label: 'Converted to Client',
-      date: new Date().toISOString().slice(0, 10),
-      note: c.company ? `${c.name} at ${c.company} is now a client` : `${c.name} is now a client`,
-    } as any)
-  } catch (err: any) {
-    console.error('[Detail] Failed to log converted_client activity:', err?.data?.message ?? err)
-  }
-  earn(200, '💰', 'Client converted! You closed the deal.', { total_clients: (xp.value.total_clients ?? 0) + 1 })
-  fireConfetti()
-}
-
-// Flip a client back to a regular contact — easy, one tap, no confetti. Backs
-// out the +200 XP so an accidental conversion leaves no trace, and updates the
-// client count. Forgiving on purpose: the dangerous direction is marking, not unmarking.
-async function doUnmarkClient() {
-  if (!selContact.value) return
-  const c = selContact.value as any
-  if (!c.is_client) return
-  await updateContact(c.id, { is_client: false, client_at: null } as any)
-  deduct(200, '↩️', 'Back to an active contact', { total_clients: Math.max(0, (xp.value.total_clients ?? 1) - 1) })
+  if (!c.is_client && !c.is_partner) return
+  await revertGraduation(c.id)
 }
 
 // Share contact — sends a real vCard (.vcf) through the system share sheet so
@@ -290,7 +317,8 @@ async function doSaveAct() {
 }
 
 function xpForActivity(act: any): number {
-  if (act.type === 'converted_client') return 200
+  if (act.type === 'converted_client' || act.type === 'converted_partner') return 200
+  if (act.type === 'stage_change') return 0
   if (act.is_response) return 100
   const c = selContact.value as any
   if (c?.rating === 'hot') return 50
@@ -546,8 +574,11 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
               <span v-if="selContact.rating" class="cd-rpill" :class="selContact.rating">
                 <CdIcon :emoji="getRating(selContact.rating)?.emoji ?? ''" :icon="getRating(selContact.rating)?.lucide" :size="10" /> {{ getRating(selContact.rating)?.label }}
               </span>
-              <button v-if="(selContact as any).is_client" type="button" title="Tap to revert to an active contact" style="background: rgba(0,255,135,0.12); border: 1px solid rgba(0,255,135,0.3); border-radius: 6px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: var(--cd-green); cursor: pointer; font-family: inherit" @click="doUnmarkClient">
+              <button v-if="(selContact as any).is_client" type="button" title="Tap to revert to an active contact" style="background: rgba(0,255,135,0.12); border: 1px solid rgba(0,255,135,0.3); border-radius: 6px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: var(--cd-green); cursor: pointer; font-family: inherit" @click="doRevertGraduation">
                 <CdIcon emoji="💰" icon="lucide:badge-check" :size="10" /> Client
+              </button>
+              <button v-else-if="(selContact as any).is_partner" type="button" title="Tap to revert to an active contact" style="background: rgba(127,119,221,0.14); border: 1px solid rgba(127,119,221,0.35); border-radius: 6px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #7f77dd; cursor: pointer; font-family: inherit" @click="doRevertGraduation">
+                <CdIcon emoji="🤝" icon="lucide:handshake" :size="10" /> Partner
               </button>
               <button
                 v-if="selContact.pipeline_stage"
@@ -563,7 +594,35 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
                 style="font-size: 9px; font-weight: 700; color: var(--cd-dim); background: none; border: 1px dashed var(--cd-bdr); border-radius: 6px; padding: 2px 8px; cursor: pointer"
                 @click="showStageSheet = true"
               >+ Pipeline</button>
-              <span v-if="(selContact as any).industry" class="cd-tag-ind">{{ (selContact as any).industry }}</span>
+              <!-- Optional goal tag — pill, shown once a goal is set, until graduated. -->
+              <CdTooltip
+                v-if="goalInfo && !(selContact as any).is_client && !(selContact as any).is_partner"
+                :label="`Goal: ${goalInfo.label} — tap to change`"
+                placement="bottom"
+              >
+                <button
+                  type="button"
+                  class="cd-rpill"
+                  style="cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 3px"
+                  :style="goalInfo.key === 'partner' ? 'color: #7f77dd; border-color: rgba(127,119,221,0.4); background: rgba(127,119,221,0.12)' : 'color: #4da6ff; border-color: rgba(77,166,255,0.4); background: rgba(77,166,255,0.1)'"
+                  @click="showGoalTagSheet = true"
+                >
+                  <CdIcon :emoji="goalInfo.emoji" :icon="goalInfo.lucide" :size="10" /> {{ goalInfo.label }} goal
+                </button>
+              </CdTooltip>
+              <CdTooltip
+                v-else-if="!(selContact as any).is_client && !(selContact as any).is_partner"
+                label="Tag what you're going for with this contact"
+                placement="bottom"
+              >
+                <button
+                  type="button"
+                  class="cd-rpill"
+                  style="cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 3px; color: var(--cd-dim); border-style: dashed; border-color: var(--cd-bdr); background: none"
+                  @click="showGoalTagSheet = true"
+                ><CdIcon emoji="🎯" icon="lucide:target" :size="9" /> Goal</button>
+              </CdTooltip>
+              <span v-if="(selContact as any).industry" class="cd-tag-ind" :style="industryTagStyle((selContact as any).industry)">{{ (selContact as any).industry }}</span>
               <span v-if="(selContact as any).location" class="cd-tag-ind"><CdIcon emoji="📍" icon="lucide:map-pin" :size="9" /> {{ (selContact as any).location }}</span>
               <span v-if="(selContact as any).met_at" class="cd-tag-ind">@ {{ (selContact as any).met_at }}</span>
             </div>
@@ -807,17 +866,17 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
           </div>
 
           <button
-            v-if="!(selContact as any).is_client"
+            v-if="!(selContact as any).is_client && !(selContact as any).is_partner"
             class="cd-abtn"
             style="width: 100%; margin: 8px 0; background: rgba(0,255,135,0.08); border-color: rgba(0,255,135,0.3); color: var(--cd-green); font-size: 14px; padding: 12px; font-weight: 800"
-            @click="showClientConfirm = true"
-          ><CdIcon emoji="💰" icon="lucide:badge-check" :size="14" /> Mark as Client +200 XP</button>
+            @click="openGraduate"
+          ><CdIcon emoji="🎓" icon="lucide:graduation-cap" :size="14" /> Graduate to client or partner</button>
           <button
             v-else
             class="cd-abtn"
             style="width: 100%; margin: 8px 0; background: transparent; border-color: var(--cd-bdr); color: var(--cd-muted); font-size: 12px; padding: 10px"
-            @click="doUnmarkClient"
-          ><CdIcon emoji="↩️" icon="lucide:rotate-ccw" :size="13" /> This isn't a client — revert to contact</button>
+            @click="doRevertGraduation"
+          ><CdIcon emoji="↩️" icon="lucide:rotate-ccw" :size="13" /> Revert to an active contact</button>
 
           <div style="display: flex; gap: 7px; margin: 8px 0 20px">
             <button
@@ -844,10 +903,11 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
     <Transition name="cd-pop">
       <div v-if="showStageSheet" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showStageSheet = false">
         <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 16px; width: 100%; max-width: 768px">
-          <div style="font-size: 14px; font-weight: 800; margin-bottom: 12px">Move to Stage</div>
+          <div style="font-size: 14px; font-weight: 800; margin-bottom: 2px">Where are you with {{ selContact?.name }}?</div>
+          <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">Move them along — we handle the rest.</div>
           <div style="display: flex; flex-direction: column; gap: 6px">
             <button
-              v-for="s in PIPELINE_STAGES"
+              v-for="s in PIPELINE_STAGES.filter((x) => x.group === 'forward')"
               :key="s.key"
               style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-text); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; text-align: left"
               :style="selContact?.pipeline_stage === s.key ? 'border-color: var(--cd-accent); background: rgba(0,255,135,0.06)' : ''"
@@ -856,8 +916,17 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
               <CdIcon :emoji="s.emoji" :icon="s.lucide" :size="16" />
               {{ s.label }}
               <span v-if="selContact?.pipeline_stage === s.key" style="margin-left: auto; font-size: 10px; color: var(--cd-accent)">current</span>
+              <span v-else-if="s.key === 'opportunity'" style="margin-left: auto; font-size: 10px; color: var(--cd-dim)">client or partner →</span>
             </button>
           </div>
+          <!-- Off-ramp, tucked beneath a divider so it never reads as a forward step. -->
+          <div style="height: 1px; background: var(--cd-bdr); margin: 12px 0 8px" />
+          <button
+            style="display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 14px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 12px; cursor: pointer; text-align: left"
+            @click="doMoveStage('lost')"
+          >
+            <CdIcon emoji="🌙" icon="lucide:moon" :size="14" /> Not now — didn't work out
+          </button>
           <button style="width: 100%; padding: 10px; margin-top: 10px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showStageSheet = false">Cancel</button>
         </div>
       </div>
@@ -892,21 +961,98 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
       </div>
     </Transition>
 
-    <!-- Mark-as-Client confirm — a deliberate gate on a big, hard-to-spot-undo step -->
+    <!-- Optional goal tag picker (independent of stage) -->
     <Transition name="cd-pop">
-      <div v-if="showClientConfirm" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showClientConfirm = false">
-        <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 18px 16px; width: 100%; max-width: 768px">
-          <div style="font-size: 30px; text-align: center; margin-bottom: 6px"><CdIcon emoji="💰" icon="lucide:badge-check" :size="30" /></div>
-          <div style="font-size: 16px; font-weight: 800; text-align: center; margin-bottom: 4px">Mark {{ selContact?.name }} as a client?</div>
-          <div style="font-size: 12px; color: var(--cd-muted); text-align: center; margin-bottom: 16px; line-height: 1.5">
-            This logs a “Converted to Client” milestone and awards +200 XP. You can revert later from this page.
+      <div v-if="showGoalTagSheet" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showGoalTagSheet = false">
+        <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 16px; width: 100%; max-width: 768px">
+          <div style="font-size: 14px; font-weight: 800; margin-bottom: 2px">What are you going for with {{ selContact?.name }}?</div>
+          <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">Optional — just a reminder of what you're aiming for.</div>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <button
+              v-for="g in GOAL_OPTIONS"
+              :key="g.key"
+              style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-text); font-size: 14px; font-weight: 700; cursor: pointer; text-align: left"
+              :style="(selContact as any)?.opportunity_goal === g.key ? 'border-color: var(--cd-accent); background: rgba(0,255,135,0.07)' : ''"
+              @click="doSetGoalTag(g.key)"
+            >
+              <CdIcon :emoji="g.emoji" :icon="g.lucide" :size="20" />
+              <span>{{ g.label }}<br><span style="font-size: 11px; font-weight: 500; color: var(--cd-muted)">{{ g.hint }}</span></span>
+              <span v-if="(selContact as any)?.opportunity_goal === g.key" style="margin-left: auto; font-size: 10px; color: var(--cd-accent)">current</span>
+            </button>
           </div>
-          <button class="cd-abtn g" style="font-size: 15px; padding: 13px" @click="doMarkClient">
-            <CdIcon emoji="💰" icon="lucide:badge-check" :size="14" /> Yes, they're a client
-          </button>
-          <button style="width: 100%; padding: 10px; margin-top: 8px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showClientConfirm = false">Cancel</button>
+          <button
+            v-if="(selContact as any)?.opportunity_goal"
+            style="width: 100%; padding: 10px; margin-top: 10px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer"
+            @click="doSetGoalTag(null)"
+          >Clear goal</button>
+          <button style="width: 100%; padding: 10px; margin-top: 6px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showGoalTagSheet = false">Cancel</button>
         </div>
       </div>
     </Transition>
+
+    <!-- Goal picker — shown when entering the Opportunity stage -->
+    <Transition name="cd-pop">
+      <div v-if="showGoalSheet" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showGoalSheet = false">
+        <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 16px; width: 100%; max-width: 768px">
+          <div style="font-size: 14px; font-weight: 800; margin-bottom: 2px">What's the goal with {{ selContact?.name }}?</div>
+          <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">This tailors the ideas Earnest gives you. You can change it later.</div>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <button
+              v-for="g in GOAL_OPTIONS"
+              :key="g.key"
+              style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-text); font-size: 14px; font-weight: 700; cursor: pointer; text-align: left"
+              @click="doPickGoal(g.key)"
+            >
+              <CdIcon :emoji="g.emoji" :icon="g.lucide" :size="20" />
+              <span>{{ g.label }}<br><span style="font-size: 11px; font-weight: 500; color: var(--cd-muted)">{{ g.hint }}</span></span>
+            </button>
+          </div>
+          <button style="width: 100%; padding: 10px; margin-top: 10px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showGoalSheet = false; showStageSheet = true">← Back</button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Graduate sheet — captures what sealed it, then hands off to Earnest -->
+    <Transition name="cd-pop">
+      <div v-if="showGraduateSheet" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showGraduateSheet = false">
+        <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 18px 16px; width: 100%; max-width: 768px">
+          <div style="font-size: 30px; text-align: center; margin-bottom: 6px"><CdIcon emoji="🎓" icon="lucide:graduation-cap" :size="30" /></div>
+          <div style="font-size: 16px; font-weight: 800; text-align: center; margin-bottom: 10px">Graduate {{ selContact?.name }}</div>
+          <!-- Goal toggle -->
+          <div style="display: flex; gap: 6px; margin-bottom: 14px">
+            <button
+              v-for="g in GOAL_OPTIONS"
+              :key="g.key"
+              style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-text); font-size: 13px; font-weight: 700; cursor: pointer"
+              :style="graduateGoal === g.key ? 'border-color: var(--cd-accent); background: rgba(0,255,135,0.07)' : ''"
+              @click="graduateGoal = g.key"
+            ><CdIcon :emoji="g.emoji" :icon="g.lucide" :size="14" /> {{ g.label }}</button>
+          </div>
+          <!-- What sealed it -->
+          <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 6px">What sealed it?</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px">
+            <button
+              v-for="r in CONVERSION_REASONS"
+              :key="r"
+              style="padding: 7px 12px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-text); font-size: 12px; font-weight: 600; cursor: pointer"
+              :style="selectedConversionReason === r ? 'border-color: var(--cd-accent); background: rgba(0,255,135,0.07)' : ''"
+              @click="selectedConversionReason = (selectedConversionReason === r ? '' : r)"
+            >{{ r }}</button>
+          </div>
+          <input
+            v-model="conversionNote"
+            placeholder="Add a note (optional)"
+            style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-text); font-size: 13px; margin-bottom: 14px; font-family: inherit"
+          >
+          <button class="cd-abtn g" style="font-size: 15px; padding: 13px" @click="doGraduate">
+            <CdIcon emoji="🎉" icon="lucide:party-popper" :size="14" /> Graduate to {{ graduateGoal }} +200 XP
+          </button>
+          <button style="width: 100%; padding: 10px; margin-top: 8px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showGraduateSheet = false">Cancel</button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Post-graduation Earnest hand-off (deep-link or sign-up nudge) -->
+    <PhoneEarnestHandoffSheet v-model:open="showEarnestHandoff" :contact="selContact" :goal="graduateGoal" />
   </div>
 </template>

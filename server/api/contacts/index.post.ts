@@ -31,12 +31,17 @@ export default defineEventHandler(async (event) => {
         source: ['scan', 'manual', 'referral', 'import', 'event'].includes(body.source) ? body.source : 'manual',
         referred_by: body.referred_by ?? null,
         hibernated: false,
-        // A freshly added contact is never a client — that's an explicit,
-        // deliberate promotion the user makes later (DetailScreen.doMarkClient).
-        // Set it explicitly rather than trusting the column default so a scan or
-        // manual add can never land someone in the client list by accident.
+        // Every contact starts at the bottom of the relationship ladder; the
+        // first logged outreach auto-advances them to Warming (useContacts).
+        pipeline_stage: 'new',
+        // A freshly added contact is never a client/partner — those are explicit,
+        // deliberate graduations the user makes later (DetailScreen → Graduate).
+        // Set them explicitly rather than trusting column defaults so a scan or
+        // manual add can never land someone in an outcome list by accident.
         is_client: false,
         client_at: null,
+        is_partner: false,
+        partner_at: null,
       }),
     );
   } catch (err: any) {

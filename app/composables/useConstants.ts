@@ -58,6 +58,18 @@ export function industryColor(industry?: string | null): string | null {
   return industry ? (INDUSTRY_COLORS[industry] ?? null) : null
 }
 
+/** Inline style to tint an industry chip with its orbit color (text/border/fill).
+ *  Returns {} for unknown industries so the chip keeps its default neutral look. */
+export function industryTagStyle(industry?: string | null): Record<string, string> {
+  const c = industryColor(industry)
+  if (!c) return {}
+  return {
+    color: c,
+    borderColor: `color-mix(in srgb, ${c} 45%, transparent)`,
+    background: `color-mix(in srgb, ${c} 12%, transparent)`,
+  }
+}
+
 export const EMOJIS = [
   "🐯", "🦁", "🦊", "🐺", "🦋", "🐬",
   "🦉", "🦝", "🐠", "🦌", "🦅", "🌊",

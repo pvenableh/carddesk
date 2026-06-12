@@ -167,7 +167,10 @@ export interface CdFeedback {
   note?: string | null
 }
 
-export type PipelineStage = 'new' | 'contacted' | 'qualified' | 'proposal_sent' | 'negotiating' | 'won' | 'lost'
+export type PipelineStage = 'new' | 'warming' | 'opportunity' | 'client' | 'partner' | 'lost'
+
+/** Goal tag set once a contact reaches the Opportunity stage. */
+export type OpportunityGoal = 'client' | 'partner'
 
 export interface CdContact {
   id: string
@@ -203,9 +206,18 @@ export interface CdContact {
   imageUrl?: string | null
   activities?: CdActivity[]
   pipeline_stage?: PipelineStage
+  /** Goal tag chosen at the Opportunity stage — are we chasing a client or a partner? */
+  opportunity_goal?: OpportunityGoal | null
   earnest_lead_id?: string
   estimated_value?: number
   lost_reason?: string
+  /** Graduated to a referral/collaboration partner (mirrors is_client). */
+  is_partner: boolean
+  partner_at?: string
+  /** What sealed the graduation — Project · Contract · Referral · Retainer · Collaboration. */
+  conversion_reason?: string
+  /** Free-text detail on what converted them; doubles as the Earnest sign-up hook. */
+  conversion_note?: string
   /** Directus user id if this contact joined CardDesk (stamped on invite redemption). */
   linked_user?: string | null
   /** How this contact was acquired. */
@@ -219,7 +231,7 @@ export interface CdActivity {
   user_created: string
   date_created: string
   contact: string | CdContact
-  type: 'email' | 'text' | 'call' | 'meeting' | 'linkedin' | 'other' | 'contact_added' | 'card_scanned' | 'converted_client' | 'stage_change' | 'converted_lead'
+  type: 'email' | 'text' | 'call' | 'meeting' | 'linkedin' | 'other' | 'contact_added' | 'card_scanned' | 'converted_client' | 'converted_partner' | 'stage_change' | 'converted_lead'
   label: string
   date: string
   note?: string

@@ -4,7 +4,7 @@
  * emoji. Reference these instead of hardcoding `'lucide:...'` strings so every
  * concept has exactly one icon, defined in one place.
  *
- *   <CdIcon :icon="ICON.stage.won" :size="20" />   // color via parent `color`
+ *   <CdIcon :icon="ICON.stage.client" :size="20" />   // color via parent `color`
  *
  * Auto-imported by Nuxt (no import needed in components).
  */
@@ -19,11 +19,10 @@ export const ICON = {
   },
   stage: {
     new: 'lucide:plus-circle',
-    contacted: 'lucide:send',
-    qualified: 'lucide:circle-check',
-    proposal_sent: 'lucide:file-text',
-    negotiating: 'lucide:handshake',
-    won: 'lucide:trophy',
+    warming: 'lucide:flame',
+    opportunity: 'lucide:target',
+    client: 'lucide:badge-check',
+    partner: 'lucide:handshake',
     lost: 'lucide:circle-x',
   },
   action: {

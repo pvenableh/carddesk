@@ -59,7 +59,8 @@ export function useAskEarnest() {
           contactId: c.id,
           context: {
             name: c.name, company: c.company, title: c.title, industry: c.industry,
-            rating: c.rating, pipeline_stage: c.pipeline_stage, is_client: c.is_client,
+            rating: c.rating, pipeline_stage: c.pipeline_stage, opportunity_goal: c.opportunity_goal,
+            is_client: c.is_client, is_partner: c.is_partner,
             met_at: c.met_at, notes: c.notes,
           },
           focus: `the contact "${c.name}"${c.company ? ` from ${c.company}` : ''} they're looking at`,

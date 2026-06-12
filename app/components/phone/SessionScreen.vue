@@ -45,9 +45,10 @@ async function loadAiCards(mode: 'tough' | 'hype') {
         xp: { level: xp.value.level, streak: xp.value.streak },
         pipeline: {
           total: Object.values(pStats.stageCounts).reduce((a: number, b: any) => a + b, 0),
-          negotiating: pStats.stageCounts.negotiating ?? 0,
+          opportunities: pStats.stageCounts.opportunity ?? 0,
           stalled: pStats.stalledCount,
-          won: pStats.stageCounts.won ?? 0,
+          clients: pStats.stageCounts.client ?? 0,
+          partners: pStats.stageCounts.partner ?? 0,
           lost: pStats.stageCounts.lost ?? 0,
           value: pStats.totalValue,
         },

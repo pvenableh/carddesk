@@ -14,9 +14,9 @@ useSeoMeta({
 })
 
 const buckets: SortBucket[] = [
-  { key: 'contacted', label: 'Reached out', icon: ICON.stage.contacted, accent: 'var(--cd-palette-primary, #4da6ff)', xp: 10 },
-  { key: 'qualified', label: 'Warming up', icon: ICON.stage.qualified, accent: 'var(--cd-green)', xp: 15 },
-  { key: 'won', label: 'Win it!', icon: ICON.stage.won, accent: 'var(--cd-gold, #ffd700)', xp: 150, celebrate: true },
+  { key: 'warming', label: 'Warming up', icon: ICON.stage.warming, accent: 'var(--cd-palette-primary, #4da6ff)', xp: 10 },
+  { key: 'opportunity', label: 'Real opportunity', icon: ICON.stage.opportunity, accent: 'var(--cd-green)', xp: 20 },
+  { key: 'client', label: 'Win the deal!', icon: ICON.stage.client, accent: 'var(--cd-gold, #ffd700)', xp: 200, celebrate: true },
   { key: 'lost', label: 'Not now', icon: ICON.contact.snooze, accent: 'var(--cd-ice, #a8d8ea)', xp: 10 },
 ]
 

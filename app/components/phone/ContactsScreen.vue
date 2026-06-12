@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { RATINGS, RATING_ORDER, getRating, cEmoji } from '~/composables/useConstants'
-import { PIPELINE_STAGES } from '~/composables/usePipeline'
+import { PIPELINE_STAGES, GOAL_OPTIONS } from '~/composables/usePipeline'
 import ConnectionsView from './ConnectionsView.vue'
 
 const { contacts, updateContact, followUpStatus, loading: contactsLoading, error: contactsError, fetchContacts } = useContacts()
 const { nav, goDetail } = useNavigation()
-const { getContactsByStage, getStageInfo } = usePipeline()
+const { getContactsByStage, getStageInfo, setGoalTag } = usePipeline()
 
 type RatingFilter = '' | 'hot' | 'warm' | 'nurture' | 'cold'
 
@@ -20,10 +20,25 @@ async function setListRating(key: string | null) {
   await updateContact(c.id, { rating: next } as any)
 }
 
+// Inline goal picker — tapping a card's goal tag opens this to change/clear it.
+const goalFor = ref<any | null>(null)
+async function setListGoal(goal: 'client' | 'partner' | null) {
+  const c = goalFor.value
+  goalFor.value = null
+  if (!c) return
+  // Tapping the current goal clears it.
+  const next = c.opportunity_goal === goal ? null : goal
+  await setGoalTag(c.id, next)
+}
+
 const cSearch = ref('')
 const cFilter = ref<RatingFilter>('')
 const cSort = ref('recent')
 const viewMode = ref<'rating' | 'pipeline'>('rating')
+
+// First-run pipeline coachmark — auto-starts the first time the lanes are shown.
+const { maybeAutoStart: maybeStartTour, startTour } = usePipelineTour()
+watch(viewMode, (m) => { if (m === 'pipeline') maybeStartTour() })
 
 // Top-level sub-tab for the "Network" screen: your saved contacts vs. your
 // user↔user connections (the orbit + leaderboard live under Connections). The
@@ -77,17 +92,19 @@ const alertCs = computed(() =>
 const pipelineGroups = computed(() => {
   const byStage = getContactsByStage()
   return PIPELINE_STAGES
-    .filter((s) => s.key !== 'won' && s.key !== 'lost')
+    .filter((s) => s.group === 'forward')
     .map((s) => ({
       ...s,
       contacts: byStage[s.key] ?? [],
     }))
 })
 
-const wonLost = computed(() => {
+// Settled outcomes shown as a summary row beneath the active lanes.
+const outcomes = computed(() => {
   const byStage = getContactsByStage()
   return {
-    won: byStage.won ?? [],
+    client: byStage.client ?? [],
+    partner: byStage.partner ?? [],
     lost: byStage.lost ?? [],
   }
 })
@@ -188,11 +205,12 @@ async function runExport() {
       <template v-if="netTab === 'contacts'">
         <input v-model="cSearch" class="cd-inp" placeholder="Search..." style="margin-bottom: 10px" />
 
-        <!-- View mode toggle: Rating | Pipeline -->
+        <!-- View mode toggle: List (browse, filter by temperature) | Pipeline (board by stage).
+             key stays 'rating' to avoid churning the viewMode checks; only the label changed. -->
         <CdTabs
           v-model="viewMode"
           :items="[
-            { key: 'rating', label: 'Rating', emoji: '⭐', icon: 'lucide:star' },
+            { key: 'rating', label: 'List', emoji: '📋', icon: 'lucide:list' },
             { key: 'pipeline', label: 'Pipeline', emoji: '📊', icon: 'lucide:git-branch' },
           ]"
           style="margin-bottom: 10px"
@@ -251,14 +269,16 @@ async function runExport() {
         </div>
         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0">
           <button v-if="c.rating" type="button" class="cd-rpill" :class="c.rating" style="cursor: pointer; font-family: inherit" title="Tap to change temperature" @click.stop="ratingFor = c">
-            <CdIcon :emoji="getRating(c.rating)?.emoji ?? ''" :icon="getRating(c.rating)?.lucide" :size="10" /> {{ getRating(c.rating)?.label }}
+            <CdIcon :emoji="getRating(c.rating)?.emoji ?? ''" :icon="getRating(c.rating)?.lucide" :size="9" /> {{ getRating(c.rating)?.label }}
           </button>
-          <button v-else type="button" style="display: inline-flex; align-items: center; gap: 3px; font-size: 9px; font-weight: 700; color: var(--cd-dim); background: none; border: 1px dashed var(--cd-bdr); border-radius: 9999px; padding: 2px 8px; cursor: pointer; font-family: inherit" title="Set temperature" @click.stop="ratingFor = c">
+          <button v-else type="button" class="cd-mpill" style="color: var(--cd-dim); background: none; border-style: dashed; cursor: pointer; font-family: inherit" title="Set temperature" @click.stop="ratingFor = c">
             <CdIcon emoji="🌡️" icon="lucide:thermometer" :size="9" /> Rate
           </button>
-          <span v-if="(c as any).is_client" style="font-size: 9px; color: var(--cd-green); font-weight: 700"><CdIcon emoji="💰" icon="lucide:badge-check" :size="9" /> client</span>
-          <span v-else-if="followUpStatus(c) === 'overdue'" style="font-size: 9px; color: #ff6b35; font-weight: 700"><CdIcon emoji="⚡" icon="lucide:alert-triangle" :size="9" /> overdue</span>
-          <span v-if="c.linked_user" style="font-size: 9px; color: var(--cd-purple, #b87dff); font-weight: 700"><CdIcon emoji="🪐" icon="lucide:orbit" :size="9" /> joined</span>
+          <span v-if="(c as any).is_client" class="cd-mpill" style="color: var(--cd-green); border-color: rgba(0,255,135,0.3); background: rgba(0,255,135,0.1)"><CdIcon emoji="💰" icon="lucide:badge-check" :size="9" /> client</span>
+          <span v-else-if="(c as any).is_partner" class="cd-mpill" style="color: #7f77dd; border-color: rgba(127,119,221,0.35); background: rgba(127,119,221,0.12)"><CdIcon emoji="🤝" icon="lucide:handshake" :size="9" /> partner</span>
+          <button v-else-if="(c as any).opportunity_goal === 'partner'" type="button" class="cd-mpill" style="color: #7f77dd; border-color: rgba(127,119,221,0.4); background: rgba(127,119,221,0.08); border-style: dashed; cursor: pointer; font-family: inherit" @click.stop="goalFor = c"><CdIcon emoji="🤝" icon="lucide:handshake" :size="9" /> partner goal</button>
+          <button v-else-if="(c as any).opportunity_goal === 'client'" type="button" class="cd-mpill" style="color: #4da6ff; border-color: rgba(77,166,255,0.4); background: rgba(77,166,255,0.08); border-style: dashed; cursor: pointer; font-family: inherit" @click.stop="goalFor = c"><CdIcon emoji="💼" icon="lucide:briefcase" :size="9" /> client goal</button>
+          <span v-if="c.linked_user" class="cd-mpill" style="color: var(--cd-purple, #b87dff); border-color: rgba(184,125,255,0.3); background: rgba(184,125,255,0.1)"><CdIcon emoji="🪐" icon="lucide:orbit" :size="9" /> joined</span>
         </div>
       </div>
       </div>
@@ -269,6 +289,10 @@ async function runExport() {
     <!-- Pipeline view (horizontal scrollable lanes) -->
     <div v-else class="cd-scrl" style="padding: 4px max(0px, calc((100% - 740px) / 2)) 8px">
       <div class="cd-foot-fill">
+      <button
+        style="display: inline-flex; align-items: center; gap: 5px; margin: 0 14px 8px; padding: 4px 0; background: none; border: none; color: var(--cd-dim); font-size: 11px; font-weight: 600; cursor: pointer"
+        @click="startTour"
+      ><CdIcon emoji="💡" icon="lucide:help-circle" :size="12" /> How the pipeline works</button>
       <div class="cd-hscroll" style="display: flex; gap: 10px; padding: 0 14px; min-height: 200px">
         <div
           v-for="lane in pipelineGroups"
@@ -295,24 +319,33 @@ async function runExport() {
               <div class="cd-cnm" style="font-size: 12px">{{ c.name }}</div>
               <div class="cd-csb" style="font-size: 10px">{{ c.company || '' }}</div>
             </div>
-            <span v-if="c.estimated_value" style="font-size: 9px; font-weight: 700; color: var(--cd-accent)">
-              ${{ c.estimated_value.toLocaleString() }}
-            </span>
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0">
+              <span v-if="(c as any).opportunity_goal === 'partner'" style="font-size: 13px" aria-label="Goal: partner"><CdIcon emoji="🤝" icon="lucide:handshake" :size="12" /></span>
+              <span v-else-if="(c as any).opportunity_goal === 'client'" style="font-size: 13px" aria-label="Goal: client"><CdIcon emoji="💼" icon="lucide:briefcase" :size="12" /></span>
+              <span v-if="c.estimated_value" style="font-size: 9px; font-weight: 700; color: var(--cd-accent)">
+                ${{ c.estimated_value.toLocaleString() }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Won/Lost summary -->
+      <!-- Graduated / settled outcomes -->
       <div style="padding: 10px 14px 0; display: flex; gap: 8px">
         <div style="flex: 1; background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 10px; padding: 10px; text-align: center">
-          <div style="font-size: 20px; margin-bottom: 2px"><CdIcon emoji="🏆" icon="lucide:trophy" :size="20" /></div>
-          <div style="font-size: 18px; font-weight: 800; color: var(--cd-accent)">{{ wonLost.won.length }}</div>
-          <div class="cd-eyebrow">Won</div>
+          <div style="font-size: 20px; margin-bottom: 2px"><CdIcon emoji="💰" icon="lucide:badge-check" :size="20" /></div>
+          <div style="font-size: 18px; font-weight: 800; color: var(--cd-accent)">{{ outcomes.client.length }}</div>
+          <div class="cd-eyebrow">Clients</div>
         </div>
         <div style="flex: 1; background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 10px; padding: 10px; text-align: center">
-          <div style="font-size: 20px; margin-bottom: 2px"><CdIcon emoji="❌" icon="lucide:x-circle" :size="20" /></div>
-          <div style="font-size: 18px; font-weight: 800; color: var(--cd-muted)">{{ wonLost.lost.length }}</div>
-          <div class="cd-eyebrow">Lost</div>
+          <div style="font-size: 20px; margin-bottom: 2px"><CdIcon emoji="🤝" icon="lucide:handshake" :size="20" /></div>
+          <div style="font-size: 18px; font-weight: 800; color: #7f77dd">{{ outcomes.partner.length }}</div>
+          <div class="cd-eyebrow">Partners</div>
+        </div>
+        <div style="flex: 1; background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 10px; padding: 10px; text-align: center">
+          <div style="font-size: 20px; margin-bottom: 2px"><CdIcon emoji="🌙" icon="lucide:moon" :size="20" /></div>
+          <div style="font-size: 18px; font-weight: 800; color: var(--cd-muted)">{{ outcomes.lost.length }}</div>
+          <div class="cd-eyebrow">Not now</div>
         </div>
       </div>
       </div>
@@ -363,6 +396,32 @@ async function runExport() {
         </div>
       </div>
     </Transition>
+
+    <!-- Inline goal picker — opened by tapping a card's goal tag. -->
+    <Transition name="cd-pop">
+      <div v-if="goalFor" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="goalFor = null">
+        <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 16px; width: 100%; max-width: 768px">
+          <div style="font-size: 14px; font-weight: 800; margin-bottom: 2px">What are you going for?</div>
+          <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">{{ goalFor.name }}</div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <button
+              v-for="g in GOAL_OPTIONS"
+              :key="g.key"
+              style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-text); font-size: 13px; font-weight: 600; cursor: pointer; text-align: left"
+              :style="goalFor.opportunity_goal === g.key ? (g.key === 'partner' ? 'border-color:#7f77dd;background:rgba(127,119,221,0.1);color:#7f77dd' : 'border-color:#4da6ff;background:rgba(77,166,255,0.1);color:#4da6ff') : ''"
+              @click="setListGoal(g.key)"
+            >
+              <CdIcon :emoji="g.emoji" :icon="g.lucide" :size="16" /> {{ g.label }}
+              <span v-if="goalFor.opportunity_goal === g.key" style="margin-left: auto; font-size: 10px">current · tap to clear</span>
+            </button>
+          </div>
+          <button style="width: 100%; padding: 10px; margin-top: 10px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="goalFor = null">Cancel</button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- First-run pipeline coachmark -->
+    <PhonePipelineTour />
   </div>
 </template>
 
