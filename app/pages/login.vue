@@ -7,8 +7,11 @@ useSeoMeta({
 })
 
 const { login, loading, error } = useAuth()
-const email = ref('')
+const route = useRoute()
+const email = ref(typeof route.query.email === 'string' ? route.query.email : '')
 const password = ref('')
+// Bounced here from the signup form because the email already has an account.
+const existsNotice = ref(route.query.exists === '1')
 async function handleSubmit() {
   if (!email.value || !password.value) return
   await login(email.value, password.value)
@@ -25,6 +28,9 @@ async function handleSubmit() {
       <div class="auth-card">
         <h1 class="auth-title">Welcome back</h1>
         <p class="auth-subtitle">Sign in to your account</p>
+        <div v-if="existsNotice && !error" class="auth-notice">
+          You already have an account — sign in to finish connecting.
+        </div>
         <div v-if="error" class="auth-error">{{ error }}</div>
         <form class="auth-form" @submit.prevent="handleSubmit">
           <div>
@@ -97,5 +103,16 @@ async function handleSubmit() {
   font-weight: 600;
   text-transform: uppercase;
   margin: 0 0 40px;
+}
+.auth-notice {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--cd-accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-accent) 35%, transparent);
+  color: var(--cd-text, inherit);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
 }
 </style>

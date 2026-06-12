@@ -100,20 +100,24 @@ export default defineEventHandler(async (event) => {
       )) as any[]
       const myEmail = meUsers?.[0]?.email?.toLowerCase()
       if (myEmail) {
-        const matches = (await admin.request(
+        // Directus has no case-insensitive-equals operator on the email field, so
+        // narrow with _icontains then exact-match case-insensitively client-side
+        // (mirrors the existing-user lookup in server/api/auth/register.post.ts).
+        const candidates = (await admin.request(
           readItems('cd_contacts' as any, {
             filter: {
               _and: [
                 { user_created: { _eq: inviter } },
-                { email: { _ieq: myEmail } },
+                { email: { _icontains: myEmail } },
                 { linked_user: { _null: true } },
               ],
             } as any,
-            fields: ['id'],
-            limit: 5,
+            fields: ['id', 'email'],
+            limit: 20,
           }),
         )) as any[]
-        for (const c of matches ?? [])
+        const matches = (candidates ?? []).filter((c) => (c.email ?? '').toLowerCase() === myEmail)
+        for (const c of matches)
           await admin.request(updateItem('cd_contacts' as any, c.id, { linked_user: me } as any))
       }
     }

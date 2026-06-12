@@ -26,6 +26,13 @@ export function useAuth() {
       analytics.signUp()
       await router.push('/')
     } catch (err: any) {
+      // Email already on the shared instance but the password didn't match —
+      // send them to sign in (a pending invite redeems after login) instead of
+      // dead-ending on an error.
+      if (err?.data?.data?.reason === 'account_exists') {
+        await router.push({ path: '/login', query: { email: data.email, exists: '1' } })
+        throw err
+      }
       error.value = err?.data?.message ?? 'Registration failed'
       throw err
     } finally { loading.value = false }
