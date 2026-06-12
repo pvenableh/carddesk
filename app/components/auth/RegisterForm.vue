@@ -4,6 +4,12 @@ import { toTypedSchema } from '@vee-validate/zod'
 import * as z from 'zod'
 import { INDUSTRIES } from '~/composables/useConstants'
 
+defineProps<{
+  // When the visitor arrived via an invite link, the name of who invited them —
+  // shown as a personalized "X invited you" banner above the form.
+  inviterName?: string | null
+}>()
+
 const emit = defineEmits<{
   login: []
 }>()
@@ -14,8 +20,8 @@ const { register, loading, error } = useAuth()
 const schema = toTypedSchema(
   z
     .object({
-      first_name: z.string().optional(),
-      last_name: z.string().optional(),
+      first_name: z.string().min(1, 'First name is required'),
+      last_name: z.string().min(1, 'Last name is required'),
       title: z.string().optional(),
       email: z.string().min(1, 'Email is required').email('Enter a valid email'),
       industry: z.string().min(1, 'Please select your industry'),
@@ -44,26 +50,13 @@ const [location, locationAttrs] = defineField('location')
 const [password, passwordAttrs] = defineField('password')
 const [confirmPassword, confirmAttrs] = defineField('confirmPassword')
 
-const passwordStrength = computed(() => {
-  const p = password.value ?? ''
-  if (!p) return { score: 0, label: '', color: '' }
-  let score = 0
-  if (p.length >= 8) score++
-  if (/[A-Z]/.test(p)) score++
-  if (/[0-9]/.test(p)) score++
-  if (/[^A-Za-z0-9]/.test(p)) score++
-  const labels = ['', 'Weak', 'Fair', 'Good', 'Strong']
-  const colors = ['', '#ff6b35', '#ffe033', '#00c268', '#00ff87']
-  return { score, label: labels[score], color: colors[score] }
-})
-
 const onSubmit = handleSubmit(async (values) => {
   try {
     await register({
       email: values.email,
       password: values.password,
-      first_name: values.first_name || undefined,
-      last_name: values.last_name || undefined,
+      first_name: values.first_name,
+      last_name: values.last_name,
       title: values.title || undefined,
       industry: values.industry,
       location: values.location || undefined,
@@ -76,18 +69,33 @@ const onSubmit = handleSubmit(async (values) => {
 
 <template>
   <div class="auth-card">
+    <!-- Floating glass chips — the gamified hero pills from the landing -->
+    <div class="auth-chips" aria-hidden="true">
+      <span class="auth-chip auth-chip-xp">+50 XP</span>
+      <span class="auth-chip auth-chip-streak"><CdIcon emoji="🔥" icon="lucide:flame" :size="13" /> day 1</span>
+    </div>
     <h1 class="auth-title">Create your account</h1>
     <p class="auth-subtitle">Start gamifying your network</p>
+    <div v-if="inviterName" class="auth-invite-banner">
+      <CdIcon emoji="🤝" icon="lucide:handshake" :size="16" />
+      <span><strong>{{ inviterName }}</strong> invited you — sign up to connect</span>
+    </div>
+    <div class="auth-token-badge">
+      <CdIcon emoji="✨" icon="lucide:sparkles" :size="15" />
+      <span><strong>25 Earnest AI tokens</strong> free when you start</span>
+    </div>
     <div v-if="error" class="auth-error">{{ error }}</div>
     <form class="auth-form" novalidate @submit="onSubmit">
       <div class="auth-row">
         <div>
           <label class="auth-label">First Name</label>
           <input v-model="firstName" v-bind="firstNameAttrs" class="auth-input" placeholder="Jane" />
+          <span v-if="errors.first_name" class="auth-field-error">{{ errors.first_name }}</span>
         </div>
         <div>
           <label class="auth-label">Last Name</label>
           <input v-model="lastName" v-bind="lastNameAttrs" class="auth-input" placeholder="Smith" />
+          <span v-if="errors.last_name" class="auth-field-error">{{ errors.last_name }}</span>
         </div>
       </div>
       <div>
@@ -114,15 +122,7 @@ const onSubmit = handleSubmit(async (values) => {
       <div>
         <label class="auth-label">Password</label>
         <input v-model="password" v-bind="passwordAttrs" type="password" class="auth-input" placeholder="••••••••" />
-        <div v-if="password" class="auth-strength">
-          <div class="auth-strength-track">
-            <div
-              class="auth-strength-fill"
-              :style="{ width: (passwordStrength.score / 4) * 100 + '%', background: passwordStrength.color }"
-            ></div>
-          </div>
-          <span :style="{ color: passwordStrength.color }">{{ passwordStrength.label }}</span>
-        </div>
+        <AuthPasswordStrength :password="password" />
         <span v-if="errors.password" class="auth-field-error">{{ errors.password }}</span>
       </div>
       <div>
@@ -133,6 +133,7 @@ const onSubmit = handleSubmit(async (values) => {
       <button type="submit" :disabled="loading" class="auth-btn">
         {{ loading ? 'Creating account...' : 'Create Account →' }}
       </button>
+      <p class="auth-hand">no credit card — your first 25 tokens are on us ✨</p>
     </form>
     <p class="auth-footer">
       Already have an account?

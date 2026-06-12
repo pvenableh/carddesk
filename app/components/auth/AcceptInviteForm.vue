@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useForm } from 'vee-validate'
+import { toTypedSchema } from '@vee-validate/zod'
+import * as z from 'zod'
+
 const props = defineProps<{
   token: string
 }>()
@@ -8,31 +12,36 @@ const emit = defineEmits<{
 }>()
 
 const { acceptInvite, loading, error } = useAuth()
-
-const password = ref('')
-const confirmPassword = ref('')
-const localError = ref<string | null>(null)
 const success = ref(false)
 
-async function handleSubmit() {
-  localError.value = null
-  if (password.value.length < 8) {
-    localError.value = 'Password must be at least 8 characters'
-    return
-  }
-  if (password.value !== confirmPassword.value) {
-    localError.value = 'Passwords do not match'
-    return
-  }
+// Same client-side validation contract as the sign-up form (vee-validate + zod).
+const schema = toTypedSchema(
+  z
+    .object({
+      password: z.string().min(8, 'Password must be at least 8 characters'),
+      confirmPassword: z.string().min(1, 'Please confirm your password'),
+    })
+    .refine((d) => d.password === d.confirmPassword, {
+      path: ['confirmPassword'],
+      message: 'Passwords do not match',
+    }),
+)
+
+const { handleSubmit, errors, defineField } = useForm({
+  validationSchema: schema,
+  initialValues: { password: '', confirmPassword: '' },
+})
+const [password, passwordAttrs] = defineField('password')
+const [confirmPassword, confirmAttrs] = defineField('confirmPassword')
+
+const onSubmit = handleSubmit(async (values) => {
   try {
-    await acceptInvite(props.token, password.value)
+    await acceptInvite(props.token, values.password)
     success.value = true
   } catch {
-    // error is set by useAuth
+    // server-side error is surfaced via useAuth's `error`
   }
-}
-
-const displayError = computed(() => localError.value || error.value)
+})
 </script>
 
 <template>
@@ -50,21 +59,34 @@ const displayError = computed(() => localError.value || error.value)
       </div>
     </template>
     <template v-else>
+      <!-- Floating glass chips — the gamified hero pills from the landing -->
+      <div class="auth-chips" aria-hidden="true">
+        <span class="auth-chip auth-chip-xp">+50 XP</span>
+        <span class="auth-chip auth-chip-streak"><CdIcon emoji="🔥" icon="lucide:flame" :size="13" /> day 1</span>
+      </div>
       <h1 class="auth-title">Accept invitation</h1>
       <p class="auth-subtitle">Set your password to complete your account</p>
-      <div v-if="displayError" class="auth-error">{{ displayError }}</div>
-      <form class="auth-form" @submit.prevent="handleSubmit">
+      <div class="auth-token-badge">
+        <CdIcon emoji="✨" icon="lucide:sparkles" :size="15" />
+        <span><strong>25 Earnest AI tokens</strong> are waiting for you</span>
+      </div>
+      <div v-if="error" class="auth-error">{{ error }}</div>
+      <form class="auth-form" novalidate @submit="onSubmit">
         <div>
           <label class="auth-label">Password</label>
-          <input v-model="password" type="password" class="auth-input" placeholder="••••••••" required />
+          <input v-model="password" v-bind="passwordAttrs" type="password" class="auth-input" placeholder="••••••••" />
+          <AuthPasswordStrength :password="password" />
+          <span v-if="errors.password" class="auth-field-error">{{ errors.password }}</span>
         </div>
         <div>
           <label class="auth-label">Confirm Password</label>
-          <input v-model="confirmPassword" type="password" class="auth-input" placeholder="••••••••" required />
+          <input v-model="confirmPassword" v-bind="confirmAttrs" type="password" class="auth-input" placeholder="••••••••" />
+          <span v-if="errors.confirmPassword" class="auth-field-error">{{ errors.confirmPassword }}</span>
         </div>
         <button type="submit" :disabled="loading" class="auth-btn">
           {{ loading ? 'Setting up...' : 'Complete Setup →' }}
         </button>
+        <p class="auth-hand">your network's about to get a whole lot more fun ✨</p>
       </form>
       <p class="auth-footer">
         Already have an account?

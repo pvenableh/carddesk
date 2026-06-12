@@ -7,6 +7,19 @@ useSeoMeta({
 })
 
 const router = useRouter()
+
+// If the visitor arrived via an invite link (/i/:code stashed the code before
+// routing here), greet them by their inviter's name. Read-only preview — the
+// connection itself is redeemed after sign-up (see pages/index.vue).
+const inviteCookie = useCookie<string | null>('cd_invite', { path: '/' })
+const inviterName = ref<string | null>(null)
+onMounted(async () => {
+  if (!inviteCookie.value) return
+  try {
+    const { inviter } = await $fetch<{ inviter?: { name?: string } }>(`/api/invite/${inviteCookie.value}`)
+    if (inviter?.name) inviterName.value = inviter.name
+  } catch { /* unknown/expired code — fall back to the generic copy */ }
+})
 </script>
 
 <template>
@@ -16,37 +29,8 @@ const router = useRouter()
         <span style="color: var(--cd-chrome-accent, var(--cd-palette-primary, hsl(213 64% 52%)))">CARD</span><span style="color: var(--cd-accent)">DESK</span>
       </div>
       <p class="auth-tagline">Your network. Gamified.</p>
-      <AuthRegisterForm @login="router.push('/login')" />
+      <AuthRegisterForm :inviter-name="inviterName" @login="router.push('/login')" />
     </div>
+    <CdBrandFooter />
   </div>
 </template>
-
-<style scoped>
-.auth-page {
-  min-height: 100vh;
-  background: var(--cd-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-.auth-container {
-  width: 100%;
-  max-width: 360px;
-}
-.auth-logo {
-  text-align: center;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 3rem;
-  letter-spacing: 0.1em;
-  margin-bottom: 4px;
-}
-.auth-tagline {
-  text-align: center;
-  color: var(--cd-dim);
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  margin: 0 0 40px;
-}
-</style>

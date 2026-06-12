@@ -110,7 +110,24 @@ function addToContacts() {
   background: var(--cd-bg, #060810);
   color: var(--cd-text, #fff);
 }
+/* Palette-tinted aurora — same recipe as the auth screens / landing, so the
+   public card people land on to connect wears the liquid-glass theme too. */
+html[data-theme="glass"][data-mode="dark"] .cardpage {
+  background:
+    radial-gradient(120% 70% at 0% 0%, hsl(var(--cd-tint-1-h, 220) var(--cd-tint-1-s, 60%) 32% / 0.4) 0%, transparent 55%),
+    radial-gradient(120% 70% at 100% 10%, hsl(var(--cd-tint-3-h, 300) var(--cd-tint-3-s, 60%) 34% / 0.32) 0%, transparent 52%),
+    radial-gradient(150% 90% at 50% 100%, hsl(var(--cd-tint-4-h, 160) var(--cd-tint-4-s, 55%) 32% / 0.34) 0%, transparent 60%),
+    var(--cd-bg);
+}
+html[data-theme="glass"][data-mode="light"] .cardpage {
+  background:
+    radial-gradient(120% 70% at 0% 0%, hsl(var(--cd-tint-1-h, 220) var(--cd-tint-1-s, 60%) 90% / 0.55) 0%, transparent 55%),
+    radial-gradient(120% 70% at 100% 10%, hsl(var(--cd-tint-3-h, 300) var(--cd-tint-3-s, 60%) 90% / 0.45) 0%, transparent 52%),
+    radial-gradient(150% 90% at 50% 100%, hsl(var(--cd-tint-4-h, 160) var(--cd-tint-4-s, 55%) 92% / 0.5) 0%, transparent 60%),
+    var(--cd-bg);
+}
 .cardbox {
+  position: relative;
   width: 100%;
   max-width: 360px;
   text-align: center;
@@ -118,6 +135,31 @@ function addToContacts() {
   border: 1px solid var(--cd-bdr, #1e2430);
   border-radius: 24px;
   padding: 28px 24px;
+}
+/* Liquid-glass widget surface (matches .auth-card / .lp-glass). */
+html[data-theme="glass"][data-mode="dark"] .cardbox {
+  background:
+    linear-gradient(135deg,
+      hsl(var(--glass-h) var(--glass-s) 65% / 0.14) 0%,
+      hsl(var(--glass-h) var(--glass-s) 45% / 0.05) 50%,
+      hsl(var(--glass-h2) var(--glass-s) 50% / 0.10) 100%),
+    rgba(30, 30, 34, 0.55);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  border: 1px solid hsl(var(--glass-h) 30% 75% / 0.16);
+  box-shadow: var(--glass-inset), var(--glass-shadow-pop);
+}
+html[data-theme="glass"][data-mode="light"] .cardbox {
+  background:
+    linear-gradient(135deg,
+      hsl(var(--glass-h) var(--glass-s) 60% / 0.10) 0%,
+      hsl(var(--glass-h) var(--glass-s) 50% / 0.03) 50%,
+      hsl(var(--glass-h2) var(--glass-s) 55% / 0.08) 100%),
+    rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  border: 1px solid hsl(var(--glass-h) 40% 78% / 0.4);
+  box-shadow: var(--glass-inset), var(--glass-shadow-pop);
 }
 .cardpage-brand {
   font-family: 'Bebas Neue', sans-serif;
@@ -136,9 +178,9 @@ function addToContacts() {
   justify-content: center;
   font-size: 28px;
   font-weight: 800;
-  color: var(--cd-accent);
-  background: rgba(0, 255, 135, 0.12);
-  border: 2px solid var(--cd-accent);
+  color: var(--cd-green);
+  background: color-mix(in srgb, var(--cd-green) 14%, transparent);
+  border: 2px solid color-mix(in srgb, var(--cd-green) 55%, transparent);
 }
 .cardpage-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .cardpage-links {

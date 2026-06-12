@@ -34,9 +34,24 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div style="min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: var(--cd-bg, #060810); color: var(--cd-text, #fff); text-align: center; padding: 24px">
-    <div style="font-family: 'Bebas Neue', sans-serif; font-size: 34px; letter-spacing: 1px">CardDesk<span style="color: #00ff87">.</span></div>
-    <div class="cd-spin" style="font-size: 30px"><CdIcon emoji="⏳" icon="lucide:loader-circle" :size="30" /></div>
-    <div style="font-size: 13px; opacity: 0.7">Connecting you…</div>
+  <div class="auth-page invite-interstitial">
+    <div class="auth-logo">
+      <span style="color: var(--cd-chrome-accent, var(--cd-palette-primary, hsl(213 64% 52%)))">CARD</span><span style="color: var(--cd-accent)">DESK</span>
+    </div>
+    <div class="cd-spin" style="font-size: 30px; color: var(--cd-green)"><CdIcon emoji="⏳" icon="lucide:loader-circle" :size="30" /></div>
+    <div class="invite-interstitial-note">Connecting you…</div>
   </div>
 </template>
+
+<style scoped>
+/* Centred over the shared auth aurora. .auth-page/.auth-logo come from auth.css. */
+.invite-interstitial { gap: 16px; text-align: center; }
+.invite-interstitial .auth-logo { margin-bottom: 0; }
+.invite-interstitial-note {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+}
+</style>

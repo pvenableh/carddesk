@@ -22,8 +22,18 @@
 
 .auth-page {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--cd-bg);
   color: var(--cd-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.auth-container {
+  width: 100%;
+  max-width: 360px;
 }
 /* Soft palette aurora behind the auth card (glass theme) */
 html[data-theme="glass"][data-mode="light"] .auth-page {
@@ -48,37 +58,55 @@ html[data-theme="glass"][data-mode="dark"] .auth-page {
 }
 
 .auth-logo {
+  text-align: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 3rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 4px;
   color: var(--cd-text);
 }
 .auth-tagline {
-  color: var(--cd-muted);
+  text-align: center;
+  color: var(--cd-dim);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin: 0 0 40px;
 }
 
 .auth-card {
+  position: relative;
   background: var(--cd-bg2);
   border: 1px solid var(--cd-bdr);
-  border-radius: 20px;
+  border-radius: 24px;
   padding: 32px;
 }
-/* Frosted glass card */
+/* Frosted glass widget — same liquid-glass recipe as the landing's .lp-card /
+ * .lp-glass surfaces (gradient sheen + palette-sampled hue + soft pop shadow),
+ * so the auth card reads as a real iOS-style widget rather than a flat panel. */
 html[data-theme="glass"][data-mode="light"] .auth-card {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(22px) saturate(170%);
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
-  border-color: hsl(var(--cd-tint-1-h, 220) 40% 80% / 0.4);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    0 12px 28px -16px hsl(var(--cd-tint-1-h, 220) 40% 30% / 0.1),
-    0 40px 84px -28px hsl(var(--cd-tint-1-h, 220) 40% 30% / 0.2);
+  background:
+    linear-gradient(135deg,
+      hsl(var(--glass-h) var(--glass-s) 60% / 0.10) 0%,
+      hsl(var(--glass-h) var(--glass-s) 50% / 0.03) 50%,
+      hsl(var(--glass-h2) var(--glass-s) 55% / 0.08) 100%),
+    rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  border: 1px solid hsl(var(--glass-h) 40% 78% / 0.4);
+  box-shadow: var(--glass-inset), var(--glass-shadow-pop);
 }
 html[data-theme="glass"][data-mode="dark"] .auth-card {
-  background: rgba(30, 30, 34, 0.55);
-  backdrop-filter: blur(22px) saturate(170%);
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
-  border-color: hsl(var(--cd-tint-1-h, 220) 30% 75% / 0.14);
-  box-shadow:
-    inset 0 1px 0 hsl(var(--cd-tint-1-h, 220) 60% 85% / 0.07),
-    0 44px 96px -32px rgba(0, 0, 0, 0.5);
+  background:
+    linear-gradient(135deg,
+      hsl(var(--glass-h) var(--glass-s) 65% / 0.14) 0%,
+      hsl(var(--glass-h) var(--glass-s) 45% / 0.05) 50%,
+      hsl(var(--glass-h2) var(--glass-s) 50% / 0.10) 100%),
+    rgba(30, 30, 34, 0.55);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  border: 1px solid hsl(var(--glass-h) 30% 75% / 0.16);
+  box-shadow: var(--glass-inset), var(--glass-shadow-pop);
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   html[data-theme="glass"] .auth-card { background: var(--cd-bg2); }
@@ -244,4 +272,110 @@ html[data-theme="glass"] .auth-btn:hover:not(:disabled) {
   height: 100%;
   border-radius: 99px;
   transition: width 0.3s, background 0.3s;
+}
+
+/* ═══ Landing "iOS widget" idioms, reused on the register screen ═══
+ * The token badge, Gaegu handwriting microcopy, and floating glass chips mirror
+ * CdLanding's hero so the sign-up flow feels like the same gamified product. */
+
+/* "25 Earnest AI tokens free" pill — palette-tinted glass, matches .lp-token-badge */
+.auth-token-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  margin: 0 0 24px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  color: var(--cd-text);
+  background: color-mix(in srgb, var(--cd-palette-primary, #4da6ff) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-palette-primary, #4da6ff) 38%, transparent);
+  box-shadow: var(--glass-shadow);
+}
+html[data-theme="glass"] .auth-token-badge {
+  backdrop-filter: blur(14px) saturate(1.6);
+  -webkit-backdrop-filter: blur(14px) saturate(1.6);
+}
+.auth-token-badge strong { color: var(--cd-palette-primary, #4da6ff); font-weight: 800; }
+
+/* "X invited you" banner — green connection tint, shown above the sign-up form
+   when the visitor arrived from an invite link. */
+.auth-invite-banner {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 14px;
+  margin: 0 0 16px;
+  border-radius: 14px;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  color: var(--cd-text);
+  background: color-mix(in srgb, var(--cd-green) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-green) 34%, transparent);
+  box-shadow: var(--glass-shadow);
+}
+html[data-theme="glass"] .auth-invite-banner {
+  backdrop-filter: blur(14px) saturate(1.6);
+  -webkit-backdrop-filter: blur(14px) saturate(1.6);
+}
+.auth-invite-banner svg { color: var(--cd-green); flex-shrink: 0; }
+.auth-invite-banner strong { color: var(--cd-green); font-weight: 800; }
+
+/* Gaegu handwriting — playful encouragement microcopy ONLY (never titles/data) */
+.auth-hand {
+  font-family: 'Gaegu', 'Proxima Nova', cursive;
+  font-weight: 700;
+  font-size: 1rem;
+  text-align: center;
+  letter-spacing: 0;
+  color: color-mix(in srgb, var(--cd-text) 38%, var(--cd-palette-primary, #4da6ff));
+  margin: 18px 0 0;
+}
+
+/* Floating glass chips that hover at the card's edges — the hero-deck pills from
+ * the landing (.lp-chip), giving the widget its gamified personality. Hidden on
+ * very short/narrow viewports so they never collide with the form. */
+.auth-chips {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.auth-chip {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 7px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: var(--cd-bg2);
+  border: 1px solid var(--cd-bdr);
+  box-shadow: var(--glass-shadow);
+  animation: auth-float 4s ease-in-out infinite;
+}
+html[data-theme="glass"] .auth-chip {
+  background: var(--cd-chrome-fill, rgba(255, 255, 255, 0.09));
+  backdrop-filter: blur(14px) saturate(1.6);
+  -webkit-backdrop-filter: blur(14px) saturate(1.6);
+  border: 1px solid hsl(var(--glass-h) 40% 78% / 0.28);
+  box-shadow: var(--glass-shadow-pop);
+}
+/* Corner badges straddling the card's top edge — sit in the top padding above
+   the heading, so they read as widget badges without colliding with the form. */
+.auth-chip-xp { top: -15px; right: 16px; color: var(--cd-green); animation-delay: 0s; }
+.auth-chip-streak { top: -15px; left: 16px; color: var(--cd-orange); animation-delay: 1.2s; }
+@keyframes auth-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-chip { animation: none; }
+}
+/* Hide only when there's truly no room (tiny/very short screens). */
+@media (max-width: 330px), (max-height: 560px) {
+  .auth-chips { display: none; }
 }

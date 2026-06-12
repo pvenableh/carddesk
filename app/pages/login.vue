@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useForm } from 'vee-validate'
+import { toTypedSchema } from '@vee-validate/zod'
+import * as z from 'zod'
+
 definePageMeta({ layout: false })
 
 useSeoMeta({
@@ -8,14 +12,29 @@ useSeoMeta({
 
 const { login, loading, error } = useAuth()
 const route = useRoute()
-const email = ref(typeof route.query.email === 'string' ? route.query.email : '')
-const password = ref('')
 // Bounced here from the signup form because the email already has an account.
 const existsNotice = ref(route.query.exists === '1')
-async function handleSubmit() {
-  if (!email.value || !password.value) return
-  await login(email.value, password.value)
-}
+
+const schema = toTypedSchema(
+  z.object({
+    email: z.string().min(1, 'Email is required').email('Enter a valid email'),
+    password: z.string().min(1, 'Password is required'),
+  }),
+)
+
+const { handleSubmit, errors, defineField } = useForm({
+  validationSchema: schema,
+  initialValues: {
+    email: typeof route.query.email === 'string' ? route.query.email : '',
+    password: '',
+  },
+})
+const [email, emailAttrs] = defineField('email')
+const [password, passwordAttrs] = defineField('password')
+
+const onSubmit = handleSubmit(async (values) => {
+  await login(values.email, values.password)
+})
 </script>
 
 <template>
@@ -32,16 +51,11 @@ async function handleSubmit() {
           You already have an account — sign in to finish connecting.
         </div>
         <div v-if="error" class="auth-error">{{ error }}</div>
-        <form class="auth-form" @submit.prevent="handleSubmit">
+        <form class="auth-form" novalidate @submit="onSubmit">
           <div>
             <label class="auth-label">Email</label>
-            <input
-              v-model="email"
-              type="email"
-              class="auth-input"
-              placeholder="you@example.com"
-              required
-            />
+            <input v-model="email" v-bind="emailAttrs" type="email" class="auth-input" placeholder="you@example.com" />
+            <span v-if="errors.email" class="auth-field-error">{{ errors.email }}</span>
           </div>
           <div>
             <div style="display: flex; justify-content: space-between; align-items: center">
@@ -54,12 +68,13 @@ async function handleSubmit() {
             </div>
             <input
               v-model="password"
+              v-bind="passwordAttrs"
               type="password"
               class="auth-input"
               placeholder="••••••••"
-              required
               style="margin-top: 8px"
             />
+            <span v-if="errors.password" class="auth-field-error">{{ errors.password }}</span>
           </div>
           <button type="submit" :disabled="loading" class="auth-btn">
             {{ loading ? 'Signing in...' : 'Sign In →' }}
@@ -76,34 +91,6 @@ async function handleSubmit() {
 </template>
 
 <style scoped>
-.auth-page {
-  min-height: 100vh;
-  background: var(--cd-bg);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-.auth-container {
-  width: 100%;
-  max-width: 360px;
-}
-.auth-logo {
-  text-align: center;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 3rem;
-  letter-spacing: 0.1em;
-  margin-bottom: 4px;
-}
-.auth-tagline {
-  text-align: center;
-  color: var(--cd-dim);
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  margin: 0 0 40px;
-}
 .auth-notice {
   margin-bottom: 16px;
   padding: 10px 12px;
