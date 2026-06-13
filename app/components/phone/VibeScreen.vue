@@ -6,11 +6,9 @@ import type { CdActivity, CdContact } from '~/types/directus'
 const { contacts, followUpStatus, daysSince } = useContacts()
 const { state: xp, earn, curLevel, nextLevel, xpPct } = useXp()
 const { nav } = useNavigation()
-const { show: openShareSheet } = useShareSheet()
 const { show: openScoreGuide } = useScoreGuide()
 const { profile } = useProfile()
 const { getPipelineStats } = usePipeline()
-const eventMode = useEventMode()
 
 // Vibe is split into focused tabs so "what's next" isn't buried under games and
 // coaching. Persists for the session (VibeScreen is kept-alive). Default: Next.
@@ -262,6 +260,8 @@ async function loadVibe() {
       <!-- ── NEXT: what to do now ── -->
       <Transition name="vb-fade">
       <div v-show="vibeTab === 'next'" class="vb-pane">
+      <!-- App-like shortcut rail: one-tap access to the most-used actions. -->
+      <PhoneQuickActionRail />
       <!-- Next-best-action queue: overdue follow-ups + a revival candidate. -->
       <PhoneUpNext />
       <!-- Tasks (daily agenda + calendar) vs. Plans (full plan manager). -->
@@ -272,21 +272,9 @@ async function loadVibe() {
       </div>
       <PhoneTaskBoard v-if="nextView === 'tasks'" />
       <PhonePlansBoard v-else />
-      <!-- Event Mode: focused capture for networking events -->
-      <button
-        class="cd-abtn g"
-        style="width: 100%; display: flex; align-items: center; gap: 8px; justify-content: center; font-size: 14px; padding: 12px; margin-bottom: 8px"
-        @click="eventMode.openPanel()"
-      >
-        <CdIcon icon="lucide:radio" :size="16" />
-        <span>{{ eventMode.active.value ? `Event Mode · ${eventMode.count.value} met` : 'Event Mode' }}</span>
-        <CdIcon icon="lucide:arrow-right" :size="14" />
-      </button>
-      <!-- Grow your network: share your card or invite -->
-      <div style="display: flex; gap: 8px; margin-bottom: 12px">
-        <button class="cd-abtn ice" style="font-size: 12px; padding: 10px" @click="openShareSheet('card')"><CdCardMark :size="15" :gradient="false" /> My Card</button>
-        <button class="cd-abtn b" style="font-size: 12px; padding: 10px" @click="openShareSheet('invite')"><CdIcon emoji="🔗" icon="lucide:user-plus" :size="14" /> Invite</button>
-      </div>
+      <!-- Event Mode, My Card and Invite now live in the quick-action rail at the
+           top of this pane (PhoneQuickActionRail), so the standalone buttons that
+           used to sit here were removed to avoid duplication. -->
       <!-- Smart moves — Earnest's AI picks for who to act on next -->
       <div class="cd-vc vb-sm">
         <div class="vb-sm-hd">
@@ -547,9 +535,13 @@ async function loadVibe() {
 }
 .vb-tabs-ind {
   position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / 3);
-  /* Use --cd-green (the mint the nav highlight + CARDDESK wordmark use) — NOT
-     --cd-accent, which is near-white in the glass theme and washed the tab out. */
-  border-radius: 9999px; background: var(--cd-green); z-index: 0;
+  box-sizing: border-box; z-index: 0; border-radius: 9999px;
+  /* Soft frosted highlight rather than a bold solid-green fill (which read as
+     "a lot"). A translucent brand tint + thin ring + blur gives a subtle glass
+     pill in every theme; the active label carries the green. */
+  background: color-mix(in srgb, var(--cd-green) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-green) 30%, transparent);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .vb-tabs button {
@@ -558,7 +550,7 @@ async function loadVibe() {
   font-size: 12px; font-weight: 800; letter-spacing: 0.02em; padding: 9px 8px; border-radius: 9999px;
   cursor: pointer; text-transform: uppercase; transition: color 0.2s;
 }
-.vb-tabs button.on { color: #060810; }
+.vb-tabs button.on { color: var(--cd-green); }
 
 /* Tasks | Plans sub-toggle within the Next pane — same segmented look, 2-up. */
 .vb-seg {
@@ -567,7 +559,11 @@ async function loadVibe() {
 }
 .vb-seg-ind {
   position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / 2);
-  border-radius: 9999px; background: var(--cd-green); z-index: 0;
+  box-sizing: border-box; z-index: 0; border-radius: 9999px;
+  /* Same soft frosted pill as .vb-tabs-ind. */
+  background: color-mix(in srgb, var(--cd-green) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-green) 30%, transparent);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .vb-seg-ind.right { transform: translateX(100%); }
@@ -577,7 +573,7 @@ async function loadVibe() {
   font-size: 12px; font-weight: 800; letter-spacing: 0.02em; padding: 8px; border-radius: 9999px;
   cursor: pointer; text-transform: uppercase; transition: color 0.2s;
 }
-.vb-seg button.on { color: #060810; }
+.vb-seg button.on { color: var(--cd-green); }
 
 /* Cross-fade between panes (leaving pane goes absolute so no layout jump) */
 .vb-panes { position: relative; }

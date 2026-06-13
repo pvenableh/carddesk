@@ -154,6 +154,38 @@ const activeIndex = computed(() => NAV_ORDER.indexOf(props.active))
   transform: scale(1.08);
   box-shadow: 0 4px 18px color-mix(in srgb, var(--cd-accent) 40%, transparent);
 }
+/* Glass chrome flattens --cd-accent to near-black/near-white, so the scan
+   circle blends into the bar. Give it the brand green — the same --cd-green the
+   "CARD" wordmark uses — with a dark glyph + green glow so it stays the obvious
+   primary action and matches the logo. */
+html[data-theme="glass"] .cd-scan-btn {
+  background: var(--cd-green);
+  color: #060810;
+  box-shadow: 0 2px 14px color-mix(in srgb, var(--cd-green) 45%, transparent);
+}
+html[data-theme="glass"] .cd-bn-scan:hover .cd-scan-btn {
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--cd-green) 55%, transparent);
+}
+/* Active scan page: swap to a green pulse so the ring/glow matches the fill.
+   (A static box-shadow would be overridden by the running animation, so we
+   override the animation itself.) */
+html[data-theme="glass"] .cd-bn-scan.on .cd-scan-btn {
+  animation-name: cd-scan-pulse-glass;
+}
+@keyframes cd-scan-pulse-glass {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px var(--cd-bg),
+      0 0 0 4px var(--cd-green),
+      0 0 11px 2px color-mix(in srgb, var(--cd-green) 42%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px var(--cd-bg),
+      0 0 0 4px var(--cd-green),
+      0 0 17px 4px color-mix(in srgb, var(--cd-green) 65%, transparent);
+  }
+}
 /* Active scan page: the circle shrinks a touch so its gap-ring + glow sit inside
    the button's footprint instead of overlapping the "Scan" label below it. */
 .cd-bn-scan.on .cd-scan-btn {

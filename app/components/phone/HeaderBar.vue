@@ -150,8 +150,10 @@ function onClickOutside(e: MouseEvent) {
   font-weight: inherit;
   cursor: pointer;
 }
+/* "CARD" is always the brand green, regardless of palette/theme/chrome — the
+ * one fixed brand colour in the wordmark. "DESK" still tracks --cd-accent. */
 .cd-sbar-logo-brand {
-  color: var(--cd-chrome-accent, var(--cd-palette-primary, hsl(213 64% 52%)));
+  color: var(--cd-green);
 }
 .cd-sbar-logo-accent {
   color: var(--cd-accent);
