@@ -5,7 +5,7 @@ import ConnectionsView from './ConnectionsView.vue'
 
 const { contacts, updateContact, followUpStatus, loading: contactsLoading, error: contactsError, fetchContacts } = useContacts()
 const { nav, goDetail } = useNavigation()
-const { getContactsByStage, getStageInfo, setGoalTag } = usePipeline()
+const { getContactsByStage, getStageInfo, setGoalTag, moveToStage } = usePipeline()
 
 type RatingFilter = '' | 'hot' | 'warm' | 'nurture' | 'cold'
 
@@ -18,6 +18,27 @@ async function setListRating(key: string | null) {
   if (!c) return
   const next = c.rating === key ? null : key
   await updateContact(c.id, { rating: next } as any)
+}
+
+// Kanban drag-and-drop — drag a card between the forward stage columns (desktop).
+const draggingId = ref<string | null>(null)
+const dragOverStage = ref<string | null>(null)
+function onCardDragStart(c: any, e: DragEvent) {
+  draggingId.value = c.id
+  if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', c.id) }
+}
+function onCardDragEnd() {
+  draggingId.value = null
+  dragOverStage.value = null
+}
+async function onDropStage(stageKey: string) {
+  const id = draggingId.value
+  dragOverStage.value = null
+  draggingId.value = null
+  if (!id) return
+  const c = contacts.value.find((x) => x.id === id)
+  if (!c || c.pipeline_stage === stageKey) return
+  await moveToStage(id, stageKey as any)
 }
 
 // Inline goal picker — tapping a card's goal tag opens this to change/clear it.
@@ -286,18 +307,22 @@ async function runExport() {
       <CdBrandFooter />
     </div>
 
-    <!-- Pipeline view (horizontal scrollable lanes) -->
-    <div v-else class="cd-scrl" style="padding: 4px max(0px, calc((100% - 740px) / 2)) 8px">
+    <!-- Pipeline view — kanban board; columns fill the container, drag a card to change its stage -->
+    <div v-else class="cd-scrl" style="padding: 4px var(--cd-gutter) 8px">
       <div class="cd-foot-fill">
       <button
         style="display: inline-flex; align-items: center; gap: 5px; margin: 0 14px 8px; padding: 4px 0; background: none; border: none; color: var(--cd-dim); font-size: 11px; font-weight: 600; cursor: pointer"
         @click="startTour"
-      ><CdIcon emoji="💡" icon="lucide:help-circle" :size="12" /> How the pipeline works</button>
-      <div class="cd-hscroll" style="display: flex; gap: 10px; padding: 0 14px; min-height: 200px">
+      ><CdIcon emoji="💡" icon="lucide:help-circle" :size="12" /> How the pipeline works · drag a card to move it</button>
+      <div class="cd-kanban">
         <div
           v-for="lane in pipelineGroups"
           :key="lane.key"
-          style="min-width: 200px; max-width: 220px; flex-shrink: 0; background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px; padding: 10px; display: flex; flex-direction: column"
+          class="cd-kanban-lane"
+          :class="{ 'is-drop': dragOverStage === lane.key }"
+          @dragover.prevent="dragOverStage = lane.key"
+          @dragleave="dragOverStage = (dragOverStage === lane.key ? null : dragOverStage)"
+          @drop.prevent="onDropStage(lane.key)"
         >
           <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 8px; padding: 0 2px">
             <CdIcon :emoji="lane.emoji" :icon="lane.lucide" :size="13" />
@@ -305,14 +330,17 @@ async function runExport() {
             <span class="cd-tab-count" style="margin-left: auto">{{ lane.contacts.length }}</span>
           </div>
           <div v-if="!lane.contacts.length" style="font-size: 11px; color: var(--cd-dim); text-align: center; padding: 20px 0">
-            No contacts
+            {{ dragOverStage === lane.key ? 'Drop here' : 'No contacts' }}
           </div>
           <div
             v-for="c in lane.contacts"
             :key="c.id"
             class="cd-crd"
-            style="margin-bottom: 6px; cursor: pointer"
+            :draggable="true"
+            :style="`margin-bottom: 6px; ${draggingId === c.id ? 'cursor: grabbing; opacity: 0.45' : 'cursor: grab'}`"
             @click="goDetail(c.id)"
+            @dragstart="onCardDragStart(c, $event)"
+            @dragend="onCardDragEnd"
           >
             <div class="cd-cbar" :class="c.rating || 'none'"></div>
             <div style="flex: 1; min-width: 0">
@@ -426,6 +454,32 @@ async function runExport() {
 </template>
 
 <style scoped>
+/* Kanban board: columns fill the container width on desktop; on narrow screens
+   they hold a usable min width and the board scrolls horizontally. */
+.cd-kanban {
+  display: flex;
+  gap: 10px;
+  padding: 0 14px;
+  min-height: 280px;
+  align-items: stretch;
+  overflow-x: auto;
+}
+.cd-kanban-lane {
+  flex: 1 1 0;
+  min-width: 150px;
+  background: var(--cd-bg2);
+  border: 1px solid var(--cd-bdr);
+  border-radius: 14px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.cd-kanban-lane.is-drop {
+  border-color: var(--cd-accent);
+  background: color-mix(in srgb, var(--cd-accent) 8%, var(--cd-bg2));
+}
+
 .cd-sel-on { color: var(--cd-accent); border-color: var(--cd-accent); }
 .cd-row-sel { outline: 1.5px solid var(--cd-accent); outline-offset: -1.5px; }
 .cd-selck {

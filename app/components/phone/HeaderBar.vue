@@ -25,11 +25,6 @@ const initials = computed(() => {
   return email.charAt(0).toUpperCase()
 })
 
-function goEditCard() {
-  closeDropdown()
-  router.push('/account?tab=card')
-}
-
 function toggleDropdown() {
   dropdownOpen.value = !dropdownOpen.value
 }
@@ -92,10 +87,6 @@ function onClickOutside(e: MouseEvent) {
           <button class="cd-dd-item" @click="goAccount">
             <span class="cd-dd-icon"><CdIcon emoji="👤" icon="lucide:user" /></span>
             Account
-          </button>
-          <button class="cd-dd-item" @click="goEditCard">
-            <span class="cd-dd-icon"><CdCardMark :size="17" :gradient="false" /></span>
-            Edit My Card
           </button>
           <button class="cd-dd-item" @click="closeDropdown(); openFeedback()">
             <span class="cd-dd-icon"><CdIcon emoji="💬" icon="lucide:message-square-plus" /></span>
