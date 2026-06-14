@@ -1,8 +1,9 @@
 <script setup lang="ts">
 /**
- * Picture Jam launch card for the Play tab. Mirrors the Reconnect Roulette gate
- * (a quiet contact must exist to hide behind the board) and pushes the
- * full-screen game when tapped. Kept deliberately thin — all the game lives in
+ * Picture Jam launch card for the Play tab. Always available — when a quiet
+ * contact exists it hides behind the board (reconnect payoff); otherwise the
+ * game falls back to a decorative scene so it's playable any time. The copy
+ * adapts to which mode you'll land in. Kept thin — the game lives in
  * BlockJamScreen.vue.
  */
 const { contacts, followUpStatus, daysSince } = useContacts()
@@ -18,7 +19,7 @@ const quietCount = computed(() =>
 </script>
 
 <template>
-  <div v-if="quietCount" class="cd-vc bjc">
+  <div class="cd-vc bjc">
     <div class="bjc-hdr">
       <span class="bjc-hdr-ico"><CdIcon emoji="🧩" icon="lucide:puzzle" :size="13" /></span>
       <span>Picture Jam</span>
@@ -27,8 +28,10 @@ const quietCount = computed(() =>
     <button class="bjc-btn" type="button" @click="nav('jam')">
       <span class="bjc-ico"><CdIcon emoji="🧩" icon="lucide:puzzle" :size="22" /></span>
       <span class="bjc-copy">
-        <span class="bjc-t">Blast blocks, uncover a face</span>
-        <span class="bjc-b">A quiet contact hides behind the board — clear lines to reveal who, then reconnect</span>
+        <span class="bjc-t">{{ quietCount ? 'Blast blocks, uncover a face' : 'Blast blocks, clear a picture' }}</span>
+        <span class="bjc-b">{{ quietCount
+          ? 'A quiet contact hides behind the board — clear lines to reveal who, then reconnect'
+          : 'A relaxing block puzzle — clear lines to reveal the picture behind the board' }}</span>
       </span>
       <CdIcon icon="lucide:play" :size="15" />
     </button>

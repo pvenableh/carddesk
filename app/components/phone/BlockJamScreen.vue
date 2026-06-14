@@ -9,6 +9,10 @@
  * is free fun, the real XP comes from the follow-up you log once they're
  * uncovered. A small once-a-day completion bonus rewards the skill itself.
  *
+ * When nobody's quiet (or you have no contacts yet) it falls back to free play:
+ * a decorative scene hides behind the blocks instead, so the game is always
+ * playable — it just drops the reconnect payoff.
+ *
  * Recovery, not punishment: running out of moves keeps the picture you've
  * uncovered so far, so a board is always winnable across a couple of tries.
  */
@@ -41,10 +45,12 @@ const busy = ref(false)
 const combo = ref<{ id: number; lines: number } | null>(null)
 let comboId = 0
 
-// ── the hidden picture: a quiet contact ──
-// Same pool as Reconnect Roulette — worth a serendipitous nudge, but not already
-// screaming in Up Next. Contacts with a photo make the nicest reveal, so float
-// them to the front of the draw.
+// ── the subject behind the blocks ──
+// Primary: a *quiet* contact (same pool as Reconnect Roulette — worth a
+// serendipitous nudge, not already screaming in Up Next), so the puzzle doubles
+// as a reconnect prompt. Fallback: when nobody's quiet — or you have no contacts
+// yet — we hide a decorative scene instead, so the game is always playable; it
+// just drops the reconnect payoff.
 const pool = computed(() =>
   contacts.value.filter((c) => {
     if (c.hibernated || followUpStatus(c) === 'overdue') return false
@@ -52,22 +58,50 @@ const pool = computed(() =>
     return d === null || d >= 14
   })
 )
-const contact = ref<CdContact | null>(null)
-const seen = ref<Set<string>>(new Set()) // don't redraw the same face back-to-back
 
-function pickContact(): CdContact | null {
+// Calm "Picture Block Jam"-style scenes for free play (no quiet contact handy).
+const SCENES = [
+  { name: 'Sunrise Coast', emoji: '🌅', accent: '#ff9e57' },
+  { name: 'Quiet Peak', emoji: '🏔️', accent: '#7db8ff' },
+  { name: 'Curious Fox', emoji: '🦊', accent: '#ff8a4d' },
+  { name: 'Calm Tide', emoji: '🌊', accent: '#3fc7c2' },
+  { name: 'Cherry Bloom', emoji: '🌸', accent: '#ff8fbf' },
+  { name: 'Cozy Cabin', emoji: '🏡', accent: '#c79a6b' },
+  { name: 'Starry Night', emoji: '🌌', accent: '#8f7dff' },
+  { name: 'Forest Path', emoji: '🌲', accent: '#4fbf72' },
+] as const
+type Scene = typeof SCENES[number]
+
+const contact = ref<CdContact | null>(null)
+const scene = ref<Scene | null>(null)
+const seen = ref<Set<string>>(new Set()) // don't redraw the same contact back-to-back
+
+// Choose what hides behind the blocks: a quiet contact if there is one, else a
+// decorative scene (free play). Sets `contact`/`scene` so exactly one is active.
+function pickSubject() {
   let candidates = pool.value.filter((c) => !seen.value.has(c.id))
   if (!candidates.length) { seen.value.clear(); candidates = [...pool.value] }
-  if (!candidates.length) return null
-  const withPhoto = candidates.filter((c) => (c as any).imageUrl)
-  const draw = withPhoto.length ? withPhoto : candidates
-  const c = draw[Math.floor(Math.random() * draw.length)]
-  seen.value.add(c.id)
-  return c
+  if (candidates.length) {
+    const withPhoto = candidates.filter((c) => (c as any).imageUrl)
+    const draw = withPhoto.length ? withPhoto : candidates
+    const c = draw[Math.floor(Math.random() * draw.length)]
+    seen.value.add(c.id)
+    contact.value = c
+    scene.value = null
+    return
+  }
+  // Free play — pick a scene different from the current one.
+  const others = SCENES.filter((s) => s.name !== scene.value?.name)
+  scene.value = others[Math.floor(Math.random() * others.length)]
+  contact.value = null
 }
 
+const isFree = computed(() => !contact.value && !!scene.value)
 const imageUrl = computed(() => (contact.value as any)?.imageUrl as string | undefined)
-const accent = computed(() => getRating(contact.value?.rating ?? '')?.color ?? 'var(--cd-green)')
+const accent = computed(() =>
+  contact.value
+    ? getRating(contact.value.rating ?? '')?.color ?? 'var(--cd-green)'
+    : scene.value?.accent ?? 'var(--cd-green)')
 const revealCount = computed(() => revealed.value.reduce((n, r) => n + (r ? 1 : 0), 0))
 const revealPct = computed(() => Math.round((revealCount.value / N) * 100))
 const firstName = computed(() => contact.value?.name?.split(' ')[0] ?? 'them')
@@ -286,16 +320,14 @@ function resetBoard() {
   refillTray()
 }
 function retry() { resetBoard() /* keep the picture uncovered so far */ }
-function newContact() {
-  const next = pickContact()
-  if (!next) return
-  contact.value = next
+function newRound() {
+  pickSubject()
   logged.value = false
   revealed.value = Array(N).fill(false)
   resetBoard()
 }
 
-onMounted(() => { if (!contact.value) newContact() })
+onMounted(() => { if (!contact.value && !scene.value) newRound() })
 onUnmounted(() => {
   window.removeEventListener('pointermove', onPointerMove)
   window.removeEventListener('pointerup', onPointerUp)
@@ -309,21 +341,15 @@ onUnmounted(() => {
       <div class="cd-stitle">Picture Jam <CdIcon emoji="🧩" icon="lucide:puzzle" :size="16" /></div>
     </div>
 
-    <!-- No one quiet enough to hide behind the board yet -->
-    <div v-if="!contact" class="bj-locked">
-      <div class="bj-locked-ico"><CdIcon emoji="🧩" icon="lucide:puzzle" :size="44" /></div>
-      <div class="bj-locked-title">Nobody to uncover yet</div>
-      <p class="bj-locked-sub">Picture Jam hides a contact who's gone quiet behind the blocks. Scan a few cards — once people go quiet, they'll show up here.</p>
-      <button class="cd-abtn g" @click="nav('add')"><CdIcon emoji="📷" icon="lucide:scan" :size="14" /> Scan a card</button>
-    </div>
-
-    <div v-else class="bj-body">
+    <div v-if="contact || scene" class="bj-body">
       <!-- HUD: the mystery + how far you've uncovered it -->
       <div class="bj-hud">
         <div class="bj-hud-row">
           <span class="bj-hud-lbl">
             <CdIcon emoji="🫥" icon="lucide:eye-off" :size="12" />
-            {{ won ? 'Uncovered!' : 'Someone quiet is hiding behind the blocks' }}
+            {{ won
+              ? (isFree ? 'Picture complete!' : 'Uncovered!')
+              : (isFree ? 'Clear the blocks to reveal the picture' : 'Someone quiet is hiding behind the blocks') }}
           </span>
           <span class="bj-hud-score">{{ score.toLocaleString() }}</span>
         </div>
@@ -338,7 +364,8 @@ onUnmounted(() => {
           <div class="bj-pic">
             <img v-if="imageUrl" :src="imageUrl" alt="" class="bj-pic-img" :class="{ done: won }" />
             <div v-else class="bj-pic-fallback" :style="{ opacity: 0.25 + 0.75 * (revealCount / N) }">
-              <CdIcon :emoji="cEmoji(contact)" icon="lucide:user" :size="84" />
+              <CdIcon v-if="contact" :emoji="cEmoji(contact)" icon="lucide:user" :size="84" />
+              <span v-else class="bj-pic-emoji">{{ scene?.emoji }}</span>
             </div>
           </div>
 
@@ -432,7 +459,25 @@ onUnmounted(() => {
               {{ logged ? 'Logged!' : `Log touch +${contact.rating === 'hot' ? 50 : 25}` }}
             </button>
           </div>
-          <button class="bj-again" type="button" @click="newContact"><CdIcon icon="lucide:refresh-cw" :size="13" /> Uncover someone new</button>
+          <button class="bj-again" type="button" @click="newRound"><CdIcon icon="lucide:refresh-cw" :size="13" /> Uncover someone new</button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- WIN (free play): a decorative scene, no contact to reconnect with -->
+    <Transition name="bj-ov">
+      <div v-if="won && isFree && scene" class="bj-ov">
+        <div class="bj-card">
+          <div class="bj-card-eyebrow"><CdIcon emoji="🎉" icon="lucide:party-popper" :size="13" /> Picture complete</div>
+          <div class="bj-scene">
+            <span class="bj-scene-emoji">{{ scene.emoji }}</span>
+            <span class="bj-scene-name">{{ scene.name }}</span>
+          </div>
+          <p class="bj-card-nudge">Nice clearing! Scan a card or two and your next picture becomes a real contact to reconnect with.</p>
+          <div class="bj-acts">
+            <button class="bj-act log" type="button" @click="newRound"><CdIcon icon="lucide:refresh-cw" :size="14" /> New picture</button>
+            <button class="bj-act" type="button" @click="nav('add')"><CdIcon emoji="📷" icon="lucide:scan" :size="14" /> Scan a card</button>
+          </div>
         </div>
       </div>
     </Transition>
@@ -446,7 +491,7 @@ onUnmounted(() => {
           <p class="bj-card-nudge">No room for the next pieces — but the {{ revealPct }}% you've uncovered stays. Pick up where you left off.</p>
           <div class="bj-acts">
             <button class="bj-act log" type="button" @click="retry"><CdIcon icon="lucide:rotate-ccw" :size="14" /> Keep uncovering</button>
-            <button class="bj-act" type="button" @click="newContact"><CdIcon icon="lucide:refresh-cw" :size="14" /> Someone new</button>
+            <button class="bj-act" type="button" @click="newRound"><CdIcon icon="lucide:refresh-cw" :size="14" /> Someone new</button>
           </div>
         </div>
       </div>
@@ -494,6 +539,7 @@ onUnmounted(() => {
     linear-gradient(150deg, color-mix(in srgb, var(--accent) 30%, var(--cd-bg2)), var(--cd-bg2));
   transition: opacity 0.4s ease;
 }
+.bj-pic-emoji { font-size: 84px; line-height: 1; filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35)); }
 
 .bj-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); }
 .bj-cell { position: relative; transition: background 0.18s ease, opacity 0.2s ease, transform 0.18s ease; }
@@ -589,6 +635,9 @@ onUnmounted(() => {
 .bj-reveal-quiet { font-size: 10px; color: var(--cd-gold, #ffd700); font-weight: 700; margin-top: 1px; }
 .bj-card-nudge { font-size: 12.5px; line-height: 1.5; color: var(--cd-muted); margin: 14px 0; }
 .bj-dead-big { font-family: 'Bebas Neue', sans-serif; font-size: 56px; line-height: 1; color: var(--cd-green); margin: 6px 0; }
+.bj-scene { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 0; }
+.bj-scene-emoji { font-size: 64px; line-height: 1; filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.4)); }
+.bj-scene-name { font-size: 18px; font-weight: 800; color: var(--cd-text); }
 
 .bj-acts { display: flex; gap: 7px; justify-content: center; flex-wrap: wrap; }
 .bj-act {
@@ -610,10 +659,4 @@ onUnmounted(() => {
 .bj-ov-enter-active .bj-card { transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1); }
 .bj-ov-enter-from, .bj-ov-leave-to { opacity: 0; }
 .bj-ov-enter-from .bj-card { transform: scale(0.85) translateY(20px); }
-
-/* ── locked ── */
-.bj-locked { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 24px; }
-.bj-locked-ico { color: var(--cd-dim); }
-.bj-locked-title { font-size: 19px; font-weight: 800; }
-.bj-locked-sub { font-size: 12.5px; color: var(--cd-muted); line-height: 1.55; max-width: 280px; margin: 0 0 6px; }
 </style>
