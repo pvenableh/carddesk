@@ -441,6 +441,8 @@ async function loadVibe() {
       </div>
       <!-- Network IQ — daily quiz built from your own contacts -->
       <PhoneNetworkQuiz />
+      <!-- Picture Jam — block-blast puzzle that uncovers a quiet contact to reconnect with -->
+      <PhoneBlockJamCallout />
       <!-- Reconnect Roulette — spin up a quiet contact, reach out, bank XP -->
       <PhoneReconnectRoulette />
       <!-- Leaderboard snapshot — only renders if you have accepted connections -->

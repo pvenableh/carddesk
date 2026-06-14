@@ -9,6 +9,15 @@
         "export PATH=\"/Users/peterhoffman/.local/share/fnm/aliases/default/bin:$PATH\"; exec npm run dev -- --port 3100"
       ],
       "port": 3100
+    },
+    {
+      "name": "earnest-dev",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": [
+        "-c",
+        "export PATH=\"/Users/peterhoffman/.local/share/fnm/aliases/default/bin:$PATH\"; cd /Users/peterhoffman/Sites/earnest/earnest && exec pnpm dev --port 3200"
+      ],
+      "port": 3200
     }
   ]
 }

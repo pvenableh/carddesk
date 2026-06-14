@@ -33,6 +33,8 @@ const earnGroups: { title: string; items: { icon: string; lucide: string; label:
       { icon: '🏆', lucide: 'lucide:trophy', label: 'Network IQ perfect round bonus', xp: '+25' },
       { icon: '🧩', lucide: 'lucide:puzzle', label: 'Network IQ — just finishing the round', xp: '+5' },
       { icon: '🎰', lucide: 'lucide:dices', label: 'Reconnect Roulette — log the touch it dares you to', xp: '+25/50' },
+      { icon: '🧩', lucide: 'lucide:puzzle', label: 'Picture Jam — complete a picture (once a day)', xp: '+10' },
+      { icon: '🧩', lucide: 'lucide:puzzle', label: 'Picture Jam — reconnect with who you uncover', xp: '+25/50' },
     ],
   },
   {
