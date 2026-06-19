@@ -2,7 +2,9 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getValidToken } from "../utils/auth";
 import { fetchUserProfile } from "../utils/profile";
 import { enforceCredits, chargeCredits } from "../utils/ai-credits";
+import { CLAUDE_MODELS } from "../utils/ai-models";
 
+import { logAnthropicError } from "../utils/ai-errors";
 export default defineEventHandler(async (event) => {
   const token = await getValidToken(event);
   const config = useRuntimeConfig();
@@ -37,7 +39,7 @@ Return ONLY the goal text — no quotes, no preamble, no explanation. Just the 2
   const client = new Anthropic({ apiKey: config.anthropicApiKey });
   try {
     const response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: CLAUDE_MODELS.default,
       max_tokens: 256,
       messages: [{ role: "user", content: prompt }],
     });
@@ -47,15 +49,14 @@ Return ONLY the goal text — no quotes, no preamble, no explanation. Just the 2
       .join("")
       .trim();
     chargeCredits(account, {
-      model: "claude-sonnet-4-20250514",
+      model: CLAUDE_MODELS.default,
       inputTokens: response.usage?.input_tokens ?? 0,
       outputTokens: response.usage?.output_tokens ?? 0,
     });
     return { goal: text };
   } catch (err: any) {
     if (err.statusCode) throw err;
-    const detail = err?.error?.error?.message || err?.message || "unknown error";
-    console.error("[ai-goal] Anthropic error:", err?.status ?? err?.statusCode, detail, err);
+    const detail = logAnthropicError("ai-goal", err);
     throw createError({ statusCode: 502, message: `AI goal suggestion failed: ${detail}` });
   }
 });

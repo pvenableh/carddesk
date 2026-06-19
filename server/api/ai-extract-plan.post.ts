@@ -14,8 +14,10 @@
  */
 import Anthropic from '@anthropic-ai/sdk'
 import { enforceCredits, chargeCredits } from '../utils/ai-credits'
+import { CLAUDE_MODELS } from '../utils/ai-models'
+import { logAnthropicError } from '../utils/ai-errors'
 
-const MODEL = 'claude-sonnet-4-20250514'
+const MODEL = CLAUDE_MODELS.default
 const MAX_OUTPUT_TOKENS = 900
 const MAX_TASKS = 12
 
@@ -136,8 +138,7 @@ export default defineEventHandler(async (event) => {
     }
   } catch (err: any) {
     if (err.statusCode) throw err
-    const detail = err?.error?.error?.message || err?.message || 'unknown error'
-    console.error('[ai-extract-plan] Anthropic error:', err?.status ?? err?.statusCode, detail)
+    const detail = logAnthropicError('ai-extract-plan', err)
     throw createError({ statusCode: 502, message: `Couldn't build a plan right now: ${detail}` })
   }
 })

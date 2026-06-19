@@ -3,7 +3,9 @@ import { getValidToken } from "../utils/auth";
 import { fetchUserProfile } from "../utils/profile";
 import { getEarnestContext } from "../utils/earnest-context";
 import { enforceCredits, chargeCredits } from "../utils/ai-credits";
+import { CLAUDE_MODELS } from "../utils/ai-models";
 
+import { logAnthropicError } from "../utils/ai-errors";
 export default defineEventHandler(async (event) => {
   const token = await getValidToken(event);
   const config = useRuntimeConfig();
@@ -73,13 +75,13 @@ Be direct and specific. Reference actual numbers. No generic advice.`;
   const client = new Anthropic({ apiKey: config.anthropicApiKey });
   try {
     const response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: CLAUDE_MODELS.default,
       max_tokens: 600,
       messages: [{ role: "user", content: prompt }],
     });
     // Charge on any completed Anthropic response, even if parsing fails below.
     chargeCredits(account, {
-      model: "claude-sonnet-4-20250514",
+      model: CLAUDE_MODELS.default,
       inputTokens: response.usage?.input_tokens ?? 0,
       outputTokens: response.usage?.output_tokens ?? 0,
     });
@@ -95,8 +97,7 @@ Be direct and specific. Reference actual numbers. No generic advice.`;
     }
   } catch (err: any) {
     if (err.statusCode) throw err;
-    const detail = err?.error?.error?.message || err?.message || "unknown error";
-    console.error("[ai-insights] Anthropic error:", err?.status ?? err?.statusCode, detail, err);
+    const detail = logAnthropicError("ai-insights", err);
     throw createError({ statusCode: 502, message: `AI insights failed: ${detail}` });
   }
 });

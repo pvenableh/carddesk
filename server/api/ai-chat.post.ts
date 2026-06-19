@@ -17,8 +17,10 @@ import { getValidToken } from '../utils/auth'
 import { fetchUserProfile } from '../utils/profile'
 import { getEarnestContext } from '../utils/earnest-context'
 import { enforceCredits, chargeCredits } from '../utils/ai-credits'
+import { CLAUDE_MODELS } from '../utils/ai-models'
+import { logAnthropicError } from '../utils/ai-errors'
 
-const MODEL = 'claude-sonnet-4-20250514'
+const MODEL = CLAUDE_MODELS.default
 const MAX_OUTPUT_TOKENS = 700
 // Last N messages sent to the model. Keeps per-turn input (and cost) bounded
 // regardless of how long the conversation grows.
@@ -169,8 +171,7 @@ export default defineEventHandler(async (event) => {
     }
   } catch (err: any) {
     if (err.statusCode) throw err
-    const detail = err?.error?.error?.message || err?.message || 'unknown error'
-    console.error('[ai-chat] Anthropic error:', err?.status ?? err?.statusCode, detail)
+    const detail = logAnthropicError('ai-chat', err)
     throw createError({ statusCode: 502, message: `Earnest AI is unavailable right now: ${detail}` })
   }
 })

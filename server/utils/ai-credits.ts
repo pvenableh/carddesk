@@ -2,6 +2,7 @@ import type { H3Event } from 'h3'
 import { readMe, readItem, readItems, createItem, updateItem, updateItems } from '@directus/sdk'
 import { getDirectus, getUserDirectus } from './directus'
 import { getValidToken } from './auth'
+import { CLAUDE_MODELS } from './ai-models'
 
 /**
  * AI credit accounting for CardDesk.
@@ -58,11 +59,11 @@ export const ONBOARDING_CREDIT_GRANT = 25
 const PRICING: Record<string, { input: number; output: number }> = {
   'claude-opus-4-8': { input: 5, output: 25 },
   'claude-opus-4-5': { input: 15, output: 75 },
-  'claude-sonnet-4-20250514': { input: 3, output: 15 },
+  'claude-sonnet-4-6': { input: 3, output: 15 },
 }
 
 function estimateCost(model: string, input: number, output: number): number {
-  const p = PRICING[model] ?? PRICING['claude-sonnet-4-20250514']
+  const p = PRICING[model] ?? PRICING[CLAUDE_MODELS.default]
   return (input * p.input + output * p.output) / 1_000_000
 }
 

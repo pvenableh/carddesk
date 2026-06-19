@@ -1,6 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getValidToken } from "../utils/auth";
 import { enforceCredits, chargeCredits } from "../utils/ai-credits";
+import { CLAUDE_MODELS } from "../utils/ai-models";
+import { logAnthropicError } from "../utils/ai-errors";
 import { SOCIAL_KEYS } from "~/types/socials";
 
 export default defineEventHandler(async (event) => {
@@ -67,7 +69,7 @@ Rules: name=full name combined. social handles = the URL or @handle if printed o
   const client = new Anthropic({ apiKey: config.anthropicApiKey });
   try {
     const response = await client.messages.create({
-      model: "claude-opus-4-8",
+      model: CLAUDE_MODELS.vision,
       max_tokens: 1024,
       messages: [
         {
@@ -81,7 +83,7 @@ Rules: name=full name combined. social handles = the URL or @handle if printed o
     });
     // Charge on any completed Anthropic response, even if parsing fails below.
     chargeCredits(account, {
-      model: "claude-opus-4-8",
+      model: CLAUDE_MODELS.vision,
       inputTokens: response.usage?.input_tokens ?? 0,
       outputTokens: response.usage?.output_tokens ?? 0,
       metadata: { multiSide: isMultiSide },
@@ -120,8 +122,7 @@ Rules: name=full name combined. social handles = the URL or @handle if printed o
     if (err.statusCode) throw err; // our own 422/402/etc — pass through
     // Surface the real Anthropic error (status + message) instead of a generic
     // 500, so failures are diagnosable in logs and actionable in the UI.
-    const detail = err?.error?.error?.message || err?.message || "unknown error";
-    console.error("[scan-card] Anthropic error:", err?.status ?? err?.statusCode, detail, err);
+    const detail = logAnthropicError("scan-card", err);
     throw createError({
       statusCode: 502,
       message: `Card scan failed: ${detail}`,

@@ -3,7 +3,9 @@ import { getValidToken } from "../utils/auth";
 import { fetchUserProfile } from "../utils/profile";
 import { getEarnestContext } from "../utils/earnest-context";
 import { enforceCredits, chargeCredits } from "../utils/ai-credits";
+import { CLAUDE_MODELS } from "../utils/ai-models";
 
+import { logAnthropicError } from "../utils/ai-errors";
 export default defineEventHandler(async (event) => {
   const token = await getValidToken(event);
   const body = await readBody(event);
@@ -60,14 +62,14 @@ Use relevant emoji icons. Be specific — mention names, companies, industries. 
   const client = new Anthropic({ apiKey: config.anthropicApiKey });
   try {
     const response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: CLAUDE_MODELS.default,
       max_tokens: 512,
       messages: [{ role: "user", content: prompt }],
     });
     // Charge on any completed Anthropic response — we paid for the call
     // regardless of whether the model's output parses cleanly.
     chargeCredits(account, {
-      model: "claude-sonnet-4-20250514",
+      model: CLAUDE_MODELS.default,
       inputTokens: response.usage?.input_tokens ?? 0,
       outputTokens: response.usage?.output_tokens ?? 0,
       contactId: contact?.id ?? null,
@@ -84,8 +86,7 @@ Use relevant emoji icons. Be specific — mention names, companies, industries. 
     }
   } catch (err: any) {
     if (err.statusCode) throw err;
-    const detail = err?.error?.error?.message || err?.message || "unknown error";
-    console.error("[ai-suggestions] Anthropic error:", err?.status ?? err?.statusCode, detail, err);
+    const detail = logAnthropicError("ai-suggestions", err);
     throw createError({ statusCode: 502, message: `AI suggestions failed: ${detail}` });
   }
 });

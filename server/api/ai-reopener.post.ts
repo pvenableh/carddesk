@@ -2,7 +2,9 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getValidToken } from "../utils/auth";
 import { fetchUserProfile } from "../utils/profile";
 import { enforceCredits, chargeCredits } from "../utils/ai-credits";
+import { CLAUDE_MODELS } from "../utils/ai-models";
 
+import { logAnthropicError } from "../utils/ai-errors";
 /**
  * Reconnect re-opener — drafts ONE short, sendable message to restart a quiet
  * relationship. Wired to the Reconnect Roulette reveal: the spin creates the
@@ -53,12 +55,12 @@ Return ONLY the message text — no preamble, no quotes, no subject line, no sig
   const client = new Anthropic({ apiKey: config.anthropicApiKey });
   try {
     const response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: CLAUDE_MODELS.default,
       max_tokens: 300,
       messages: [{ role: "user", content: prompt }],
     });
     chargeCredits(account, {
-      model: "claude-sonnet-4-20250514",
+      model: CLAUDE_MODELS.default,
       inputTokens: response.usage?.input_tokens ?? 0,
       outputTokens: response.usage?.output_tokens ?? 0,
       contactId: contact?.id ?? null,
@@ -73,8 +75,7 @@ Return ONLY the message text — no preamble, no quotes, no subject line, no sig
     return { message };
   } catch (err: any) {
     if (err.statusCode) throw err;
-    const detail = err?.error?.error?.message || err?.message || "unknown error";
-    console.error("[ai-reopener] Anthropic error:", err?.status ?? err?.statusCode, detail, err);
+    const detail = logAnthropicError("ai-reopener", err);
     throw createError({ statusCode: 502, message: `Re-opener failed: ${detail}` });
   }
 });
