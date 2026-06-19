@@ -10,7 +10,7 @@ import type { CdPlan, CdTask, TaskChannel } from '~/types/directus'
 import { dueMeta } from '~/composables/usePlans'
 
 const props = defineProps<{ contactId: string }>()
-const emit = defineEmits<{ (e: 'ask'): void }>()
+const emit = defineEmits<{ (e: 'ask'): void; (e: 'count', open: number): void }>()
 
 const { listPlans, listTasks, createTask, setTaskStatus, deleteTask, deletePlan, updatePlan, dirty } = usePlans()
 
@@ -53,6 +53,14 @@ function defaultDue(): string {
 const activePlans = computed(() => plans.value.filter((p) => p.status === 'active'))
 const donePlans = computed(() => plans.value.filter((p) => p.status !== 'active'))
 const hasAnything = computed(() => plans.value.length > 0 || looseTasks.value.length > 0)
+
+// Open (not-done) tasks across active plans + loose tasks — surfaced to the
+// parent so the "Plan" tab can show a count badge.
+const openCount = computed(() => {
+  const open = (ts: CdTask[]) => ts.filter((t) => t.status !== 'done').length
+  return open(looseTasks.value) + activePlans.value.reduce((n, p) => n + open(p.tasks ?? []), 0)
+})
+watch(openCount, (n) => emit('count', n), { immediate: true })
 
 function bySchedule(a: CdTask, b: CdTask): number {
   const ad = a.status === 'done' ? 1 : 0

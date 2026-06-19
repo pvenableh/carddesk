@@ -440,6 +440,47 @@ select.cd-inp {
   margin-bottom: 4px;
   font-weight: 700;
 }
+/* Paired form fields — two-up when the content column is wide enough (desktop /
+   tablet), stacked on phones. Each direct child wraps one label + input. */
+.cd-frow {
+  display: grid;
+  gap: 0 10px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+/* Pill-shaped section toggle (e.g. "Social profiles") shared by the add + edit
+   contact forms, with an accent count badge. */
+.cd-collapse-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--cd-bg2);
+  border: 1px solid var(--cd-bdr);
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cd-muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+.cd-collapse-toggle:hover {
+  border-color: var(--cd-muted);
+}
+.cd-collapse-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: 9999px;
+  background: var(--cd-accent);
+  color: #060810;
+  font-size: 10px;
+  font-weight: 800;
+}
 /* Pinned action bar — keeps the primary CTA (e.g. Save Contact) reachable on
    small screens instead of scrolling off below the fold / behind the home bar. */
 .cd-save-bar {
@@ -1163,6 +1204,139 @@ select.cd-inp {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* Network list card — reuses .cd-crd for all theme chrome, but switches to a
+   column so the card itself GROWS to hold the inline "last touchpoint" peek
+   (mirrors the .cd-cold-card accordion). Padding moves off the container and
+   onto .cd-net-head / .cd-peek so the divider can span the full card width. */
+.cd-net-card {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  cursor: default;
+}
+/* Beats the themed `html[data-theme="glass"] .cd-crd` padding (same specificity,
+   later in source) so the container stays padding-free under the glass theme. */
+html[data-theme="glass"] .cd-net-card {
+  padding: 0;
+}
+/* The tappable header row — the part that navigates into the contact. */
+.cd-net-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+/* Chevron that expands the touchpoint peek. Sits at the end of the header row. */
+.cd-peek-tog {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin: -4px -6px -4px 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--cd-dim);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: transform 0.2s ease, color 0.15s ease;
+}
+.cd-peek-tog:hover {
+  color: var(--cd-text, var(--cd-ice));
+}
+.cd-peek-tog.on {
+  transform: rotate(180deg);
+  color: var(--cd-accent);
+}
+/* The expanded touchpoint section inside the grown card — set off by a top
+   divider. Holds a single timeline entry styled like the detail screen. */
+.cd-peek {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px 13px;
+  border-top: 1px solid var(--cd-bdr);
+}
+/* Timeline row — mirrors the detail-screen activity layout: dot + indented card. */
+.cd-peek-tl {
+  display: flex;
+  gap: 9px;
+  position: relative;
+  align-items: flex-start;
+}
+/* Faded connector dropping from the dot, hinting at older touchpoints below. */
+.cd-peek-line {
+  position: absolute;
+  left: 17px;
+  top: 36px;
+  bottom: -13px;
+  width: 2px;
+  background: linear-gradient(var(--cd-bdr), transparent);
+}
+/* Indented touchpoint card — matches the detail timeline entry exactly. */
+.cd-peek-card {
+  flex: 1;
+  min-width: 0;
+  background: var(--cd-bg2);
+  border: 1px solid var(--cd-bdr);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.cd-peek-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.cd-peek-card-label {
+  font-size: 14px;
+  font-weight: 800;
+}
+/* Date: relative time on top, full date in small monospace beneath
+   (also surfaced as a hover tooltip via the title attribute). */
+.cd-peek-when {
+  flex-shrink: 0;
+  text-align: right;
+  line-height: 1.2;
+}
+.cd-peek-rel {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cd-muted);
+}
+.cd-peek-abs {
+  display: block;
+  font-size: 9px;
+  color: var(--cd-dim);
+  font-family: monospace;
+  margin-top: 1px;
+}
+.cd-peek-card-note {
+  font-size: 12px;
+  color: var(--cd-muted);
+  line-height: 1.5;
+}
+/* Sits below the touchpoint card (outside its background), right-aligned. */
+.cd-peek-more {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--cd-accent);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
 }
 .cd-rpill {
   font-size: 9px;

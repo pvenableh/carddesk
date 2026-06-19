@@ -304,7 +304,7 @@ async function doSaveContact() {
         or enter manually
         <div style="flex: 1; height: 1px; background: var(--cd-bdr)"></div>
       </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+      <div class="cd-frow">
         <div>
           <label class="cd-lbl">First Name</label>
           <input v-model="addForm.firstName" class="cd-inp" placeholder="Jane" />
@@ -314,10 +314,14 @@ async function doSaveContact() {
           <input v-model="addForm.lastName" class="cd-inp" placeholder="Smith" />
         </div>
       </div>
-      <label class="cd-lbl">Title</label><input v-model="addForm.title" class="cd-inp" placeholder="VP Product" />
-      <label class="cd-lbl">Company</label><input v-model="addForm.company" class="cd-inp" placeholder="Acme Corp" />
-      <label class="cd-lbl">Email</label><input v-model="addForm.email" class="cd-inp" type="email" placeholder="jane@acme.com" />
-      <label class="cd-lbl">Phone</label><input v-model="addForm.phone" class="cd-inp" type="tel" placeholder="+1 555 000 0000" />
+      <div class="cd-frow">
+        <div><label class="cd-lbl">Title</label><input v-model="addForm.title" class="cd-inp" placeholder="VP Product" /></div>
+        <div><label class="cd-lbl">Company</label><input v-model="addForm.company" class="cd-inp" placeholder="Acme Corp" /></div>
+      </div>
+      <div class="cd-frow">
+        <div><label class="cd-lbl">Email</label><input v-model="addForm.email" class="cd-inp" type="email" placeholder="jane@acme.com" /></div>
+        <div><label class="cd-lbl">Phone</label><input v-model="addForm.phone" class="cd-inp" type="tel" placeholder="+1 555 000 0000" /></div>
+      </div>
       <!-- Location suggestions (Google Places). Hidden entirely when the feature
            is off (no API key). Tap to detect — no auto permission prompt. -->
       <div v-if="locEnabled" class="cd-loc">
@@ -329,9 +333,12 @@ async function doSaveContact() {
       </div>
       <div v-if="locError" class="cd-loc-err">{{ locError }}</div>
 
-      <label class="cd-lbl">Where We Met</label><input v-model="addForm.metAt" class="cd-inp" placeholder="SaaS Summit NYC" />
-      <!-- Nearby venues as quick fills. Skipped in Event Mode (the event name is
-           the tag there). -->
+      <div class="cd-frow">
+        <div><label class="cd-lbl">Where We Met</label><input v-model="addForm.metAt" class="cd-inp" placeholder="SaaS Summit NYC" /></div>
+        <div><label class="cd-lbl">Location <span style="color: var(--cd-dim); font-weight: 600; text-transform: none; letter-spacing: 0">· city / region</span></label><input v-model="addForm.location" class="cd-inp" placeholder="Austin, TX" /></div>
+      </div>
+      <!-- Nearby venues as quick fills for "Where We Met". Skipped in Event Mode
+           (the event name is the tag there). -->
       <div v-if="locVenues.length && !eventMode.active.value" class="cd-loc-chips">
         <button
           v-for="v in locVenues"
@@ -342,8 +349,6 @@ async function doSaveContact() {
           @click="pickVenue(v.name)"
         ><CdIcon icon="lucide:map-pin" :size="10" /> {{ v.name }}</button>
       </div>
-      <label class="cd-lbl">Location <span style="color: var(--cd-dim); font-weight: 600; text-transform: none; letter-spacing: 0">· city / region, helps Earnest AI</span></label>
-      <input v-model="addForm.location" class="cd-inp" placeholder="Austin, TX" />
       <label class="cd-lbl">Address</label>
       <textarea v-model="addForm.address" class="cd-inp" style="min-height: 48px; resize: vertical" placeholder="123 Main St, New York, NY 10001"></textarea>
       <label class="cd-lbl">Industry</label>
@@ -370,13 +375,14 @@ async function doSaveContact() {
            core fields stay short. The dot shows when any handle is already filled. -->
       <button
         type="button"
+        class="cd-collapse-toggle"
         :aria-expanded="showSocials"
-        style="display: flex; align-items: center; gap: 7px; width: 100%; margin-top: 14px; padding: 10px 12px; background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 10px; font-size: 12px; font-weight: 700; color: var(--cd-muted); cursor: pointer; font-family: inherit"
+        style="margin-top: 14px"
         @click="showSocials = !showSocials"
       >
         <CdIcon icon="lucide:at-sign" :size="13" />
         Social profiles
-        <span v-if="socialCount" style="display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px; padding: 0 5px; border-radius: 9999px; background: var(--cd-accent); color: #060810; font-size: 10px; font-weight: 800">{{ socialCount }}</span>
+        <span v-if="socialCount" class="cd-collapse-count">{{ socialCount }}</span>
         <CdIcon :icon="showSocials ? 'lucide:chevron-up' : 'lucide:chevron-down'" :size="14" style="margin-left: auto" />
       </button>
       <template v-if="showSocials">

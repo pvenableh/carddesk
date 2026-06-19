@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { RATINGS, RATING_ORDER, getRating, cEmoji } from '~/composables/useConstants'
+import { RATINGS, RATING_ORDER, getRating, getAct, cEmoji } from '~/composables/useConstants'
 import { PIPELINE_STAGES, GOAL_OPTIONS } from '~/composables/usePipeline'
 import ConnectionsView from './ConnectionsView.vue'
 
-const { contacts, updateContact, followUpStatus, loading: contactsLoading, error: contactsError, fetchContacts } = useContacts()
+const { contacts, updateContact, followUpStatus, lastActivity, daysSince, loading: contactsLoading, error: contactsError, fetchContacts } = useContacts()
 const { nav, goDetail } = useNavigation()
 const { getContactsByStage, getStageInfo, setGoalTag, moveToStage } = usePipeline()
 
@@ -18,6 +18,15 @@ async function setListRating(key: string | null) {
   if (!c) return
   const next = c.rating === key ? null : key
   await updateContact(c.id, { rating: next } as any)
+}
+
+// Inline "last touchpoint" peek — tapping the chevron on a list card expands a
+// quick summary of the most recent activity without navigating into the detail
+// screen. Set-based so multiple cards can stay open at once.
+const peeked = ref<Set<string>>(new Set())
+function togglePeek(id: string) {
+  peeked.value.has(id) ? peeked.value.delete(id) : peeked.value.add(id)
+  peeked.value = new Set(peeked.value)
 }
 
 // Kanban drag-and-drop — drag a card between the forward stage columns (desktop).
@@ -272,35 +281,84 @@ async function runExport() {
       <div
         v-for="c in filteredCs"
         :key="c.id"
-        class="cd-crd"
-        :class="{ 'cd-row-sel': selectMode && selectedIds.has(c.id) }"
-        @click="selectMode ? toggleSelect(c.id) : goDetail(c.id)"
+        class="cd-crd cd-net-card"
+        :class="{ 'cd-row-sel': selectMode && selectedIds.has(c.id), 'is-open': peeked.has(c.id) }"
       >
         <div class="cd-cbar" :class="c.rating || 'none'"></div>
-        <div v-if="selectMode" class="cd-selck" :class="{ on: selectedIds.has(c.id) }">
-          <CdIcon v-if="selectedIds.has(c.id)" emoji="✓" icon="lucide:check" :size="13" />
-        </div>
-        <div class="cd-cav">
-          <img v-if="(c as any).imageUrl" :src="(c as any).imageUrl" alt="" />
-          <CdIcon v-else :emoji="cEmoji(c)" icon="lucide:user" :size="19" />
-        </div>
-        <div style="flex: 1; min-width: 0">
-          <div class="cd-cnm">{{ c.name }}</div>
-          <div class="cd-csb">{{ [c.title, c.company].filter(Boolean).join(' · ') }}</div>
-        </div>
-        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0">
-          <button v-if="c.rating" type="button" class="cd-rpill" :class="c.rating" style="cursor: pointer; font-family: inherit" title="Tap to change temperature" @click.stop="ratingFor = c">
-            <CdIcon :emoji="getRating(c.rating)?.emoji ?? ''" :icon="getRating(c.rating)?.lucide" :size="9" /> {{ getRating(c.rating)?.label }}
+        <div
+          class="cd-net-head"
+          @click="selectMode ? toggleSelect(c.id) : goDetail(c.id)"
+        >
+          <div v-if="selectMode" class="cd-selck" :class="{ on: selectedIds.has(c.id) }">
+            <CdIcon v-if="selectedIds.has(c.id)" emoji="✓" icon="lucide:check" :size="13" />
+          </div>
+          <div class="cd-cav">
+            <img v-if="(c as any).imageUrl" :src="(c as any).imageUrl" alt="" />
+            <CdIcon v-else :emoji="cEmoji(c)" icon="lucide:user" :size="19" />
+          </div>
+          <div style="flex: 1; min-width: 0">
+            <div class="cd-cnm">{{ c.name }}</div>
+            <div class="cd-csb">{{ [c.title, c.company].filter(Boolean).join(' · ') }}</div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0">
+            <button v-if="c.rating" type="button" class="cd-rpill" :class="c.rating" style="cursor: pointer; font-family: inherit" title="Tap to change temperature" @click.stop="ratingFor = c">
+              <CdIcon :emoji="getRating(c.rating)?.emoji ?? ''" :icon="getRating(c.rating)?.lucide" :size="9" /> {{ getRating(c.rating)?.label }}
+            </button>
+            <button v-else type="button" class="cd-mpill" style="color: var(--cd-dim); background: none; border-style: dashed; cursor: pointer; font-family: inherit" title="Set temperature" @click.stop="ratingFor = c">
+              <CdIcon emoji="🌡️" icon="lucide:thermometer" :size="9" /> Rate
+            </button>
+            <span v-if="(c as any).is_client" class="cd-mpill" style="color: var(--cd-green); border-color: rgba(0,255,135,0.3); background: rgba(0,255,135,0.1)"><CdIcon emoji="💰" icon="lucide:badge-check" :size="9" /> client</span>
+            <span v-else-if="(c as any).is_partner" class="cd-mpill" style="color: #7f77dd; border-color: rgba(127,119,221,0.35); background: rgba(127,119,221,0.12)"><CdIcon emoji="🤝" icon="lucide:handshake" :size="9" /> partner</span>
+            <button v-else-if="(c as any).opportunity_goal === 'partner'" type="button" class="cd-mpill" style="color: #7f77dd; border-color: rgba(127,119,221,0.4); background: rgba(127,119,221,0.08); border-style: dashed; cursor: pointer; font-family: inherit" @click.stop="goalFor = c"><CdIcon emoji="🤝" icon="lucide:handshake" :size="9" /> partner goal</button>
+            <button v-else-if="(c as any).opportunity_goal === 'client'" type="button" class="cd-mpill" style="color: #4da6ff; border-color: rgba(77,166,255,0.4); background: rgba(77,166,255,0.08); border-style: dashed; cursor: pointer; font-family: inherit" @click.stop="goalFor = c"><CdIcon emoji="💼" icon="lucide:briefcase" :size="9" /> client goal</button>
+            <span v-if="c.linked_user" class="cd-mpill" style="color: var(--cd-purple, #b87dff); border-color: rgba(184,125,255,0.3); background: rgba(184,125,255,0.1)"><CdIcon emoji="🪐" icon="lucide:orbit" :size="9" /> joined</span>
+          </div>
+          <!-- Peek toggle: reveals the last touchpoint inline without leaving the list. -->
+          <button
+            v-if="!selectMode"
+            type="button"
+            class="cd-peek-tog"
+            :class="{ on: peeked.has(c.id) }"
+            :aria-label="peeked.has(c.id) ? 'Hide last touchpoint' : 'Show last touchpoint'"
+            :aria-expanded="peeked.has(c.id)"
+            title="Last touchpoint"
+            @click.stop="togglePeek(c.id)"
+          >
+            <CdIcon emoji="🕓" icon="lucide:chevron-down" :size="16" />
           </button>
-          <button v-else type="button" class="cd-mpill" style="color: var(--cd-dim); background: none; border-style: dashed; cursor: pointer; font-family: inherit" title="Set temperature" @click.stop="ratingFor = c">
-            <CdIcon emoji="🌡️" icon="lucide:thermometer" :size="9" /> Rate
-          </button>
-          <span v-if="(c as any).is_client" class="cd-mpill" style="color: var(--cd-green); border-color: rgba(0,255,135,0.3); background: rgba(0,255,135,0.1)"><CdIcon emoji="💰" icon="lucide:badge-check" :size="9" /> client</span>
-          <span v-else-if="(c as any).is_partner" class="cd-mpill" style="color: #7f77dd; border-color: rgba(127,119,221,0.35); background: rgba(127,119,221,0.12)"><CdIcon emoji="🤝" icon="lucide:handshake" :size="9" /> partner</span>
-          <button v-else-if="(c as any).opportunity_goal === 'partner'" type="button" class="cd-mpill" style="color: #7f77dd; border-color: rgba(127,119,221,0.4); background: rgba(127,119,221,0.08); border-style: dashed; cursor: pointer; font-family: inherit" @click.stop="goalFor = c"><CdIcon emoji="🤝" icon="lucide:handshake" :size="9" /> partner goal</button>
-          <button v-else-if="(c as any).opportunity_goal === 'client'" type="button" class="cd-mpill" style="color: #4da6ff; border-color: rgba(77,166,255,0.4); background: rgba(77,166,255,0.08); border-style: dashed; cursor: pointer; font-family: inherit" @click.stop="goalFor = c"><CdIcon emoji="💼" icon="lucide:briefcase" :size="9" /> client goal</button>
-          <span v-if="c.linked_user" class="cd-mpill" style="color: var(--cd-purple, #b87dff); border-color: rgba(184,125,255,0.3); background: rgba(184,125,255,0.1)"><CdIcon emoji="🪐" icon="lucide:orbit" :size="9" /> joined</span>
         </div>
+        <Transition name="cd-expand">
+          <div v-if="peeked.has(c.id)" class="cd-peek" @click.stop>
+            <!-- Mirrors the detail-screen timeline entry: colored type dot on the
+                 left (with a fading line hinting at older history) + an indented
+                 touchpoint card on the right. -->
+            <div v-if="lastActivity(c)" class="cd-peek-tl">
+              <div v-if="(c.activities?.length || 0) > 1" class="cd-peek-line"></div>
+              <div class="cd-tl-dot" :class="lastActivity(c)!.type">
+                <CdIcon :emoji="getAct(lastActivity(c)!.type).icon" :icon="getAct(lastActivity(c)!.type).lucide" :size="17" />
+              </div>
+              <div class="cd-peek-card">
+                <div class="cd-peek-card-top">
+                  <div class="cd-peek-card-label">{{ lastActivity(c)!.label || getAct(lastActivity(c)!.type).label }}</div>
+                  <div class="cd-peek-when" :title="fmtFull(lastActivity(c)!.date)">
+                    <span class="cd-peek-rel">{{ fmtRelative(lastActivity(c)!.date) }}</span>
+                    <span class="cd-peek-abs">{{ fmtFull(lastActivity(c)!.date) }}</span>
+                  </div>
+                </div>
+                <div v-if="lastActivity(c)!.note" class="cd-peek-card-note">{{ lastActivity(c)!.note }}</div>
+              </div>
+            </div>
+            <div v-else class="cd-peek-tl">
+              <div class="cd-tl-dot other"><CdIcon emoji="👋" icon="lucide:hand" :size="16" /></div>
+              <div class="cd-peek-card">
+                <div class="cd-peek-card-note">No touchpoints logged yet.</div>
+              </div>
+            </div>
+            <button type="button" class="cd-peek-more" @click.stop="goDetail(c.id)">
+              {{ lastActivity(c) ? 'View full history' : 'Log the first one' }} <CdIcon icon="lucide:arrow-right" :size="11" />
+            </button>
+          </div>
+        </Transition>
       </div>
       </div>
 

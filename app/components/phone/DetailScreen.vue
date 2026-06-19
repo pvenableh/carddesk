@@ -162,6 +162,13 @@ const actType = ref('email')
 const actNote = ref('')
 const actDate = ref(todayStr())
 
+// Edit form: socials live behind a pill toggle (matching the add-contact form).
+const showEditSocials = ref(false)
+const editSocialCount = computed(() => SOCIAL_KEYS.filter((k) => editForm.value[k]).length)
+
+// Open-task count from the Plans widget, surfaced on the "Plan" coach tab.
+const planCount = ref(0)
+
 const sortedActs = computed(() => {
   if (!selContact.value?.activities?.length) return []
   return [...(selContact.value.activities as any[])].sort(
@@ -194,6 +201,8 @@ function startEdit() {
     met_at: c.met_at, location: c.location, address: c.address, rating: c.rating, notes: c.notes,
     ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, c[k]])),
   }
+  // Start expanded only if there's already a handle to show.
+  showEditSocials.value = SOCIAL_KEYS.some((k) => c[k])
   editing.value = true
 }
 
@@ -378,6 +387,22 @@ const filteredHistory = computed(() => {
 })
 const sugSaved = ref(false)
 
+// Earnest coach widget — three views (ideas / plan / saved history) collapsed
+// into one tabbed card so they stop competing for space down the page.
+const coachTab = ref<'next' | 'plan' | 'history'>('next')
+
+// Shorten the coach tab labels on phones ("Next steps"→"Next",
+// "Earnest AI History"→"AI History") so the three pills don't overflow.
+const isMobile = ref(false)
+let coachMq: MediaQueryList | null = null
+const onCoachMq = (e: MediaQueryList | MediaQueryListEvent) => { isMobile.value = e.matches }
+onMounted(() => {
+  coachMq = window.matchMedia('(max-width: 767px)')
+  isMobile.value = coachMq.matches
+  coachMq.addEventListener('change', onCoachMq)
+})
+onUnmounted(() => coachMq?.removeEventListener('change', onCoachMq))
+
 async function loadHistory() {
   if (!selContact.value) { aiHistory.value = []; return }
   historyLoading.value = true
@@ -506,19 +531,9 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
           <button class="cd-back" @click="editing = false">← Cancel</button>
           <div style="font-size: 18px; font-weight: 800; margin-bottom: 12px">Edit Contact</div>
           <label class="cd-lbl">Name</label><input v-model="editForm.name" class="cd-inp" />
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
-            <div><label class="cd-lbl">Title</label><input v-model="editForm.title" class="cd-inp" /></div>
-            <div><label class="cd-lbl">Company</label><input v-model="editForm.company" class="cd-inp" /></div>
-          </div>
-          <label class="cd-lbl">Email</label><input v-model="editForm.email" class="cd-inp" type="email" />
-          <label class="cd-lbl">Phone</label><input v-model="editForm.phone" class="cd-inp" />
-          <label class="cd-lbl">Location <span style="color: var(--cd-dim); font-weight: 600; text-transform: none; letter-spacing: 0">· city / region</span></label><input v-model="editForm.location" class="cd-inp" placeholder="Austin, TX" />
-          <label class="cd-lbl">Address</label><textarea v-model="editForm.address" class="cd-inp" style="min-height: 48px; resize: vertical"></textarea>
-          <template v-for="s in SOCIALS" :key="s.key">
-            <label class="cd-lbl">{{ s.label }}</label><input v-model="editForm[s.key]" class="cd-inp" :placeholder="s.placeholder" />
-          </template>
+          <!-- Rating up top — it's the primary signal, not a footnote. -->
           <label class="cd-lbl">Rating</label>
-          <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px">
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px">
             <button
               v-for="r in RATINGS"
               :key="r.key"
@@ -527,6 +542,38 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
               @click="editForm.rating = editForm.rating === r.key ? '' : r.key"
             ><CdIcon :emoji="r.emoji" :icon="r.lucide" :size="12" /> {{ r.label }}</button>
           </div>
+          <div class="cd-frow">
+            <div><label class="cd-lbl">Title</label><input v-model="editForm.title" class="cd-inp" /></div>
+            <div><label class="cd-lbl">Company</label><input v-model="editForm.company" class="cd-inp" /></div>
+          </div>
+          <div class="cd-frow">
+            <div><label class="cd-lbl">Email</label><input v-model="editForm.email" class="cd-inp" type="email" /></div>
+            <div><label class="cd-lbl">Phone</label><input v-model="editForm.phone" class="cd-inp" /></div>
+          </div>
+          <div class="cd-frow">
+            <div><label class="cd-lbl">Where We Met</label><input v-model="editForm.met_at" class="cd-inp" placeholder="SaaS Summit NYC" /></div>
+            <div><label class="cd-lbl">Location <span style="color: var(--cd-dim); font-weight: 600; text-transform: none; letter-spacing: 0">· city / region</span></label><input v-model="editForm.location" class="cd-inp" placeholder="Austin, TX" /></div>
+          </div>
+          <label class="cd-lbl">Address</label><textarea v-model="editForm.address" class="cd-inp" style="min-height: 48px; resize: vertical"></textarea>
+
+          <!-- Socials tucked behind a pill toggle, matching the add-contact form. -->
+          <button
+            type="button"
+            class="cd-collapse-toggle"
+            :aria-expanded="showEditSocials"
+            style="margin: 4px 0 8px"
+            @click="showEditSocials = !showEditSocials"
+          >
+            <CdIcon icon="lucide:at-sign" :size="13" />
+            Social profiles
+            <span v-if="editSocialCount" class="cd-collapse-count">{{ editSocialCount }}</span>
+            <CdIcon :icon="showEditSocials ? 'lucide:chevron-up' : 'lucide:chevron-down'" :size="14" style="margin-left: auto" />
+          </button>
+          <template v-if="showEditSocials">
+            <template v-for="s in SOCIALS" :key="s.key">
+              <label class="cd-lbl">{{ s.label }}</label><input v-model="editForm[s.key]" class="cd-inp" :placeholder="s.placeholder" />
+            </template>
+          </template>
           <label class="cd-lbl">Notes</label>
           <textarea v-model="editForm.notes" class="cd-inp" style="min-height: 60px; resize: vertical"></textarea>
           <button class="cd-abtn g" style="margin-top: 4px" @click="doSaveEdit">Save Changes</button>
@@ -625,6 +672,8 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
               <span v-if="(selContact as any).industry" class="cd-tag-ind" :style="industryTagStyle((selContact as any).industry)">{{ (selContact as any).industry }}</span>
               <span v-if="(selContact as any).location" class="cd-tag-ind"><CdIcon emoji="📍" icon="lucide:map-pin" :size="9" /> {{ (selContact as any).location }}</span>
               <span v-if="(selContact as any).met_at" class="cd-tag-ind">@ {{ (selContact as any).met_at }}</span>
+              <!-- Who introduced this contact — settable inline, lives among the hero tags. -->
+              <PhoneContactReferral :contact="(selContact as any)" placement="header" />
             </div>
           </div>
 
@@ -670,38 +719,38 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             </a>
           </div>
 
-          <PhoneContactReferral :contact="(selContact as any)" />
+          <!-- Earnest coach — Next steps (AI ideas) · Plan · saved History, tabbed
+               into one card so they stop stacking and burying each other. -->
+          <div class="cd-hscroll" style="margin-bottom: 10px">
+            <CdTabs
+              v-model="coachTab"
+              :items="[
+                { key: 'next', label: isMobile ? 'Next' : 'Next Steps', emoji: '✨', icon: 'lucide:sparkles' },
+                { key: 'plan', label: 'Plan', emoji: '🎯', icon: 'lucide:flag', count: planCount || null },
+                { key: 'history', label: isMobile ? 'AI History' : 'Earnest AI History', emoji: '🕓', icon: 'lucide:history', count: aiHistory.length || null },
+              ]"
+            />
+          </div>
 
-          <div class="cd-log-sec" style="margin-bottom: 16px">
-            <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim); margin-bottom: 10px">
-              Next Steps
+          <!-- Next steps — a single AI-ideas callout (chat lives on the floating Ask Earnest button). -->
+          <div v-show="coachTab === 'next'" class="cd-log-sec" style="margin-bottom: 16px">
+            <button
+              type="button"
+              style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; padding: 12px; border-radius: 9999px; border: 1px solid color-mix(in srgb, var(--cd-accent) 32%, transparent); background: color-mix(in srgb, var(--cd-accent) 13%, transparent); color: var(--cd-accent); font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit"
+              :disabled="sugLoading"
+              @click="loadSuggestions"
+            >
+              <CdEarnestMark :size="18" />
+              <span>{{ sugLoading ? 'Thinking…' : suggestions.length ? 'Refresh Earnest AI ideas' : 'Get Earnest AI ideas' }}</span>
+            </button>
+            <div v-if="!suggestions.length && !sugLoading && !sugError" style="font-size: 12px; color: var(--cd-muted); line-height: 1.5; margin-top: 10px">
+              Tactical, contextual next moves for {{ selContact.name }} — from their history, rating, and your goal. Tap <strong>Save these to history</strong> to keep the good ones; they’ll land in the History tab.
             </div>
-            <!-- Two AI actions, side by side: tactical ideas (blue) vs open chat (green).
-                 Equal columns + matched min-height keep the tiles the same size. -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px">
-              <button
-                type="button"
-                style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; min-height: 78px; padding: 12px 8px; border-radius: 14px; border: 1px solid color-mix(in srgb, #4da6ff 38%, transparent); background: color-mix(in srgb, #4da6ff 12%, transparent); color: #4da6ff; font-size: 12px; font-weight: 700; line-height: 1.25; cursor: pointer; font-family: inherit"
-                :disabled="sugLoading"
-                @click="loadSuggestions"
-              >
-                <CdEarnestMark :size="18" />
-                <span>{{ sugLoading ? 'Thinking…' : suggestions.length ? 'Refresh AI ideas' : 'Get Earnest AI ideas' }}</span>
-              </button>
-              <button
-                type="button"
-                style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; min-height: 78px; padding: 12px 8px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--cd-accent) 32%, transparent); background: color-mix(in srgb, var(--cd-accent) 13%, transparent); color: var(--cd-accent); font-size: 12px; font-weight: 700; line-height: 1.25; cursor: pointer; font-family: inherit"
-                @click="askEarnest"
-              >
-                <CdEarnestMark :size="18" />
-                <span>Chat with Earnest about {{ selContact.name }}</span>
-              </button>
-            </div>
-            <div v-if="sugError" style="font-size: 12px; color: #f87171; margin-bottom: 8px">{{ sugError }}</div>
+            <div v-if="sugError" style="font-size: 12px; color: #f87171; margin-top: 10px">{{ sugError }}</div>
             <div
               v-for="(s, i) in suggestions"
               :key="i"
-              style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px"
+              style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 12px; padding: 10px 12px; margin-top: 8px"
             >
               <div style="font-size: 14px; font-weight: 700; margin-bottom: 3px">{{ s.icon }} {{ s.title }}</div>
               <div style="font-size: 12px; color: var(--cd-muted); line-height: 1.5">{{ s.body }}</div>
@@ -709,7 +758,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             <button
               v-if="suggestions.length"
               class="cd-abtn"
-              style="width: 100%; margin-top: 4px; background: transparent; border-color: var(--cd-bdr); color: var(--cd-muted); font-size: 11px; padding: 8px"
+              style="width: 100%; margin-top: 8px; background: transparent; border-color: var(--cd-bdr); color: var(--cd-muted); font-size: 11px; padding: 8px"
               :disabled="sugSaved"
               @click="saveSuggestions"
             >
@@ -718,51 +767,57 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             </button>
           </div>
 
-          <PhoneContactPlans :contact-id="(selContact as any).id" @ask="askEarnest" />
+          <!-- Plan (kept mounted so its loaded tasks persist across tab switches) -->
+          <PhoneContactPlans v-show="coachTab === 'plan'" :contact-id="(selContact as any).id" @ask="askEarnest" @count="planCount = $event" />
 
-          <div v-if="aiHistory.length || historyLoading" class="cd-log-sec" style="margin-bottom: 16px">
-            <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim); margin-bottom: 8px">
-              Earnest AI History
-            </div>
+          <!-- History -->
+          <div v-show="coachTab === 'history'" class="cd-log-sec" style="margin-bottom: 16px">
             <div v-if="historyLoading" style="font-size: 12px; color: var(--cd-muted)">Loading…</div>
-            <input
-              v-if="aiHistory.length > 2"
-              v-model="historySearch"
-              class="cd-inp"
-              type="search"
-              placeholder="Search this history…"
-              style="margin-bottom: 8px"
-            />
-            <div v-if="!historyLoading && !filteredHistory.length" style="font-size: 12px; color: var(--cd-muted)">No matches for “{{ historySearch }}”.</div>
-            <div
-              v-for="s in filteredHistory"
-              :key="s.id"
-              style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px"
-            >
-              <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px">
-                <button
-                  style="flex: 1; text-align: left; background: none; border: none; cursor: pointer; color: var(--cd-text); padding: 0"
-                  :title="s.type === 'chat' ? 'Continue this conversation' : 'Show details'"
-                  @click="s.type === 'chat' ? continueChat(s) : (expandedSession = expandedSession === s.id ? null : s.id)"
-                >
-                  <div style="font-size: 13px; font-weight: 700">{{ s.title }}</div>
-                  <div style="font-size: 10px; color: var(--cd-dim); font-family: monospace">
-                    {{ fmtFull(s.date_created) }} · {{ s.type }}<span v-if="s.type === 'chat'" style="color: var(--cd-accent)"> · tap to continue</span>
+            <template v-else-if="aiHistory.length">
+              <input
+                v-if="aiHistory.length > 2"
+                v-model="historySearch"
+                class="cd-inp"
+                type="search"
+                placeholder="Search this history…"
+                style="margin-bottom: 8px"
+              />
+              <div v-if="!filteredHistory.length" style="font-size: 12px; color: var(--cd-muted)">No matches for “{{ historySearch }}”.</div>
+              <div
+                v-for="s in filteredHistory"
+                :key="s.id"
+                style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px"
+              >
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px">
+                  <button
+                    style="flex: 1; text-align: left; background: none; border: none; cursor: pointer; color: var(--cd-text); padding: 0"
+                    :title="s.type === 'chat' ? 'Continue this conversation' : 'Show details'"
+                    @click="s.type === 'chat' ? continueChat(s) : (expandedSession = expandedSession === s.id ? null : s.id)"
+                  >
+                    <div style="font-size: 13px; font-weight: 700">{{ s.title }}</div>
+                    <div style="font-size: 10px; color: var(--cd-dim); font-family: monospace">
+                      {{ fmtFull(s.date_created) }} · {{ s.type }}<span v-if="s.type === 'chat'" style="color: var(--cd-accent)"> · tap to continue</span>
+                    </div>
+                  </button>
+                  <div style="display: flex; align-items: center; gap: 4px">
+                    <button v-if="s.type === 'chat'" style="background:none;border:none;cursor:pointer;padding:3px;color:var(--cd-accent)" title="Continue chat" @click="continueChat(s)"><CdIcon emoji="💬" icon="lucide:message-circle" :size="13" /></button>
+                    <button :style="`background:none;border:none;cursor:pointer;padding:3px;opacity:${s._rated === 'up' ? 1 : 0.4}`" title="Helpful" @click="rateSession(s, 'up')"><CdIcon emoji="👍" icon="lucide:thumbs-up" :size="13" /></button>
+                    <button :style="`background:none;border:none;cursor:pointer;padding:3px;opacity:${s._rated === 'down' ? 1 : 0.4}`" title="Not helpful" @click="rateSession(s, 'down')"><CdIcon emoji="👎" icon="lucide:thumbs-down" :size="13" /></button>
+                    <button style="background: none; border: none; cursor: pointer; padding: 3px; color: var(--cd-dim)" title="Delete" @click="removeSession(s)"><CdIcon emoji="🗑" icon="lucide:trash-2" :size="11" /></button>
                   </div>
-                </button>
-                <div style="display: flex; align-items: center; gap: 4px">
-                  <button v-if="s.type === 'chat'" style="background:none;border:none;cursor:pointer;padding:3px;color:var(--cd-accent)" title="Continue chat" @click="continueChat(s)"><CdIcon emoji="💬" icon="lucide:message-circle" :size="13" /></button>
-                  <button :style="`background:none;border:none;cursor:pointer;padding:3px;opacity:${s._rated === 'up' ? 1 : 0.4}`" title="Helpful" @click="rateSession(s, 'up')"><CdIcon emoji="👍" icon="lucide:thumbs-up" :size="13" /></button>
-                  <button :style="`background:none;border:none;cursor:pointer;padding:3px;opacity:${s._rated === 'down' ? 1 : 0.4}`" title="Not helpful" @click="rateSession(s, 'down')"><CdIcon emoji="👎" icon="lucide:thumbs-down" :size="13" /></button>
-                  <button style="background: none; border: none; cursor: pointer; padding: 3px; color: var(--cd-dim)" title="Delete" @click="removeSession(s)"><CdIcon emoji="🗑" icon="lucide:trash-2" :size="11" /></button>
+                </div>
+                <div v-if="expandedSession === s.id" style="margin-top: 8px; border-top: 1px solid var(--cd-bdr); padding-top: 8px">
+                  <div v-for="(line, li) in sessionLines(s)" :key="li" style="margin-bottom: 7px">
+                    <div v-if="line.title" style="font-size: 12px; font-weight: 700">{{ line.title }}</div>
+                    <div v-if="line.body" style="font-size: 12px; color: var(--cd-muted); line-height: 1.5">{{ line.body }}</div>
+                  </div>
                 </div>
               </div>
-              <div v-if="expandedSession === s.id" style="margin-top: 8px; border-top: 1px solid var(--cd-bdr); padding-top: 8px">
-                <div v-for="(line, li) in sessionLines(s)" :key="li" style="margin-bottom: 7px">
-                  <div v-if="line.title" style="font-size: 12px; font-weight: 700">{{ line.title }}</div>
-                  <div v-if="line.body" style="font-size: 12px; color: var(--cd-muted); line-height: 1.5">{{ line.body }}</div>
-                </div>
-              </div>
+            </template>
+            <div v-else style="text-align: center; padding: 18px 12px; border: 1px dashed var(--cd-bdr); border-radius: 14px; color: var(--cd-muted); display: flex; flex-direction: column; align-items: center; gap: 4px">
+              <CdIcon icon="lucide:history" :size="18" style="color: var(--cd-accent)" />
+              <div style="font-weight: 700; color: var(--cd-text); font-size: 13px">No saved history yet</div>
+              <div style="font-size: 12px; line-height: 1.45; max-width: 240px">Save Earnest's ideas from <strong>Next steps</strong> — or a chat — and they'll collect here.</div>
             </div>
           </div>
 
@@ -878,6 +933,9 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             @click="doRevertGraduation"
           ><CdIcon emoji="↩️" icon="lucide:rotate-ccw" :size="13" /> Revert to an active contact</button>
 
+          <!-- Source & referrals — invite/share + provenance, kept near the bottom. -->
+          <PhoneContactReferral :contact="(selContact as any)" placement="footer" />
+
           <div style="display: flex; gap: 7px; margin: 8px 0 20px">
             <button
               class="cd-abtn"
@@ -887,8 +945,9 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             <button
               class="cd-abtn"
               style="flex: 1; background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr); font-size: 12px; padding: 9px"
+              title="Share this contact as a card (.vcf) — add to iOS/Android Contacts"
               @click="shareContact"
-            ><CdIcon emoji="📤" icon="lucide:share-2" :size="12" /> {{ shareCopied ? 'Copied!' : 'Share' }}</button>
+            ><CdIcon emoji="📇" icon="lucide:contact-round" :size="13" /> {{ shareCopied ? 'Copied!' : 'Share card' }}</button>
             <button
               class="cd-abtn"
               style="flex: 1; background: transparent; color: var(--cd-dim); border-color: var(--cd-bdr); font-size: 12px; padding: 9px"
