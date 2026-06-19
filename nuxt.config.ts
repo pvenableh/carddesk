@@ -66,7 +66,12 @@ export default defineNuxtConfig({
     strategies: 'injectManifest',
     srcDir: '../public',
     filename: 'sw.ts',
-    registerType: 'autoUpdate',
+    // 'prompt' (not 'autoUpdate'): a new deploy surfaces a non-intrusive
+    // "Refresh" toast (AppUpdateToast, bound to $pwa.needRefresh) instead of
+    // silently reloading the page mid-interaction. The new SW stays in
+    // "waiting" until the user taps refresh — see the SKIP_WAITING handler in
+    // public/sw.ts, which must NOT skipWaiting on install for this to work.
+    registerType: 'prompt',
     injectRegister: 'auto',
     manifest: {
       name: 'CardDesk',
@@ -90,7 +95,14 @@ export default defineNuxtConfig({
       globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
     },
     devOptions: { enabled: true, type: 'module' },
-    client: { installPrompt: true },
+    client: {
+      installPrompt: true,
+      // Poll for a new service worker hourly. Long-open PWA sessions navigate
+      // client-side only, so the browser may not re-check for a new SW for a
+      // long time on its own; this calls registration.update() on an interval
+      // so a fresh deploy is discovered and $pwa.needRefresh flips to true.
+      periodicSyncForUpdates: 3600,
+    },
   },
   css: ['~/assets/css/tailwind.css', '~/assets/css/fonts.css', '~/assets/css/carddesk.css', '~/assets/css/auth.css'],
   vite: {

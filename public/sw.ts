@@ -65,9 +65,15 @@ registerRoute(
   }),
 )
 
-// 3) SW lifecycle — take over immediately so new versions don't wait.
-self.addEventListener('install', (event) => {
-  event.waitUntil(self.skipWaiting())
+// 3) SW lifecycle. We deliberately DON'T skipWaiting on install: a freshly
+// built SW stays in "waiting" so the app can surface a "Refresh" prompt
+// (registerType:'prompt' + $pwa.needRefresh → AppUpdateToast). It activates
+// only when the user taps refresh, which calls updateServiceWorker() and posts
+// {type:'SKIP_WAITING'} to this worker. clients.claim() still runs on activate
+// so the very first SW controls the page immediately (offline works without a
+// manual reload).
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting()
 })
 self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim())
