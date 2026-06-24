@@ -32,13 +32,63 @@ export function useEventMode() {
   const pastEvents = useState<CdSession[]>('cd-event-past', () => [])
 
   const { contacts } = useContacts()
-  const { saveSession, listSessions } = useSessions()
+  const { saveSession, listSessions, updateSession, deleteSession } = useSessions()
 
   // Everyone tagged with this event's name — the people met here.
   const captured = computed(() =>
     name.value ? contacts.value.filter((c) => c.met_at === name.value && !c.hibernated) : []
   )
   const count = computed(() => captured.value.length)
+
+  // Every distinct "where we met" value across the network — the real list of
+  // events the user has, derived from the source of truth (`met_at`) rather than
+  // the snapshot log, so it includes events that were never formally "ended".
+  // The live event is always surfaced first; the rest are ordered by how many
+  // people carry the tag. Powers the Where-We-Met picker on Add/Detail.
+  const knownPlaces = computed(() => {
+    const counts = new Map<string, number>()
+    for (const c of contacts.value) {
+      const m = (c.met_at || '').trim()
+      if (m) counts.set(m, (counts.get(m) || 0) + 1)
+    }
+    const live = name.value.trim()
+    if (active.value && live && !counts.has(live)) counts.set(live, 0)
+    return [...counts.entries()]
+      .map(([place, n]) => ({ name: place, count: n, active: active.value && place === live }))
+      .sort((a, b) => {
+        if (a.active !== b.active) return a.active ? -1 : 1
+        if (b.count !== a.count) return b.count - a.count
+        return a.name.localeCompare(b.name)
+      })
+  })
+
+  /**
+   * Rename an event everywhere it lives: re-tag every contact carrying the old
+   * `met_at` (the membership link), retitle any saved history snapshot, and
+   * update the live event name if it's the one being renamed. Because membership
+   * is a string match, this is what actually moves people between events.
+   */
+  async function renameEvent(oldName: string, newName: string): Promise<void> {
+    const nn = (newName || '').trim()
+    if (!nn || nn === oldName) return
+    // One bulk Directus call re-tags every attendee, then we patch local state
+    // to match (no full refetch needed).
+    await $fetch('/api/contacts/retag-event', { method: 'POST', body: { oldName, newName: nn } })
+    contacts.value = contacts.value.map((c) => ((c.met_at || '') === oldName ? { ...c, met_at: nn } : c))
+    const snaps = pastEvents.value.filter((s) => s.title === oldName)
+    await Promise.all(snaps.map((s) => updateSession(s.id, { title: nn }).catch(() => null)))
+    pastEvents.value = pastEvents.value.map((s) => (s.title === oldName ? { ...s, title: nn } : s))
+    if (active.value && name.value === oldName) name.value = nn
+  }
+
+  /**
+   * Remove an event's history snapshot. Contacts keep their `met_at` tag — they
+   * were still met there — so this deletes the log, not the relationships.
+   */
+  async function deleteEvent(sessionId: string): Promise<void> {
+    await deleteSession(sessionId)
+    pastEvents.value = pastEvents.value.filter((s) => s.id !== sessionId)
+  }
 
   function start(eventName: string) {
     name.value = (eventName || '').trim() || 'My Event'
@@ -104,5 +154,5 @@ export function useEventMode() {
     }
   }
 
-  return { active, name, startedAt, panelOpen, captured, count, pastEvents, start, end, openPanel, closePanel, saveAndEnd, loadPastEvents }
+  return { active, name, startedAt, panelOpen, captured, count, pastEvents, knownPlaces, start, end, openPanel, closePanel, saveAndEnd, loadPastEvents, renameEvent, deleteEvent }
 }

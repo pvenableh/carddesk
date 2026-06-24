@@ -13,15 +13,33 @@ export default defineEventHandler(async (event) => {
   const directus = getUserDirectus(token);
   try {
     return await directus.request(
-      createItem("cd_activities", {
-        contact: body.contact,
-        type: body.type,
-        label: body.label ?? body.type,
-        date: body.date,
-        note: body.note ?? null,
-        is_response: body.is_response ?? false,
-        response_note: body.response_note ?? null,
-      }),
+      createItem(
+        "cd_activities",
+        {
+          contact: body.contact,
+          type: body.type,
+          label: body.label ?? body.type,
+          date: body.date,
+          note: body.note ?? null,
+          is_response: body.is_response ?? false,
+          response_note: body.response_note ?? null,
+        },
+        // Return the same fields the contacts GET hydrates with, so the
+        // client's optimistic timeline row has note/date_created immediately
+        // (otherwise the note only appears after a refresh).
+        {
+          fields: [
+            "id",
+            "type",
+            "label",
+            "date",
+            "note",
+            "is_response",
+            "response_note",
+            "date_created",
+          ],
+        },
+      ),
     );
   } catch (err: any) {
     console.error("[POST /api/activities] Directus error:", err?.errors ?? err?.message ?? err);

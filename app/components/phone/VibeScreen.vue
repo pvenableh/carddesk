@@ -260,6 +260,8 @@ async function loadVibe() {
       <!-- ── NEXT: what to do now ── -->
       <Transition name="vb-fade">
       <div v-show="vibeTab === 'next'" class="vb-pane">
+      <!-- While an event is live, a focused capture/share toolkit rides up top. -->
+      <PhoneEventModeBar />
       <!-- App-like shortcut rail: one-tap access to the most-used actions. -->
       <PhoneQuickActionRail />
       <!-- Next-best-action queue: overdue follow-ups + a revival candidate. -->

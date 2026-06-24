@@ -551,7 +551,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             <div><label class="cd-lbl">Phone</label><input v-model="editForm.phone" class="cd-inp" /></div>
           </div>
           <div class="cd-frow">
-            <div><label class="cd-lbl">Where We Met</label><input v-model="editForm.met_at" class="cd-inp" placeholder="SaaS Summit NYC" /></div>
+            <PhoneMetAtField v-model="editForm.met_at" />
             <div><label class="cd-lbl">Location <span style="color: var(--cd-dim); font-weight: 600; text-transform: none; letter-spacing: 0">· city / region</span></label><input v-model="editForm.location" class="cd-inp" placeholder="Austin, TX" /></div>
           </div>
           <label class="cd-lbl">Address</label><textarea v-model="editForm.address" class="cd-inp" style="min-height: 48px; resize: vertical"></textarea>

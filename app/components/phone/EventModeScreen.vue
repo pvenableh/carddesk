@@ -7,7 +7,7 @@
  * Closing the panel doesn't end the event — the app-wide EventPill rides along
  * until the user explicitly ends it here.
  */
-const { active, name, captured, count, pastEvents, start, closePanel, saveAndEnd, loadPastEvents } = useEventMode()
+const { active, name, captured, count, pastEvents, start, closePanel, saveAndEnd, loadPastEvents, renameEvent, deleteEvent } = useEventMode()
 const { enabled: locEnabled, detecting: locDetecting, venues: locVenues, detect: detectLocation } = useLocation()
 const { nav, goDetail } = useNavigation()
 const { open: openChat } = useChat()
@@ -86,6 +86,44 @@ function eventCount(s: any): number {
   const c = s?.messages?.[0]?.content
   return typeof c?.count === 'number' ? c.count : 0
 }
+
+// ── Past-event management (resume / rename / delete) ──
+const openRowId = ref<string | null>(null)
+const renamingId = ref<string | null>(null)
+const renameVal = ref('')
+const confirmDeleteId = ref<string | null>(null)
+const rowBusy = ref(false)
+
+function toggleRow(id: string) {
+  openRowId.value = openRowId.value === id ? null : id
+  renamingId.value = null
+  confirmDeleteId.value = null
+}
+// Resume: flip Event Mode back on with this name. Because membership is a
+// `met_at` match, everyone tagged here is instantly back in the live count.
+function resumeEvent(ev: any) {
+  start(ev.title)
+  openRowId.value = null
+}
+function beginRename(ev: any) {
+  renamingId.value = ev.id
+  renameVal.value = ev.title
+  confirmDeleteId.value = null
+}
+async function doRename(ev: any) {
+  if (rowBusy.value) return
+  const nn = renameVal.value.trim()
+  if (!nn || nn === ev.title) { renamingId.value = null; return }
+  rowBusy.value = true
+  try { await renameEvent(ev.title, nn) }
+  finally { rowBusy.value = false; renamingId.value = null; openRowId.value = null }
+}
+async function doDelete(ev: any) {
+  if (rowBusy.value) return
+  rowBusy.value = true
+  try { await deleteEvent(ev.id) }
+  finally { rowBusy.value = false; confirmDeleteId.value = null; openRowId.value = null }
+}
 </script>
 
 <template>
@@ -160,13 +198,58 @@ function eventCount(s: any): number {
             <CdIcon icon="lucide:arrow-right" :size="16" />
           </button>
           <div class="em-list">
-            <div v-for="ev in pastEvents" :key="ev.id" class="em-row glass-thin" style="cursor: default">
-              <span class="em-av"><CdIcon icon="lucide:calendar-check" :size="16" /></span>
-              <span class="em-row-info">
-                <span class="em-row-name">{{ ev.title }}</span>
-                <span class="em-row-co">{{ eventDate(ev.date_created) }} · {{ ev.summary }}</span>
-              </span>
-              <span class="em-past-count">{{ eventCount(ev) }}</span>
+            <div v-for="ev in pastEvents" :key="ev.id" class="em-past glass-thin">
+              <button class="em-row em-row-btn" type="button" @click="toggleRow(ev.id)">
+                <span class="em-av"><CdIcon icon="lucide:calendar-check" :size="16" /></span>
+                <span class="em-row-info">
+                  <span class="em-row-name">{{ ev.title }}</span>
+                  <span class="em-row-co">{{ eventDate(ev.date_created) }} · {{ ev.summary }}</span>
+                </span>
+                <span class="em-past-count">{{ eventCount(ev) }}</span>
+                <CdIcon class="em-past-caret" :class="{ open: openRowId === ev.id }" icon="lucide:chevron-down" :size="15" />
+              </button>
+
+              <!-- Expanded actions: resume / rename / delete -->
+              <div v-if="openRowId === ev.id" class="em-past-drawer">
+                <!-- Rename input -->
+                <div v-if="renamingId === ev.id" class="em-past-rename">
+                  <input
+                    v-model="renameVal"
+                    class="cd-inp"
+                    placeholder="Event name"
+                    @keyup.enter="doRename(ev)"
+                  />
+                  <div class="em-past-rename-row">
+                    <span class="em-past-hint">Re-tags everyone met here.</span>
+                    <button class="cd-abtn g em-past-mini" :disabled="rowBusy" @click="doRename(ev)">
+                      {{ rowBusy ? 'Saving…' : 'Save' }}
+                    </button>
+                    <button class="cd-abtn b em-past-mini" :disabled="rowBusy" @click="renamingId = null">Cancel</button>
+                  </div>
+                </div>
+                <!-- Delete confirm -->
+                <div v-else-if="confirmDeleteId === ev.id" class="em-past-confirm">
+                  <span class="em-past-hint">Remove from history? Your contacts stay tagged to it.</span>
+                  <div class="em-past-rename-row">
+                    <button class="cd-abtn em-past-mini em-past-del" :disabled="rowBusy" @click="doDelete(ev)">
+                      <CdIcon icon="lucide:trash-2" :size="12" /> {{ rowBusy ? 'Removing…' : 'Remove' }}
+                    </button>
+                    <button class="cd-abtn b em-past-mini" :disabled="rowBusy" @click="confirmDeleteId = null">Cancel</button>
+                  </div>
+                </div>
+                <!-- Action buttons -->
+                <div v-else class="em-past-acts">
+                  <button class="em-past-act" type="button" @click="resumeEvent(ev)">
+                    <CdIcon icon="lucide:play" :size="13" /> Resume
+                  </button>
+                  <button class="em-past-act" type="button" @click="beginRename(ev)">
+                    <CdIcon icon="lucide:pencil" :size="13" /> Rename
+                  </button>
+                  <button class="em-past-act danger" type="button" @click="confirmDeleteId = ev.id">
+                    <CdIcon icon="lucide:trash-2" :size="13" /> Delete
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </template>
@@ -375,5 +458,40 @@ function eventCount(s: any): number {
   padding: 2px 8px; border-radius: 999px;
   background: color-mix(in srgb, var(--cd-accent) 14%, transparent);
   border: 1px solid color-mix(in srgb, var(--cd-accent) 28%, transparent);
+}
+
+/* ── manageable past-event rows ── */
+.em-past { border-radius: 14px; overflow: hidden; }
+.em-row-btn { background: none; border: none; font-family: inherit; }
+.em-past-caret { flex-shrink: 0; color: var(--cd-dim); transition: transform 0.2s ease; }
+.em-past-caret.open { transform: rotate(180deg); }
+.em-past-drawer {
+  padding: 4px 12px 12px;
+  border-top: 1px solid hsl(var(--glass-h, 220) 30% 75% / 0.10);
+}
+.em-past-acts { display: flex; gap: 7px; padding-top: 10px; }
+.em-past-act {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 9px 6px; border-radius: 10px;
+  background: var(--cd-bg2); border: 1px solid var(--cd-bdr); color: var(--cd-text);
+  font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.em-past-act :deep(svg) { color: var(--cd-accent); }
+.em-past-act:hover { border-color: color-mix(in srgb, var(--cd-accent) 40%, transparent); }
+.em-past-act.danger { color: var(--cd-orange, #ff6b35); }
+.em-past-act.danger :deep(svg) { color: var(--cd-orange, #ff6b35); }
+.em-past-act.danger:hover { border-color: color-mix(in srgb, var(--cd-orange, #ff6b35) 45%, transparent); }
+
+.em-past-rename, .em-past-confirm { padding-top: 10px; }
+.em-past-rename .cd-inp { margin-bottom: 8px; }
+.em-past-rename-row { display: flex; align-items: center; gap: 7px; }
+.em-past-hint { flex: 1; min-width: 0; font-size: 10.5px; color: var(--cd-dim); line-height: 1.35; }
+.em-past-mini { flex-shrink: 0; font-size: 12px; padding: 8px 14px; }
+.em-past-del {
+  background: color-mix(in srgb, var(--cd-orange, #ff6b35) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-orange, #ff6b35) 34%, transparent);
+  color: var(--cd-orange, #ff6b35);
+  display: inline-flex; align-items: center; gap: 5px;
 }
 </style>

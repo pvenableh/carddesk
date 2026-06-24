@@ -18,6 +18,11 @@ export interface QuickAction {
   icon?: string
   /** Render a brand mark instead of an icon (e.g. the CardDesk card mark). */
   mark?: 'card'
+  /** Per-tile accent color (a CSS color / var) so the rail reads as distinct,
+   *  color-coded shortcuts rather than a row of identical grey tiles. Falls back
+   *  to the theme accent. In monochrome themes the color vars collapse to grey,
+   *  so this still respects the appearance system. */
+  tint?: string
   /** Count badge; falsy/undefined renders nothing. */
   badge?: number
   /** Highlighted "on" state — e.g. Event mode while it's running. */
@@ -42,9 +47,17 @@ export function useQuickActions() {
 
   const actions = computed<QuickAction[]>(() => [
     {
+      id: 'scan',
+      label: 'Scan a card',
+      icon: 'lucide:scan',
+      tint: 'var(--cd-green)',
+      run: () => nav('add'),
+    },
+    {
       id: 'event',
       label: 'Event mode',
       icon: 'lucide:radio',
+      tint: 'var(--cd-blue)',
       active: eventMode.active.value,
       badge: eventMode.active.value ? eventMode.count.value : undefined,
       run: () => eventMode.openPanel(),
@@ -53,6 +66,7 @@ export function useQuickActions() {
       id: 'followup',
       label: 'Follow up',
       icon: 'lucide:clock',
+      tint: 'var(--cd-orange)',
       badge: overdueCount.value || undefined,
       run: () => nav('contacts'),
     },
@@ -60,6 +74,7 @@ export function useQuickActions() {
       id: 'reconnect',
       label: 'Reconnect',
       icon: 'lucide:heart-handshake',
+      tint: 'var(--cd-purple)',
       badge: coldCount.value || undefined,
       cost: 1,
       run: () => nav('cold'),
@@ -68,6 +83,7 @@ export function useQuickActions() {
       id: 'analyze',
       label: 'Analyze',
       icon: 'lucide:network',
+      tint: 'var(--cd-gold)',
       cost: 2,
       run: () => nav('home'),
     },
@@ -75,12 +91,14 @@ export function useQuickActions() {
       id: 'invite',
       label: 'Invite',
       icon: 'lucide:user-plus',
+      tint: 'var(--cd-blue)',
       run: () => openShareSheet('invite'),
     },
     {
       id: 'mycard',
       label: 'My card',
       mark: 'card',
+      tint: 'var(--cd-green)',
       run: () => openShareSheet('card'),
     },
   ])

@@ -334,7 +334,7 @@ async function doSaveContact() {
       <div v-if="locError" class="cd-loc-err">{{ locError }}</div>
 
       <div class="cd-frow">
-        <div><label class="cd-lbl">Where We Met</label><input v-model="addForm.metAt" class="cd-inp" placeholder="SaaS Summit NYC" /></div>
+        <PhoneMetAtField v-model="addForm.metAt" />
         <div><label class="cd-lbl">Location <span style="color: var(--cd-dim); font-weight: 600; text-transform: none; letter-spacing: 0">· city / region</span></label><input v-model="addForm.location" class="cd-inp" placeholder="Austin, TX" /></div>
       </div>
       <!-- Nearby venues as quick fills for "Where We Met". Skipped in Event Mode

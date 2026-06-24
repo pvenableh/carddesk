@@ -73,9 +73,13 @@ export function useContacts() {
     const activity = await $fetch<CdActivity>('/api/activities', { method: 'POST', body: payload })
     // Stage changes are tracked separately as `pipeline_stage_move` — don't double-count.
     if (payload.type && payload.type !== 'stage_change') analytics.activityLog(payload.type)
+    // Merge the request payload under the server response so the optimistic
+    // timeline row carries note/label/date even if the POST response omits a
+    // field — the note used to only appear after a page refresh otherwise.
+    const optimistic = { ...payload, ...activity } as CdActivity
     contacts.value = contacts.value.map((c) => {
       if (c.id !== payload.contact) return c
-      return { ...c, activities: [activity, ...((c.activities as CdActivity[]) ?? [])] }
+      return { ...c, activities: [optimistic, ...((c.activities as CdActivity[]) ?? [])] }
     })
     // Auto-advance New → Warming the first time real outreach is logged.
     if (payload.type && (OUTREACH_TYPES as readonly string[]).includes(payload.type)) {
