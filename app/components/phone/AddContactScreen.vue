@@ -249,6 +249,40 @@ async function doSaveContact() {
         <span class="cd-xpb" style="margin-top: 9px; display: inline-block">+50 XP</span>
       </div>
 
+      <!-- Scan Zone: Front captured, prompt for back -->
+      <div v-else-if="scanStep === 'captured-front'" class="cd-scan-captured">
+        <div style="font-size: 36px; margin-bottom: 6px"><CdIcon emoji="✅" icon="lucide:check-circle" :size="36" /></div>
+        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; color: var(--cd-accent); margin-bottom: 4px">
+          Front Captured
+        </div>
+        <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 14px">
+          Flip the card to scan the back, or skip if single-sided
+        </div>
+        <div style="display: flex; gap: 8px">
+          <button class="cd-abtn g" style="font-size: 13px; padding: 10px" @click="doScanBack">
+            <CdIcon emoji="📷" icon="lucide:camera" :size="14" /> Scan Back
+          </button>
+          <button class="cd-abtn b" style="font-size: 13px; padding: 10px" @click="doSkipBack">
+            Skip →
+          </button>
+        </div>
+      </div>
+
+      <!-- Scan Zone: Processing -->
+      <div v-else class="cd-scan-zone" style="pointer-events: none">
+        <div class="cd-spin" style="font-size: 44px; line-height: 1"><CdIcon emoji="⏳" icon="lucide:loader-circle" :size="44" /></div>
+        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: var(--cd-accent); margin-bottom: 4px">
+          Reading card...
+        </div>
+        <div style="font-size: 11px; color: var(--cd-dim)">
+          Earnest AI is extracting the details
+        </div>
+      </div>
+
+      <!-- The idle-only helpers below sit OUTSIDE the scan-state v-if/v-else-if/v-else
+           chain above. They must come after the chain — interleaving extra v-if
+           blocks would re-bind the chain's v-else to the wrong element. -->
+
       <!-- Cards captured offline, waiting for a connection — one tap replays them. -->
       <button
         v-if="scanStep === 'idle' && !scanning && pendingScans.length"
@@ -287,36 +321,6 @@ async function doSaveContact() {
         <button class="cd-add-share-btn" type="button" @click="openShareSheet('invite')">
           <CdIcon icon="lucide:user-plus" :size="16" /> Invite
         </button>
-      </div>
-
-      <!-- Scan Zone: Front captured, prompt for back -->
-      <div v-else-if="scanStep === 'captured-front'" class="cd-scan-captured">
-        <div style="font-size: 36px; margin-bottom: 6px"><CdIcon emoji="✅" icon="lucide:check-circle" :size="36" /></div>
-        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; color: var(--cd-accent); margin-bottom: 4px">
-          Front Captured
-        </div>
-        <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 14px">
-          Flip the card to scan the back, or skip if single-sided
-        </div>
-        <div style="display: flex; gap: 8px">
-          <button class="cd-abtn g" style="font-size: 13px; padding: 10px" @click="doScanBack">
-            <CdIcon emoji="📷" icon="lucide:camera" :size="14" /> Scan Back
-          </button>
-          <button class="cd-abtn b" style="font-size: 13px; padding: 10px" @click="doSkipBack">
-            Skip →
-          </button>
-        </div>
-      </div>
-
-      <!-- Scan Zone: Processing -->
-      <div v-else class="cd-scan-zone" style="pointer-events: none">
-        <div class="cd-spin" style="font-size: 44px; line-height: 1"><CdIcon emoji="⏳" icon="lucide:loader-circle" :size="44" /></div>
-        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: var(--cd-accent); margin-bottom: 4px">
-          Reading card...
-        </div>
-        <div style="font-size: 11px; color: var(--cd-dim)">
-          Earnest AI is extracting the details
-        </div>
       </div>
 
       <div

@@ -14,8 +14,23 @@ interface Venue { name: string; address: string | null }
 export default defineEventHandler(async (event) => {
   await getValidToken(event) // require a signed-in user
 
-  const key = useRuntimeConfig().googlePlacesApiKey as string
+  const cfg = useRuntimeConfig()
+  const key = cfg.googlePlacesApiKey as string
   if (!key) return { enabled: false }
+
+  // Google API keys are usually locked with an HTTP-referrer restriction, but
+  // server-side calls carry no Referer, so Google blocks them ("Requests from
+  // referer <empty> are blocked"). Spoof the app's own URL as the Referer so a
+  // referrer-restricted key accepts the request. The key authorizes
+  // "*.earnest.guru/*", and the app lives at carddesk.earnest.guru — use that
+  // canonical origin so lookups work in prod AND local dev (where APP_URL is
+  // localhost, which the restricted key would reject). Defer to APP_URL only
+  // when it's already an earnest.guru host. The trailing slash matters: the
+  // "…/*" pattern requires a path segment to match.
+  const appUrl = (cfg.public.appUrl as string) || ''
+  const referer = /^https:\/\/[^/]*earnest\.guru/i.test(appUrl)
+    ? (appUrl.endsWith('/') ? appUrl : `${appUrl}/`)
+    : 'https://carddesk.earnest.guru/'
 
   const body = await readBody(event)
   const lat = Number(body?.lat)
@@ -25,8 +40,8 @@ export default defineEventHandler(async (event) => {
 
   // Run the two lookups in parallel; either failing shouldn't sink the other.
   const [place, venues] = await Promise.all([
-    reverseGeocode(lat, lng, key).catch((e) => { logGoogleErr('geocode', e); return null }),
-    nearbyVenues(lat, lng, key).catch((e) => { logGoogleErr('nearby', e); return [] as Venue[] }),
+    reverseGeocode(lat, lng, key, referer).catch((e) => { logGoogleErr('geocode', e); return null }),
+    nearbyVenues(lat, lng, key, referer).catch((e) => { logGoogleErr('nearby', e); return [] as Venue[] }),
   ])
 
   return {
@@ -53,9 +68,9 @@ function logGoogleErr(label: string, e: any) {
 }
 
 /** Coords → "City, ST" using the Geocoding API. */
-async function reverseGeocode(lat: number, lng: number, key: string) {
+async function reverseGeocode(lat: number, lng: number, key: string, referer: string) {
   const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${key}`
-  const res = (await $fetch(url)) as any
+  const res = (await $fetch(url, referer ? { headers: { Referer: referer } } : {})) as any
   const comps: any[] = res?.results?.[0]?.address_components ?? []
   const get = (type: string, short = false) => {
     const c = comps.find((x) => x.types?.includes(type))
@@ -68,13 +83,14 @@ async function reverseGeocode(lat: number, lng: number, key: string) {
 }
 
 /** Coords → nearest few named venues (Places API New, ranked by distance). */
-async function nearbyVenues(lat: number, lng: number, key: string): Promise<Venue[]> {
+async function nearbyVenues(lat: number, lng: number, key: string, referer: string): Promise<Venue[]> {
   const res = (await $fetch('https://places.googleapis.com/v1/places:searchNearby', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-Goog-Api-Key': key,
       'X-Goog-FieldMask': 'places.displayName,places.formattedAddress',
+      ...(referer ? { Referer: referer } : {}),
     },
     body: {
       maxResultCount: 8,
