@@ -10,6 +10,7 @@ const { pending: pendingScans, remove: removePendingScan } = usePendingScans()
 const { nav, goDetail } = useNavigation()
 const { error: showError } = useToast()
 const eventMode = useEventMode()
+const { show: openShareSheet } = useShareSheet()
 const { enabled: locEnabled, detecting: locDetecting, error: locError, venues: locVenues, location: locDetected, detect: detectLocation } = useLocation()
 
 // Tap-to-detect (never auto-prompts for permission). Fills Location with the
@@ -218,6 +219,18 @@ async function doSaveContact() {
 <template>
   <div class="cd-screen on">
     <div class="cd-shdr">
+      <!-- While an event is live, a back affordance returns to the Event Mode
+           panel (the capture hub) so scanning loops smoothly back to the count. -->
+      <button
+        v-if="eventMode.active.value"
+        type="button"
+        class="cd-back cd-add-evt-back"
+        @click="eventMode.openPanel()"
+      >
+        <CdIcon icon="lucide:chevron-left" :size="15" />
+        <span class="cd-add-evt-live"></span>
+        Back to {{ eventMode.name.value }}
+      </button>
       <div class="cd-stitle">Add Contact</div>
     </div>
     <div class="cd-scrl cd-pad">
@@ -264,6 +277,17 @@ async function doSaveContact() {
           At an event? Turn on Event Mode <CdIcon icon="lucide:arrow-right" :size="11" />
         </template>
       </button>
+
+      <!-- Share-back row: hand out your own card / send an invite without leaving
+           the capture screen. Only while an event is live (the at-an-event base). -->
+      <div v-if="scanStep === 'idle' && !scanning && eventMode.active.value" class="cd-add-share">
+        <button class="cd-add-share-btn" type="button" @click="openShareSheet('card')">
+          <CdIcon icon="lucide:qr-code" :size="16" /> My card
+        </button>
+        <button class="cd-add-share-btn" type="button" @click="openShareSheet('invite')">
+          <CdIcon icon="lucide:user-plus" :size="16" /> Invite
+        </button>
+      </div>
 
       <!-- Scan Zone: Front captured, prompt for back -->
       <div v-else-if="scanStep === 'captured-front'" class="cd-scan-captured">
@@ -447,4 +471,28 @@ async function doSaveContact() {
   background: color-mix(in srgb, var(--cd-accent) 12%, transparent);
 }
 .cd-loc-chip.on :deep(svg) { color: var(--cd-accent); }
+
+/* ── Event-mode "back to event" header link + share-back row ── */
+.cd-add-evt-back { color: var(--cd-accent); }
+.cd-add-evt-live {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  background: var(--cd-accent);
+  box-shadow: 0 0 7px color-mix(in srgb, var(--cd-accent) 70%, transparent);
+  animation: cd-add-pulse 1.6s ease-in-out infinite;
+}
+@keyframes cd-add-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.75); }
+}
+.cd-add-share { display: flex; gap: 8px; margin-top: 8px; }
+.cd-add-share-btn {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 10px; border-radius: 12px; cursor: pointer;
+  background: var(--cd-bg2); border: 1px solid var(--cd-bdr); color: var(--cd-text);
+  font-family: inherit; font-size: 13px; font-weight: 700;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s;
+}
+.cd-add-share-btn :deep(svg) { color: var(--cd-accent); flex-shrink: 0; }
+.cd-add-share-btn:hover { border-color: color-mix(in srgb, var(--cd-accent) 40%, transparent); }
+.cd-add-share-btn:active { transform: scale(0.98); }
 </style>

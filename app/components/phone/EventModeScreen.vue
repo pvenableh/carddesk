@@ -7,10 +7,11 @@
  * Closing the panel doesn't end the event — the app-wide EventPill rides along
  * until the user explicitly ends it here.
  */
-const { active, name, captured, count, pastEvents, start, closePanel, saveAndEnd, loadPastEvents, renameEvent, deleteEvent } = useEventMode()
+const { active, name, captured, count, pastEvents, start, resume, closePanel, saveAndEnd, loadPastEvents, renameEvent, deleteEvent } = useEventMode()
 const { enabled: locEnabled, detecting: locDetecting, venues: locVenues, detect: detectLocation } = useLocation()
 const { nav, goDetail } = useNavigation()
 const { open: openChat } = useChat()
+const { show: openShareSheet } = useShareSheet()
 const { state: xp } = useXp()
 
 // Hand the past-event snapshots to Earnest AI as a continuable analysis chat.
@@ -73,6 +74,9 @@ async function finish() {
   finishing.value = false
   summary.value = false
   closePanel()
+  // Land back on the home dashboard rather than whatever screen sat behind the
+  // panel (often the Add/scan screen the capture loop came from).
+  nav('vibe')
 }
 function initials(n: string): string {
   return n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('') || '?'
@@ -102,7 +106,7 @@ function toggleRow(id: string) {
 // Resume: flip Event Mode back on with this name. Because membership is a
 // `met_at` match, everyone tagged here is instantly back in the live count.
 function resumeEvent(ev: any) {
-  start(ev.title)
+  resume(ev)
   openRowId.value = null
 }
 function beginRename(ev: any) {
@@ -140,6 +144,12 @@ async function doDelete(ev: any) {
         </button>
       </div>
       <div class="cd-stitle">Event Mode <CdIcon icon="lucide:radio" :size="16" /></div>
+      <!-- The live event's name, clearly under the "Event Mode" header so it's
+           obvious which event you're capturing into. -->
+      <div v-if="active && !summary" class="em-title">
+        <span class="em-title-live"></span>
+        <span class="em-title-name">{{ name }}</span>
+      </div>
     </div>
 
     <div class="cd-scrl cd-pad">
@@ -219,8 +229,8 @@ async function doDelete(ev: any) {
                     placeholder="Event name"
                     @keyup.enter="doRename(ev)"
                   />
-                  <div class="em-past-rename-row">
-                    <span class="em-past-hint">Re-tags everyone met here.</span>
+                  <p class="em-past-hint">Re-tags everyone met here.</p>
+                  <div class="em-past-btn-row">
                     <button class="cd-abtn g em-past-mini" :disabled="rowBusy" @click="doRename(ev)">
                       {{ rowBusy ? 'Saving…' : 'Save' }}
                     </button>
@@ -229,8 +239,8 @@ async function doDelete(ev: any) {
                 </div>
                 <!-- Delete confirm -->
                 <div v-else-if="confirmDeleteId === ev.id" class="em-past-confirm">
-                  <span class="em-past-hint">Remove from history? Your contacts stay tagged to it.</span>
-                  <div class="em-past-rename-row">
+                  <p class="em-past-hint">Remove from history? Your contacts stay tagged to it.</p>
+                  <div class="em-past-btn-row">
                     <button class="cd-abtn em-past-mini em-past-del" :disabled="rowBusy" @click="doDelete(ev)">
                       <CdIcon icon="lucide:trash-2" :size="12" /> {{ rowBusy ? 'Removing…' : 'Remove' }}
                     </button>
@@ -259,7 +269,7 @@ async function doDelete(ev: any) {
       <template v-else-if="!summary">
         <!-- live count hero -->
         <div class="em-hero glass-surface">
-          <div class="em-hero-label">{{ name }}</div>
+          <div class="em-hero-label">Live now</div>
           <div class="em-hero-count">{{ count }}</div>
           <div class="em-hero-unit">{{ count === 1 ? 'person met here' : 'people met here' }}</div>
           <div class="em-hero-streak">
@@ -276,6 +286,19 @@ async function doDelete(ev: any) {
           </span>
           <CdIcon icon="lucide:arrow-right" :size="18" />
         </button>
+
+        <!-- Share back: hand out your own card / send an invite without leaving
+             the capture loop. The global ShareSheet layers above this panel. -->
+        <div class="em-share">
+          <button class="em-share-btn" type="button" @click="openShareSheet('card')">
+            <CdIcon icon="lucide:qr-code" :size="17" />
+            <span>My card</span>
+          </button>
+          <button class="em-share-btn" type="button" @click="openShareSheet('invite')">
+            <CdIcon icon="lucide:user-plus" :size="17" />
+            <span>Invite</span>
+          </button>
+        </div>
 
         <!-- people met here -->
         <div class="em-sec-lbl">
@@ -337,9 +360,32 @@ async function doDelete(ev: any) {
   border: 1px solid hsl(var(--glass-h, 220) 30% 75% / 0.12);
 }
 
+/* iOS PWA safe-area: the sheet wrapper handles the top inset; here we keep the
+   scrollable content (footer, Done button, the people list) clear of the home
+   indicator at the bottom. Selector is intentionally specific enough to win
+   over the glass theme's `.cd-pad` padding-bottom. */
+.cd-screen .cd-scrl { padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
+
 /* header row: sheet close on the left, end-event on the right */
 .em-hdr-row { display: flex; align-items: center; justify-content: space-between; }
 .em-end { color: var(--cd-orange, #ff6b35); }
+
+/* Live event title, sitting just under the "Event Mode" header. */
+.em-title { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.em-title-name {
+  font-size: 16px; font-weight: 800; color: var(--cd-accent);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.em-title-live {
+  width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%;
+  background: var(--cd-accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--cd-accent) 70%, transparent);
+  animation: em-title-pulse 1.6s ease-in-out infinite;
+}
+@keyframes em-title-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.75); }
+}
 
 /* start */
 .em-start { border-radius: 20px; padding: 26px 20px; text-align: center; }
@@ -399,6 +445,19 @@ async function doDelete(ev: any) {
 .em-scan-copy { flex: 1; display: flex; flex-direction: column; }
 .em-scan-title { font-weight: 800; font-size: 1.05rem; }
 .em-scan-sub { font-size: 0.78rem; color: var(--cd-muted); }
+
+/* share-back row (My card / Invite) — secondary to the scan CTA */
+.em-share { display: flex; gap: 10px; margin-bottom: 18px; }
+.em-share-btn {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 13px; border-radius: 14px; cursor: pointer;
+  background: var(--cd-bg2); border: 1px solid var(--cd-bdr); color: var(--cd-text);
+  font-family: inherit; font-size: 0.92rem; font-weight: 700;
+  transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.12s;
+}
+.em-share-btn :deep(svg) { color: var(--cd-accent); flex-shrink: 0; }
+.em-share-btn:hover { border-color: color-mix(in srgb, var(--cd-accent) 40%, transparent); }
+.em-share-btn:active { transform: scale(0.98); }
 
 /* list */
 .em-sec-lbl {
@@ -485,9 +544,13 @@ async function doDelete(ev: any) {
 
 .em-past-rename, .em-past-confirm { padding-top: 10px; }
 .em-past-rename .cd-inp { margin-bottom: 8px; }
-.em-past-rename-row { display: flex; align-items: center; gap: 7px; }
-.em-past-hint { flex: 1; min-width: 0; font-size: 10.5px; color: var(--cd-dim); line-height: 1.35; }
-.em-past-mini { flex-shrink: 0; font-size: 12px; padding: 8px 14px; }
+/* Hint sits on its own full-width line above the buttons (it used to share a
+   flex row with them and wrap into a jammed column). */
+.em-past-hint { display: block; margin: 0 2px 8px; font-size: 10.5px; color: var(--cd-dim); line-height: 1.4; }
+.em-past-btn-row { display: flex; gap: 7px; }
+/* flex:1 (basis 0) overrides the global .cd-abtn width:100%, so the buttons
+   split the row evenly instead of each demanding full width. */
+.em-past-mini { flex: 1; width: auto; font-size: 12px; padding: 8px 14px; }
 .em-past-del {
   background: color-mix(in srgb, var(--cd-orange, #ff6b35) 14%, transparent);
   border: 1px solid color-mix(in srgb, var(--cd-orange, #ff6b35) 34%, transparent);

@@ -57,7 +57,12 @@ function pick(name: string) {
 .metat-chips {
   display: flex;
   gap: 6px;
-  margin-top: 7px;
+  /* The input above already carries an 8px bottom margin; keep a small top gap
+     and a clear bottom gap so the chips don't crowd the next field/label. */
+  margin-top: 2px;
+  margin-bottom: 10px;
+  /* A long event history scrolls horizontally rather than wrapping into a tall
+     block (chips are flex-shrink:0). The list is also capped at 8 entries. */
   overflow-x: auto;
   padding-bottom: 2px;
   scrollbar-width: none;

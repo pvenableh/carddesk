@@ -30,6 +30,9 @@ export function useEventMode() {
   const panelOpen = useState('cd-event-panel', () => false)
   // Cached list of past event sessions for the "recent events" history.
   const pastEvents = useState<CdSession[]>('cd-event-past', () => [])
+  // When the live event was resumed from history, this holds that snapshot's id
+  // so ending it UPDATES the existing record instead of creating a duplicate.
+  const resumedSessionId = useState<string | null>('cd-event-resumed', () => null)
 
   const { contacts } = useContacts()
   const { saveSession, listSessions, updateSession, deleteSession } = useSessions()
@@ -94,6 +97,20 @@ export function useEventMode() {
     name.value = (eventName || '').trim() || 'My Event'
     startedAt.value = new Date().toISOString()
     active.value = true
+    // A fresh start is not a resume — clear any stale link so it saves as new.
+    resumedSessionId.value = null
+  }
+
+  /**
+   * Resume a past event: re-activate the mode under its name and remember the
+   * snapshot so ending updates that record rather than spawning a duplicate.
+   * Preserves the original start time for the saved history.
+   */
+  function resume(session: CdSession) {
+    start(session.title)
+    resumedSessionId.value = session.id
+    const origStart = (session.messages?.[0]?.content as any)?.started_at
+    if (origStart) startedAt.value = origStart
   }
 
   function end() {
@@ -117,23 +134,33 @@ export function useEventMode() {
     const snapshotContacts = captured.value.map((c) => ({
       id: c.id, name: c.name, company: c.company ?? null, title: c.title ?? null,
     }))
+    const evName = name.value
+    active.value = false
+    if (!evName) { resumedSessionId.value = null; return null }
+
+    // A resumed event (or one re-using an existing event's name — same `met_at`,
+    // so the same people) updates its snapshot instead of spawning a duplicate.
+    const existing =
+      pastEvents.value.find((s) => s.id === resumedSessionId.value) ||
+      pastEvents.value.find((s) => s.title === evName)
+
     const summary: EventSummary = {
-      name: name.value,
-      started_at: startedAt.value || new Date().toISOString(),
+      name: evName,
+      started_at: (existing?.messages?.[0]?.content as any)?.started_at || startedAt.value || new Date().toISOString(),
       ended_at: new Date().toISOString(),
       count: snapshotContacts.length,
       contacts: snapshotContacts,
     }
-    active.value = false
-    if (!name.value) return null
+    const summaryText = `${summary.count} ${summary.count === 1 ? 'connection' : 'connections'}`
+    const messages = [{ role: 'assistant' as const, content: summary, ts: summary.ended_at }]
+
     try {
-      const session = await saveSession({
-        type: 'event',
-        contact: null,
-        title: name.value,
-        summary: `${summary.count} ${summary.count === 1 ? 'connection' : 'connections'}`,
-        messages: [{ role: 'assistant', content: summary, ts: summary.ended_at }],
-      })
+      if (existing) {
+        const updated = await updateSession(existing.id, { title: evName, summary: summaryText, messages })
+        pastEvents.value = [updated, ...pastEvents.value.filter((s) => s.id !== existing.id)]
+        return updated
+      }
+      const session = await saveSession({ type: 'event', contact: null, title: evName, summary: summaryText, messages })
       pastEvents.value = [session, ...pastEvents.value]
       return session
     } catch (err) {
@@ -142,6 +169,8 @@ export function useEventMode() {
       console.error('[eventMode] Failed to save event session:', err)
       useToast().error("Couldn't save this event to history — your contacts are still tagged to it.")
       return null
+    } finally {
+      resumedSessionId.value = null
     }
   }
 
@@ -154,5 +183,5 @@ export function useEventMode() {
     }
   }
 
-  return { active, name, startedAt, panelOpen, captured, count, pastEvents, knownPlaces, start, end, openPanel, closePanel, saveAndEnd, loadPastEvents, renameEvent, deleteEvent }
+  return { active, name, startedAt, panelOpen, captured, count, pastEvents, knownPlaces, start, resume, end, openPanel, closePanel, saveAndEnd, loadPastEvents, renameEvent, deleteEvent }
 }
