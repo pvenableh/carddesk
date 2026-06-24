@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
       readItems('cd_contacts', {
         fields: [
           'id', 'name', 'first_name', 'last_name', 'title', 'company',
-          'email', 'phone', ...SOCIAL_KEYS, 'notes', 'image',
+          'email', 'phone', 'phones', 'website', ...SOCIAL_KEYS, 'notes', 'image',
         ],
         filter,
         sort: ['name'],

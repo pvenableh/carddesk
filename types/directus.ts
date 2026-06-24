@@ -1,3 +1,5 @@
+import type { ContactPhone } from '~/types/contact'
+
 export interface DirectusSchema {
   cd_contacts: CdContact[]
   cd_activities: CdActivity[]
@@ -184,6 +186,10 @@ export interface CdContact {
   company?: string
   email?: string
   phone?: string
+  /** Additional phone numbers beyond the primary `phone` (work, home, etc.). */
+  phones?: ContactPhone[]
+  /** Website / portfolio URL. */
+  website?: string
   linkedin?: string
   instagram?: string
   twitter?: string

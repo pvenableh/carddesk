@@ -1,10 +1,12 @@
 <script setup lang="ts">
 /**
- * "Where We Met" field with a one-tap picker of the user's events. The list is
+ * "Where We Met" field with a one-tap picker of recent places. The list is
  * every distinct `met_at` across their network (plus the live event, surfaced
- * first) — so tagging a contact to an existing event, or moving them between
- * events, is a tap instead of retyping an exact name and risking a typo that
- * silently orphans them. Plain text entry still works for brand-new places.
+ * first) — so re-tagging a contact to a place they've already used, or moving
+ * them between places, is a tap instead of retyping an exact name and risking a
+ * typo that silently orphans them. These are existing tags from across the
+ * network, not events the user formally created, so the strip reads as "recent
+ * places." Plain text entry still works for brand-new places.
  */
 const props = defineProps<{
   modelValue: string
@@ -33,27 +35,36 @@ function pick(name: string) {
   <div class="metat">
     <label class="cd-lbl">{{ label || 'Where We Met' }}</label>
     <input v-model="val" class="cd-inp" :placeholder="placeholder || 'SaaS Summit NYC'" />
-    <div v-if="suggestions.length" class="metat-chips" role="listbox" aria-label="Your events">
-      <button
-        v-for="s in suggestions"
-        :key="s.name"
-        type="button"
-        class="metat-chip"
-        :class="{ on: val === s.name, live: s.active }"
-        role="option"
-        :aria-selected="val === s.name"
-        @click="pick(s.name)"
-      >
-        <span v-if="s.active" class="metat-live"></span>
-        <CdIcon v-else icon="lucide:calendar-check" :size="10" />
-        <span class="metat-chip-name">{{ s.name }}</span>
-      </button>
-    </div>
+    <template v-if="suggestions.length">
+      <div class="metat-lbl"><CdIcon icon="lucide:map-pin" :size="11" /> Recent places <span>· tap to reuse one</span></div>
+      <div class="metat-chips" role="listbox" aria-label="Recent places">
+        <button
+          v-for="s in suggestions"
+          :key="s.name"
+          type="button"
+          class="metat-chip"
+          :class="{ on: val === s.name, live: s.active }"
+          role="option"
+          :aria-selected="val === s.name"
+          @click="pick(s.name)"
+        >
+          <span v-if="s.active" class="metat-live"></span>
+          <CdIcon v-else icon="lucide:map-pin" :size="10" />
+          <span class="metat-chip-name">{{ s.name }}</span>
+        </button>
+      </div>
+    </template>
   </div>
 </template>
 
 <style scoped>
 .metat { min-width: 0; }
+.metat-lbl {
+  display: flex; align-items: center; gap: 5px; margin: 2px 0 6px;
+  font-size: 11px; font-weight: 800; color: var(--cd-muted); text-transform: uppercase; letter-spacing: 0.04em;
+}
+.metat-lbl :deep(svg) { color: var(--cd-accent); }
+.metat-lbl span { font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--cd-dim); }
 .metat-chips {
   display: flex;
   gap: 6px;

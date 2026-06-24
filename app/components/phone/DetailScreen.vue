@@ -3,6 +3,7 @@ import { RATINGS, ACT_TYPES, getRating, getAct, cEmoji, industryTagStyle } from 
 import { todayStr, fmtFull } from '~/composables/useFormatters'
 import { PIPELINE_STAGES, LOST_REASONS, GOAL_OPTIONS, CONVERSION_REASONS } from '~/composables/usePipeline'
 import { SOCIALS, SOCIAL_KEYS, socialUrl } from '~/types/socials'
+import { cleanPhones } from '~/types/contact'
 import type { PipelineStage, OpportunityGoal } from '~/types/directus'
 import confettiLib from 'canvas-confetti'
 
@@ -192,12 +193,20 @@ function fireConfetti() {
   confettiLib({ particleCount: 60, spread: 70, origin: { y: 0.6 }, colors: ['#00ff87', '#ffd700', '#ff6b35', '#4da6ff', '#b87dff'] })
 }
 
+// Directional transition between the detail view and its edit form: opening the
+// editor pushes left (iOS deeper); cancel/save pops right (iOS back).
+const editTransition = ref<'cd-slide-left' | 'cd-slide-right'>('cd-slide-left')
+
 function startEdit() {
   const c = selContact.value as any
   if (!c) return
+  editTransition.value = 'cd-slide-left'
   editForm.value = {
     name: c.name, title: c.title, company: c.company,
-    email: c.email, phone: c.phone, industry: c.industry,
+    email: c.email, phone: c.phone,
+    // Clone so editing the rows doesn't mutate the cached contact in place.
+    phones: Array.isArray(c.phones) ? c.phones.map((p: any) => ({ ...p })) : [],
+    website: c.website, industry: c.industry,
     met_at: c.met_at, location: c.location, address: c.address, rating: c.rating, notes: c.notes,
     ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, c[k]])),
   }
@@ -211,9 +220,27 @@ function contactSocials(c: any) {
   return SOCIALS.filter((s) => c?.[s.key])
 }
 
+/** Additional (non-primary) phone numbers, blanks filtered out. */
+function extraPhones(c: any) {
+  return Array.isArray(c?.phones) ? c.phones.filter((p: any) => p?.value) : []
+}
+
+/** Turn a bare website into a clickable absolute URL. */
+function websiteHref(url: string) {
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`
+}
+
 async function doSaveEdit() {
   if (!selContact.value) return
-  await updateContact((selContact.value as any).id, editForm.value)
+  // Strip blank phone rows so we don't persist empty entries.
+  const patch = { ...editForm.value, phones: cleanPhones(editForm.value.phones) }
+  await updateContact((selContact.value as any).id, patch)
+  editTransition.value = 'cd-slide-right'
+  editing.value = false
+}
+
+function cancelEdit() {
+  editTransition.value = 'cd-slide-right'
   editing.value = false
 }
 
@@ -291,6 +318,8 @@ async function shareContact() {
     company: c.company,
     email: c.email,
     phone: c.phone,
+    phones: c.phones,
+    website: c.website,
     notes: c.notes,
   })
   if (result === 'downloaded') {
@@ -526,9 +555,9 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
 <template>
   <div class="cd-screen on">
     <template v-if="selContact">
-      <template v-if="editing">
-        <div class="cd-scrl cd-pad">
-          <button class="cd-back" @click="editing = false">← Cancel</button>
+      <Transition :name="editTransition" mode="out-in">
+        <div v-if="editing" key="edit" class="cd-scrl cd-pad">
+          <button class="cd-back" @click="cancelEdit"><CdIcon emoji="‹" icon="lucide:chevron-left" :size="14" /> Cancel</button>
           <div style="font-size: 18px; font-weight: 800; margin-bottom: 12px">Edit Contact</div>
           <label class="cd-lbl">Name</label><input v-model="editForm.name" class="cd-inp" />
           <!-- Rating up top — it's the primary signal, not a footnote. -->
@@ -548,8 +577,11 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
           </div>
           <div class="cd-frow">
             <div><label class="cd-lbl">Email</label><input v-model="editForm.email" class="cd-inp" type="email" /></div>
-            <div><label class="cd-lbl">Phone</label><input v-model="editForm.phone" class="cd-inp" /></div>
+            <div><label class="cd-lbl">Phone <span style="color: var(--cd-dim); font-weight: 600; text-transform: none; letter-spacing: 0">· primary</span></label><input v-model="editForm.phone" class="cd-inp" type="tel" /></div>
           </div>
+          <PhonePhonesField v-model="editForm.phones" />
+          <label class="cd-lbl">Website</label>
+          <input v-model="editForm.website" class="cd-inp" type="url" placeholder="acme.com" />
           <div class="cd-frow">
             <PhoneMetAtField v-model="editForm.met_at" />
             <div><label class="cd-lbl">Location <span style="color: var(--cd-dim); font-weight: 600; text-transform: none; letter-spacing: 0">· city / region</span></label><input v-model="editForm.location" class="cd-inp" placeholder="Austin, TX" /></div>
@@ -578,9 +610,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
           <textarea v-model="editForm.notes" class="cd-inp" style="min-height: 60px; resize: vertical"></textarea>
           <button class="cd-abtn g" style="margin-top: 4px" @click="doSaveEdit">Save Changes</button>
         </div>
-      </template>
-      <template v-else>
-        <div class="cd-scrl cd-pad">
+        <div v-else key="view" class="cd-scrl cd-pad">
           <button class="cd-back" @click="nav('contacts')"><CdIcon emoji="‹" icon="lucide:chevron-left" :size="14" /> Back</button>
           <div class="cd-det-hero">
             <div style="display: flex; align-items: center; gap: 11px; margin-bottom: 10px">
@@ -610,8 +640,14 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
               <input ref="camInputEl" type="file" accept="image/*" capture="environment" hidden @change="onContactPhoto" />
               <input ref="libInputEl" type="file" accept="image/*" hidden @change="onContactPhoto" />
               <input ref="fileInputEl" type="file" hidden @change="onContactPhoto" />
-              <div>
-                <div style="font-family: 'Bebas Neue', sans-serif; font-size: 26px; line-height: 1; margin-bottom: 3px">{{ selContact.name }}</div>
+              <div class="cd-det-id">
+                <!-- Name doubles as the edit trigger; a pencil sits to its right
+                     (hover-revealed on pointer-fine screens, always shown on touch).
+                     The footer Edit button stays as the explicit fallback. -->
+                <div class="cd-det-name-row">
+                  <button type="button" class="cd-det-name" title="Edit contact" @click="startEdit">{{ selContact.name }}</button>
+                  <button type="button" class="cd-det-name-pen" tabindex="-1" aria-hidden="true" @click="startEdit"><CdIcon icon="lucide:pencil" :size="13" /></button>
+                </div>
                 <div style="font-size: 12px; color: var(--cd-muted)">
                   {{ [(selContact as any).title, (selContact as any).company].filter(Boolean).join(' · ') }}
                 </div>
@@ -697,7 +733,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             ><CdIcon :emoji="r.emoji" :icon="r.lucide" :size="13" /> {{ r.label }}</button>
           </div>
 
-          <div v-if="(selContact as any).email || (selContact as any).phone || (selContact as any).address" class="cd-info-grid">
+          <div v-if="(selContact as any).email || (selContact as any).phone || extraPhones(selContact).length || (selContact as any).website || (selContact as any).address" class="cd-info-grid">
             <div v-if="(selContact as any).email" class="cd-info-row">
               <span class="cd-info-k"><CdIcon emoji="📧" icon="lucide:mail" :size="11" /></span>
               <a :href="'mailto:' + (selContact as any).email" class="cd-info-v" style="color: #4da6ff">{{ (selContact as any).email }}</a>
@@ -705,6 +741,14 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             <div v-if="(selContact as any).phone" class="cd-info-row">
               <span class="cd-info-k"><CdIcon emoji="📞" icon="lucide:phone" :size="11" /></span>
               <a :href="'tel:' + (selContact as any).phone" class="cd-info-v" style="color: #4da6ff">{{ (selContact as any).phone }}</a>
+            </div>
+            <div v-for="(p, i) in extraPhones(selContact)" :key="'ph' + i" class="cd-info-row">
+              <span class="cd-info-k"><CdIcon emoji="📞" icon="lucide:phone" :size="11" /></span>
+              <a :href="'tel:' + p.value" class="cd-info-v" style="color: #4da6ff">{{ p.value }}<span v-if="p.label" style="color: var(--cd-dim); font-weight: 600"> · {{ p.label }}</span></a>
+            </div>
+            <div v-if="(selContact as any).website" class="cd-info-row">
+              <span class="cd-info-k"><CdIcon emoji="🌐" icon="lucide:globe" :size="11" /></span>
+              <a :href="websiteHref((selContact as any).website)" target="_blank" rel="noopener" class="cd-info-v" style="color: #4da6ff">{{ (selContact as any).website }}</a>
             </div>
             <div v-if="(selContact as any).address" class="cd-info-row">
               <span class="cd-info-k"><CdIcon emoji="📍" icon="lucide:map-pin" :size="11" /></span>
@@ -955,7 +999,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             ><CdIcon emoji="😴" icon="lucide:moon" :size="12" /> Hibernate</button>
           </div>
         </div>
-      </template>
+      </Transition>
     </template>
 
     <!-- Pipeline Stage Sheet -->

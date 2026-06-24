@@ -19,6 +19,8 @@ export default defineEventHandler(async (event) => {
           "company",
           "email",
           "phone",
+          "phones",
+          "website",
           ...SOCIAL_KEYS,
           "industry",
           "met_at",

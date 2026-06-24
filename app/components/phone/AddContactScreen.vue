@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RATINGS, INDUSTRIES } from '~/composables/useConstants'
 import { SOCIALS, SOCIAL_KEYS } from '~/types/socials'
+import { cleanPhones } from '~/types/contact'
 import confettiLib from 'canvas-confetti'
 
 const { contacts, createContact, logActivity } = useContacts()
@@ -31,7 +32,7 @@ onMounted(() => {
 
 const addForm = ref<Record<string, any>>({
   firstName: '', lastName: '', title: '', company: '',
-  email: '', phone: '', industry: '', metAt: '', location: '', address: '', rating: '', notes: '', howMet: '',
+  email: '', phone: '', phones: [], website: '', industry: '', metAt: '', location: '', address: '', rating: '', notes: '', howMet: '',
   ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, ''])),
 })
 const wasScanned = ref(false)
@@ -54,12 +55,14 @@ function applyResult(result: any) {
     company: result.company ?? '',
     email: result.email ?? '',
     phone: result.phone ?? '',
+    phones: [],
+    website: result.website ?? '',
     industry: result.industry ?? '',
     metAt: addForm.value.metAt,
     location: result.location ?? addForm.value.location ?? '',
     address: result.address ?? '',
     rating: '',
-    notes: result.website ?? '',
+    notes: '',
     howMet: addForm.value.howMet,
     ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, result[k] ?? ''])),
   }
@@ -141,6 +144,8 @@ async function doSaveContact() {
       company: addForm.value.company || undefined,
       email: addForm.value.email || undefined,
       phone: addForm.value.phone || undefined,
+      phones: cleanPhones(addForm.value.phones) ?? undefined,
+      website: addForm.value.website || undefined,
       industry: addForm.value.industry || undefined,
       ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, addForm.value[k] || undefined])),
       met_at: (eventMode.active.value ? eventMode.name.value : addForm.value.metAt) || undefined,
@@ -200,7 +205,7 @@ async function doSaveContact() {
   earn(25, '💾', "They're in your network.", { total_contacts: contacts.value.length })
   addForm.value = {
     firstName: '', lastName: '', title: '', company: '',
-    email: '', phone: '', industry: '', metAt: '', location: '', address: '', rating: '', notes: '', howMet: '',
+    email: '', phone: '', phones: [], website: '', industry: '', metAt: '', location: '', address: '', rating: '', notes: '', howMet: '',
     ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, ''])),
   }
   wasScanned.value = false
@@ -348,8 +353,11 @@ async function doSaveContact() {
       </div>
       <div class="cd-frow">
         <div><label class="cd-lbl">Email</label><input v-model="addForm.email" class="cd-inp" type="email" placeholder="jane@acme.com" /></div>
-        <div><label class="cd-lbl">Phone</label><input v-model="addForm.phone" class="cd-inp" type="tel" placeholder="+1 555 000 0000" /></div>
+        <div><label class="cd-lbl">Phone <span style="color: var(--cd-dim); font-weight: 600; text-transform: none; letter-spacing: 0">· primary</span></label><input v-model="addForm.phone" class="cd-inp" type="tel" placeholder="+1 555 000 0000" /></div>
       </div>
+      <PhonePhonesField v-model="addForm.phones" />
+      <label class="cd-lbl">Website</label>
+      <input v-model="addForm.website" class="cd-inp" type="url" placeholder="acme.com" />
       <!-- Location suggestions (Google Places). Hidden entirely when the feature
            is off (no API key). Tap to detect — no auto permission prompt. -->
       <div v-if="locEnabled" class="cd-loc">
@@ -367,15 +375,20 @@ async function doSaveContact() {
       </div>
       <!-- Nearby venues as quick fills for "Where We Met". Skipped in Event Mode
            (the event name is the tag there). -->
-      <div v-if="locVenues.length && !eventMode.active.value" class="cd-loc-chips">
-        <button
-          v-for="v in locVenues"
-          :key="v.name"
-          type="button"
-          class="cd-loc-chip"
-          :class="{ on: addForm.metAt === v.name }"
-          @click="pickVenue(v.name)"
-        ><CdIcon icon="lucide:map-pin" :size="10" /> {{ v.name }}</button>
+      <div v-if="locVenues.length && !eventMode.active.value" class="cd-loc-venues">
+        <div class="cd-loc-venues-lbl">
+          <CdIcon icon="lucide:map-pin" :size="11" /> Nearby places <span>· tap to set where you met</span>
+        </div>
+        <div class="cd-loc-chips">
+          <button
+            v-for="v in locVenues"
+            :key="v.name"
+            type="button"
+            class="cd-loc-chip"
+            :class="{ on: addForm.metAt === v.name }"
+            @click="pickVenue(v.name)"
+          ><CdIcon icon="lucide:map-pin" :size="10" /> {{ v.name }}</button>
+        </div>
       </div>
       <label class="cd-lbl">Address</label>
       <textarea v-model="addForm.address" class="cd-inp" style="min-height: 48px; resize: vertical" placeholder="123 Main St, New York, NY 10001"></textarea>
@@ -461,7 +474,14 @@ async function doSaveContact() {
 .cd-loc-found { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; color: var(--cd-muted); }
 .cd-loc-found :deep(svg) { color: var(--cd-accent); }
 .cd-loc-err { font-size: 11.5px; color: #f87171; margin-bottom: 8px; }
-.cd-loc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 10px; }
+.cd-loc-venues { margin: 8px 0 10px; }
+.cd-loc-venues-lbl {
+  display: flex; align-items: center; gap: 5px; margin-bottom: 6px;
+  font-size: 11px; font-weight: 800; color: var(--cd-muted); text-transform: uppercase; letter-spacing: 0.04em;
+}
+.cd-loc-venues-lbl :deep(svg) { color: var(--cd-accent); }
+.cd-loc-venues-lbl span { font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--cd-dim); }
+.cd-loc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .cd-loc-chip {
   display: inline-flex; align-items: center; gap: 4px; max-width: 100%;
   background: var(--cd-bg2); border: 1px solid var(--cd-bdr); color: var(--cd-text);

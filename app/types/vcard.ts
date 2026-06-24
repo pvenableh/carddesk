@@ -14,6 +14,8 @@ export interface ShareableContact {
   company?: string | null
   email?: string | null
   phone?: string | null
+  /** Additional numbers beyond the primary `phone`. */
+  phones?: { label?: string; value: string }[] | null
   website?: string | null
   notes?: string | null
   /** Social handles (linkedin, instagram, twitter, …) read dynamically via SOCIALS. */
@@ -50,6 +52,15 @@ export function buildVCard(c: ShareableContact, opts?: { photo?: VCardPhoto | nu
   if (c.company) lines.push(`ORG:${vcardEscape(c.company)}`)
   if (c.email) lines.push(`EMAIL;TYPE=INTERNET:${vcardEscape(c.email)}`)
   if (c.phone) lines.push(`TEL;TYPE=CELL:${vcardEscape(c.phone)}`)
+  if (Array.isArray(c.phones)) {
+    for (const p of c.phones) {
+      if (!p?.value) continue
+      // Map a free-text label onto a vCard TYPE token (WORK, HOME, …); fall back
+      // to a generic VOICE so the number still imports cleanly.
+      const type = (p.label || '').trim().toUpperCase().replace(/[^A-Z]/g, '') || 'VOICE'
+      lines.push(`TEL;TYPE=${type}:${vcardEscape(p.value)}`)
+    }
+  }
   if (c.website) lines.push(`URL:${vcardEscape(c.website)}`)
   for (const def of SOCIALS) {
     const v = c[def.key]

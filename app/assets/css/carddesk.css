@@ -1409,6 +1409,52 @@ html[data-theme="glass"] .cd-net-card {
   position: relative;
   flex-shrink: 0;
 }
+/* Contact name in the detail header doubles as the edit trigger, with a pencil
+   beside it. The pencil is hover-revealed on pointer-fine (larger) screens and
+   always shown on touch, where there's no hover to lean on. */
+.cd-det-id { min-width: 0; }
+.cd-det-name-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+  max-width: 100%;
+}
+.cd-det-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--cd-text);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+.cd-det-name:hover { color: var(--cd-accent); }
+.cd-det-name-pen {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 2px;
+  background: none;
+  border: none;
+  color: var(--cd-dim);
+  cursor: pointer;
+  transition: opacity 0.15s, color 0.15s;
+}
+.cd-det-name-pen:hover { color: var(--cd-accent); }
+@media (hover: hover) and (pointer: fine) {
+  .cd-det-name-pen { opacity: 0; }
+  .cd-det-name-row:hover .cd-det-name-pen,
+  .cd-det-name:focus-visible + .cd-det-name-pen { opacity: 1; }
+}
 /* Contact-photo source picker — a bottom sheet teleported to <body> (high z-index
    so it sits above the glass cards, nav, and everything else). */
 .cd-ph-backdrop {
