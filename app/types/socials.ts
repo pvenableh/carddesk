@@ -12,6 +12,11 @@ export interface SocialDef {
   label: string
   /** Iconify brand logo (from @iconify-json/logos), e.g. 'logos:linkedin-icon'. */
   icon: string
+  /** Monochrome brand glyph (from @iconify-json/simple-icons) that inherits
+   *  currentColor — used where the icon should match the theme, not its brand. */
+  mono: string
+  /** Per-platform call-to-action, e.g. 'Connect with me on LinkedIn'. */
+  cta: string
   /** Input placeholder shown in the edit forms. */
   placeholder: string
   /** URL prefix used to turn a bare @handle into a full link. */
@@ -19,11 +24,11 @@ export interface SocialDef {
 }
 
 export const SOCIALS: SocialDef[] = [
-  { key: 'linkedin',  label: 'LinkedIn',  icon: 'logos:linkedin-icon',  placeholder: 'linkedin.com/in/jane or @jane', base: 'https://www.linkedin.com/in/' },
-  { key: 'instagram', label: 'Instagram', icon: 'logos:instagram-icon', placeholder: '@jane or instagram.com/jane',     base: 'https://instagram.com/' },
-  { key: 'twitter',   label: 'X',         icon: 'logos:x',              placeholder: '@jane or x.com/jane',             base: 'https://x.com/' },
-  { key: 'youtube',   label: 'YouTube',   icon: 'logos:youtube-icon',   placeholder: '@jane or youtube.com/@jane',      base: 'https://youtube.com/@' },
-  { key: 'behance',   label: 'Behance',   icon: 'logos:behance',        placeholder: 'behance.net/jane or @jane',       base: 'https://www.behance.net/' },
+  { key: 'linkedin',  label: 'LinkedIn',  icon: 'logos:linkedin-icon',  mono: 'simple-icons:linkedin',  cta: 'Connect with me on LinkedIn', placeholder: 'linkedin.com/in/jane or @jane', base: 'https://www.linkedin.com/in/' },
+  { key: 'instagram', label: 'Instagram', icon: 'logos:instagram-icon', mono: 'simple-icons:instagram', cta: 'Check us out on Instagram',    placeholder: '@jane or instagram.com/jane',     base: 'https://instagram.com/' },
+  { key: 'twitter',   label: 'X',         icon: 'logos:x',              mono: 'simple-icons:x',         cta: 'Follow me on X',               placeholder: '@jane or x.com/jane',             base: 'https://x.com/' },
+  { key: 'youtube',   label: 'YouTube',   icon: 'logos:youtube-icon',   mono: 'simple-icons:youtube',   cta: 'Subscribe on YouTube',         placeholder: '@jane or youtube.com/@jane',      base: 'https://youtube.com/@' },
+  { key: 'behance',   label: 'Behance',   icon: 'logos:behance',        mono: 'simple-icons:behance',   cta: 'See my work on Behance',       placeholder: 'behance.net/jane or @jane',       base: 'https://www.behance.net/' },
 ]
 
 export const SOCIAL_KEYS = SOCIALS.map((s) => s.key)

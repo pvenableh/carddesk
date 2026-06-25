@@ -90,6 +90,24 @@ export default defineNuxtConfig({
         { src: '/icons/icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
         { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
       ],
+      // Long-press the home-screen icon → jump straight to a big scannable QR of
+      // your card (our answer to Blinq's lock-screen widget, within PWA limits).
+      shortcuts: [
+        {
+          name: 'Show my card',
+          short_name: 'My Card',
+          description: 'Pull up a big QR of your card to scan',
+          url: '/?card=present',
+          icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
+        },
+        {
+          name: 'Scan a card',
+          short_name: 'Scan',
+          description: 'Capture a new contact',
+          url: '/?go=scan',
+          icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
+        },
+      ],
     },
     injectManifest: {
       globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],

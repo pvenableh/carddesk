@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { INDUSTRIES } from '~/composables/useConstants'
 import { SOCIALS, SOCIAL_KEYS } from '~/types/socials'
+import { CARD_THEMES, normalizeCardTheme } from '~/composables/useCardThemes'
 
 definePageMeta({ middleware: 'auth' })
 
@@ -59,9 +60,12 @@ const { data: card, refresh: refreshCard } = await useFetch<any>('/api/cards/me'
 const cardForm = reactive<Record<string, any>>({
   display_name: '', title: '', company: '', headline: '',
   email: '', phone: '', website: '', office_address: '', broadcast_activity: true,
+  card_theme: 'carddesk',
   ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, ''])),
 })
 const cardImageUrl = ref<string | null>(null)
+const cardCoverUrl = ref<string | null>(null)
+const cardLogoUrl = ref<string | null>(null)
 
 watchEffect(() => {
   if (!card.value) return
@@ -75,8 +79,21 @@ watchEffect(() => {
   cardForm.office_address = card.value.office_address ?? ''
   for (const k of SOCIAL_KEYS) cardForm[k] = card.value[k] ?? ''
   cardForm.broadcast_activity = card.value.broadcast_activity ?? true
+  cardForm.card_theme = normalizeCardTheme(card.value.card_theme)
   cardImageUrl.value = card.value.imageUrl ?? null
+  cardCoverUrl.value = card.value.coverUrl ?? null
+  cardLogoUrl.value = card.value.logoUrl ?? null
 })
+
+// Live data fed to the <CardView> preview — mirrors unsaved edits, and falls
+// back to the Earnest avatar for the photo (same as the public card does).
+const previewCard = computed(() => ({
+  ...cardForm,
+  name: cardForm.display_name || fullName.value || 'Your name',
+  imageUrl: cardImageUrl.value || profile.value.avatarUrl || null,
+  coverUrl: cardCoverUrl.value || null,
+  logoUrl: cardLogoUrl.value || null,
+}))
 
 const cardInitials = computed(() =>
   (cardForm.display_name || '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('') || '?'
@@ -104,7 +121,12 @@ const cardSaving = ref(false)
 async function saveCard() {
   cardSaving.value = true
   try {
-    await $fetch('/api/cards/me', { method: 'PATCH', body: { ...cardForm } })
+    // Only send cover_image when the user cleared it (null) — uploads set it
+    // server-side, so an unchanged cover is left untouched (undefined → skipped).
+    const body: Record<string, any> = { ...cardForm }
+    if (!cardCoverUrl.value) body.cover_image = null
+    if (!cardLogoUrl.value) body.logo_image = null
+    await $fetch('/api/cards/me', { method: 'PATCH', body })
     success('Card saved')
     await refreshCard()
   } catch {
@@ -151,6 +173,46 @@ async function onCardFile(e: Event) {
     showError('Upload failed (max 5MB)')
   } finally {
     cardUploading.value = false
+  }
+}
+
+// Cover/banner image — a wide 16:9-ish header behind the profile photo.
+const coverUploading = ref(false)
+const coverFileEl = ref<HTMLInputElement | null>(null)
+async function onCoverFile(e: Event) {
+  const f = (e.target as HTMLInputElement).files?.[0]
+  if (!f) return
+  coverUploading.value = true
+  try {
+    const fd = new FormData()
+    fd.append('file', await downscaleImage(f), f.name || 'cover.jpg')
+    const r = await $fetch<{ coverUrl: string }>('/api/cards/cover', { method: 'POST', body: fd })
+    cardCoverUrl.value = r.coverUrl
+    success('Cover updated')
+  } catch {
+    showError('Upload failed (max 5MB)')
+  } finally {
+    coverUploading.value = false
+  }
+}
+
+// Company logo — shown opposite the profile photo.
+const logoUploading = ref(false)
+const logoFileEl = ref<HTMLInputElement | null>(null)
+async function onLogoFile(e: Event) {
+  const f = (e.target as HTMLInputElement).files?.[0]
+  if (!f) return
+  logoUploading.value = true
+  try {
+    const fd = new FormData()
+    fd.append('file', await downscaleImage(f), f.name || 'logo.png')
+    const r = await $fetch<{ logoUrl: string }>('/api/cards/logo', { method: 'POST', body: fd })
+    cardLogoUrl.value = r.logoUrl
+    success('Logo updated')
+  } catch {
+    showError('Upload failed (max 5MB)')
+  } finally {
+    logoUploading.value = false
   }
 }
 
@@ -417,6 +479,66 @@ async function suggestGoal() {
               </div>
             </div>
             <button class="acct-sync-btn" @click="syncFromAccount">Sync to card</button>
+          </div>
+
+          <!-- Live preview of the shareable card in the chosen design -->
+          <div class="acct-card-preview">
+            <CardView :card="previewCard" :interactive="false" />
+          </div>
+
+          <!-- Design picker -->
+          <div class="acct-section-title" style="margin-top: 4px">Design</div>
+          <div class="acct-themes">
+            <button
+              v-for="t in CARD_THEMES"
+              :key="t.id"
+              type="button"
+              class="acct-theme"
+              :class="{ on: cardForm.card_theme === t.id }"
+              @click="cardForm.card_theme = t.id"
+            >
+              <span class="acct-theme-swatch" :style="{ background: t.swatch }">
+                <span class="acct-theme-mark" :style="{ color: t.swatchInk }">Aa</span>
+              </span>
+              <span class="acct-theme-label">{{ t.label }}</span>
+              <CdIcon v-if="cardForm.card_theme === t.id" icon="lucide:check" emoji="✓" :size="13" class="acct-theme-check" />
+            </button>
+          </div>
+          <div class="acct-theme-hint">{{ CARD_THEMES.find((t) => t.id === cardForm.card_theme)?.hint }}</div>
+
+          <!-- Cover / banner image -->
+          <div class="acct-cover">
+            <div class="acct-cover-img" :class="{ empty: !cardCoverUrl }">
+              <img v-if="cardCoverUrl" :src="cardCoverUrl" alt="Cover" />
+              <span v-else><CdIcon emoji="🖼️" icon="lucide:image" :size="18" /> Add a cover photo</span>
+            </div>
+            <input ref="coverFileEl" type="file" accept="image/*" hidden @change="onCoverFile" />
+            <div class="acct-cover-actions">
+              <button class="cd-abtn ice" style="width: auto; font-size: 12px; padding: 8px 14px" :disabled="coverUploading" @click="coverFileEl?.click()">
+                <CdIcon emoji="📷" icon="lucide:camera" :size="13" /> {{ coverUploading ? 'Uploading…' : cardCoverUrl ? 'Change cover' : 'Add cover' }}
+              </button>
+              <button v-if="cardCoverUrl" class="acct-cover-remove" :disabled="coverUploading" @click="cardCoverUrl = null">Remove</button>
+            </div>
+            <div style="font-size: 11px; color: var(--cd-dim); text-align: center">Wide banner shown across the top of your card (optional).</div>
+          </div>
+
+          <!-- Company logo (shown opposite the profile photo) -->
+          <div class="acct-logo-row">
+            <div class="acct-logo-img" :class="{ empty: !cardLogoUrl }">
+              <img v-if="cardLogoUrl" :src="cardLogoUrl" alt="Logo" />
+              <CdIcon v-else emoji="🏢" icon="lucide:image" :size="18" />
+            </div>
+            <div class="acct-logo-copy">
+              <div style="font-size: 13px; font-weight: 700">Company logo</div>
+              <div style="font-size: 11px; color: var(--cd-dim); line-height: 1.4">Shown opposite your photo. PNG with transparency works best.</div>
+              <input ref="logoFileEl" type="file" accept="image/*" hidden @change="onLogoFile" />
+              <div class="acct-logo-actions">
+                <button class="acct-card-btn" style="font-size: 12px; padding: 7px 12px" :disabled="logoUploading" @click="logoFileEl?.click()">
+                  <CdIcon emoji="📷" icon="lucide:camera" :size="13" /> {{ logoUploading ? 'Uploading…' : cardLogoUrl ? 'Change' : 'Add logo' }}
+                </button>
+                <button v-if="cardLogoUrl" class="acct-cover-remove" :disabled="logoUploading" @click="cardLogoUrl = null">Remove</button>
+              </div>
+            </div>
           </div>
 
           <!-- Photo — defaults to your Earnest avatar until you set a card-specific one -->
@@ -738,6 +860,184 @@ async function suggestGoal() {
 }
 .acct-sync-btn:hover {
   opacity: 0.85;
+}
+/* ── Live card preview ── */
+.acct-card-preview {
+  position: relative;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid var(--cd-bdr);
+  margin-bottom: 18px;
+  /* Let CardView paint its own themed backdrop edge-to-edge. */
+}
+.acct-card-preview :deep(.cv) {
+  min-height: 0;
+}
+.acct-card-preview :deep(.cv-main) {
+  padding: 30px 18px;
+  max-width: 340px;
+}
+/* With a cover the banner provides the top edge — drop the column's top pad. */
+.acct-card-preview :deep(.cv--cover .cv-main) {
+  padding-top: 0;
+}
+/* ── Design / theme picker ── */
+.acct-themes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.acct-theme {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px;
+  border-radius: 12px;
+  border: 1px solid var(--cd-bdr);
+  background: var(--cd-bg2);
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.12s ease;
+}
+.acct-theme:hover {
+  transform: translateY(-2px);
+}
+.acct-theme.on {
+  border-color: var(--cd-accent);
+  box-shadow: 0 0 0 1px var(--cd-accent);
+}
+.acct-theme-swatch {
+  width: 100%;
+  aspect-ratio: 1 / 1.15;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-size: cover;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.acct-theme-mark {
+  font-size: 15px;
+  font-weight: 800;
+  font-family: 'Bauer Bodoni', Georgia, serif;
+  opacity: 0.95;
+}
+.acct-theme-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--cd-muted);
+}
+.acct-theme.on .acct-theme-label {
+  color: var(--cd-text);
+}
+.acct-theme-check {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  color: var(--cd-accent);
+}
+.acct-theme-hint {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--cd-dim);
+  margin-bottom: 18px;
+  min-height: 17px;
+}
+/* ── Card cover / banner ── */
+.acct-cover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.acct-cover-img {
+  width: 100%;
+  aspect-ratio: 16 / 6.2;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--cd-bg2);
+  border: 1px solid var(--cd-bdr);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.acct-cover-img.empty {
+  border-style: dashed;
+}
+.acct-cover-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.acct-cover-img span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cd-dim);
+}
+.acct-cover-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.acct-cover-remove {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cd-dim);
+  cursor: pointer;
+}
+.acct-cover-remove:hover {
+  color: #f87171;
+}
+/* ── Company logo ── */
+.acct-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.acct-logo-img {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  color: var(--cd-dim);
+  background: var(--cd-bg2);
+  border: 1px solid var(--cd-bdr);
+}
+.acct-logo-img.empty {
+  border-style: dashed;
+}
+.acct-logo-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.acct-logo-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.acct-logo-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
 }
 /* ── Card photo ── */
 .acct-cardphoto {

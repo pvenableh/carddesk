@@ -6,9 +6,9 @@
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": [
         "-c",
-        "export PATH=\"/Users/peterhoffman/.local/share/fnm/aliases/default/bin:$PATH\"; exec npm run dev -- --port 3100"
+        "export PATH=\"/Users/peterhoffman/.local/share/fnm/aliases/default/bin:$PATH\"; exec npm run dev -- --port 3110"
       ],
-      "port": 3100
+      "port": 3110
     },
     {
       "name": "earnest-dev",

@@ -1,6 +1,6 @@
 import { readItems, readUsers } from '@directus/sdk'
 import { getDirectus } from '../../utils/directus'
-import { assetUrl } from '../../utils/cards'
+import { assetUrl, getAvatarUrls } from '../../utils/cards'
 import { SOCIAL_KEYS } from '~/types/socials'
 
 /**
@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   const cards = (await admin.request(
     readItems('cd_cards' as any, {
       filter: { user: { _eq: id } } as any,
-      fields: ['display_name', 'title', 'company', 'email', 'phone', 'website', ...SOCIAL_KEYS, 'headline', 'office_address', 'image'],
+      fields: ['display_name', 'title', 'company', 'email', 'phone', 'website', ...SOCIAL_KEYS, 'headline', 'office_address', 'image', 'cover_image', 'logo_image', 'card_theme'],
       limit: 1,
     }),
   )) as any[]
@@ -52,6 +52,12 @@ export default defineEventHandler(async (event) => {
     ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, c[k] ?? null])),
     headline: c.headline ?? null,
     office_address: c.office_address ?? null,
-    imageUrl: assetUrl(c.image),
+    card_theme: c.card_theme || 'carddesk',
+    // Photo: card image if set, otherwise the user's Earnest profile avatar
+    // (getAvatarUrls prefers the card image, then the profile avatar) so a card
+    // shows a real photo without extra setup.
+    imageUrl: (await getAvatarUrls([id]))[id] ?? null,
+    coverUrl: assetUrl(c.cover_image),
+    logoUrl: assetUrl(c.logo_image),
   }
 })

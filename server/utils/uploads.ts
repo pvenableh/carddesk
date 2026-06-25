@@ -13,6 +13,8 @@ const ROOT_FOLDER = 'CardDesk'
 
 export const UPLOAD_FOLDERS = {
   card: 'Card Images',
+  cover: 'Card Covers',
+  logo: 'Card Logos',
   avatar: 'Profile Avatars',
   contact: 'Contact Photos',
 } as const

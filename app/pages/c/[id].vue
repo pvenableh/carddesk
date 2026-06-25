@@ -1,34 +1,47 @@
 <script setup lang="ts">
-import { buildVCard, useShare } from '~/composables/useShare'
-import { SOCIALS, socialUrl } from '~/types/socials'
+import { CARD_THEMES, normalizeCardTheme } from '~/composables/useCardThemes'
+import type { CardViewData } from '~/components/card/View.vue'
 
 definePageMeta({ layout: false })
 
 const route = useRoute()
+const router = useRouter()
 const id = computed(() => String(route.params.id || ''))
-const { shareContact } = useShare()
 
-interface PublicCard {
-  id: string; name: string; title: string | null; company: string | null
-  email: string | null; phone: string | null; website: string | null
-  linkedin: string | null; instagram: string | null; twitter: string | null; youtube: string | null; behance: string | null
-  headline: string | null; office_address: string | null; imageUrl: string | null
+interface PublicCard extends CardViewData {
+  id: string
+  name: string
 }
 const { data: card, error } = await useFetch<PublicCard>(() => `/api/cards/${id.value}`)
 
-const socialLinks = computed(() => (card.value ? SOCIALS.filter((s) => (card.value as any)[s.key]) : []))
+const shareUrl = computed(() => (import.meta.client ? window.location.href : ''))
+
+// ── Design preview mode ──
+// `?preview=1` (or any `?theme=` override) shows a floating design switcher so
+// the cardholder can flip through all designs on their real card. Real visitors
+// never see it — they get the saved design only.
+const previewMode = computed(() => route.query.preview === '1' || !!route.query.theme)
+const overrideTheme = computed(() => (route.query.theme ? normalizeCardTheme(String(route.query.theme)) : null))
+// The card as rendered — with the theme swapped when previewing a design.
+const displayCard = computed(() =>
+  card.value ? { ...card.value, card_theme: overrideTheme.value || card.value.card_theme } : null,
+)
+const theme = computed(() => normalizeCardTheme(displayCard.value?.card_theme))
+function pickTheme(themeId: string) {
+  router.replace({ query: { ...route.query, preview: '1', theme: themeId } })
+}
 
 // Public, shareable card page — give it a rich, person-specific title + OG/Twitter
 // preview so a shared link unfurls nicely in messages and social.
 const cardTitle = computed(() =>
   card.value
     ? `${card.value.name}${card.value.title || card.value.company ? ` — ${[card.value.title, card.value.company].filter(Boolean).join(' · ')}` : ''} · CardDesk`
-    : 'Digital Card · CardDesk'
+    : 'Digital Card · CardDesk',
 )
 const cardDescription = computed(() =>
   card.value
     ? `${card.value.name}’s digital business card on CardDesk${card.value.headline ? ` — ${card.value.headline}` : ''}. Tap to save the contact or connect.`
-    : 'A digital business card on CardDesk. Tap to save the contact or connect.'
+    : 'A digital business card on CardDesk. Tap to save the contact or connect.',
 )
 useSeoMeta({
   title: cardTitle,
@@ -41,179 +54,156 @@ useSeoMeta({
   twitterTitle: cardTitle,
   twitterDescription: cardDescription,
 })
-
-const initials = computed(() => {
-  const n = card.value?.name || ''
-  return n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('') || '?'
-})
-
-// QR encodes the vCard itself, so anyone can scan the on-screen code with their
-// phone camera and get a native "Add Contact" prompt — no extra tap.
-const qr = ref('')
-watchEffect(async () => {
-  if (!card.value || !import.meta.client) return
-  const QR = await import('qrcode')
-  qr.value = await QR.toDataURL(buildVCard(card.value), { margin: 1, width: 300, color: { dark: '#060810', light: '#ffffff' } })
-})
-
-function addToContacts() {
-  if (card.value) shareContact(card.value)
-}
 </script>
 
 <template>
-  <div class="cardpage">
-    <div v-if="error" class="cardbox">
+  <div class="cardpage" :class="{ 'is-preview': previewMode }" :data-card-theme="theme">
+    <div v-if="error" class="cardpage-error">
       <div style="font-size: 40px; margin-bottom: 8px">🃏</div>
       <div style="font-size: 18px; font-weight: 800">Card not found</div>
-      <NuxtLink to="/" class="cd-abtn g" style="margin-top: 16px; text-decoration: none">Go to CardDesk</NuxtLink>
+      <NuxtLink to="/" class="cardpage-error-link">Go to CardDesk →</NuxtLink>
     </div>
-    <div v-else-if="card" class="cardbox">
-      <div class="cardpage-brand">CARD<span style="color: var(--cd-accent)">DESK</span></div>
-      <div class="cardpage-avatar"><img v-if="card.imageUrl" :src="card.imageUrl" alt=""><span v-else>{{ initials }}</span></div>
-      <div style="font-size: 22px; font-weight: 800; margin-bottom: 2px">{{ card.name }}</div>
-      <div style="font-size: 13px; color: var(--cd-dim)">{{ [card.title, card.company].filter(Boolean).join(' · ') || 'On CardDesk' }}</div>
-      <div v-if="card.headline" style="font-size: 12px; color: var(--cd-muted); margin-top: 6px; font-style: italic">“{{ card.headline }}”</div>
 
-      <div v-if="card.website || socialLinks.length || card.phone || card.email" class="cardpage-links">
-        <a v-if="card.website" :href="card.website" target="_blank" rel="noopener"><CdIcon emoji="🌐" icon="lucide:globe" :size="16" /></a>
-        <a v-for="s in socialLinks" :key="s.key" :href="socialUrl(s.key, (card as any)[s.key])" target="_blank" rel="noopener" :aria-label="s.label"><Icon :name="s.icon" :size="16" /></a>
-        <a v-if="card.phone" :href="`tel:${card.phone}`"><CdIcon emoji="📞" icon="lucide:phone" :size="16" /></a>
-        <a v-if="card.email" :href="`mailto:${card.email}`"><CdIcon emoji="✉️" icon="lucide:mail" :size="16" /></a>
+    <CardView v-else-if="displayCard" :card="displayCard" :share-url="shareUrl" floating-qr :float-raised="previewMode">
+      <template #footer>
+        <NuxtLink to="/auth/register" class="cardpage-cta">Get your own CardDesk <CdIcon icon="lucide:chevron-right" :size="13" /></NuxtLink>
+      </template>
+    </CardView>
+
+    <!-- Design preview switcher (only in ?preview=1 mode) -->
+    <div v-if="previewMode && card" class="cardpage-switch">
+      <div class="cardpage-switch-label">Preview design</div>
+      <div class="cardpage-switch-row">
+        <button
+          v-for="t in CARD_THEMES"
+          :key="t.id"
+          type="button"
+          class="cardpage-switch-btn"
+          :class="{ on: theme === t.id }"
+          @click="pickTheme(t.id)"
+        >
+          <span class="cardpage-switch-swatch" :style="{ background: t.swatch }"></span>
+          <span class="cardpage-switch-name">{{ t.label }}</span>
+        </button>
       </div>
-
-      <a
-        v-if="card.office_address"
-        :href="`https://maps.google.com/?q=${encodeURIComponent(card.office_address)}`"
-        target="_blank"
-        rel="noopener"
-        style="display: inline-flex; align-items: flex-start; gap: 6px; margin-top: 12px; font-size: 12px; color: var(--cd-muted); text-decoration: none; white-space: pre-line; text-align: left; max-width: 280px"
-      ><CdIcon emoji="📍" icon="lucide:map-pin" :size="14" /> {{ card.office_address }}</a>
-
-      <div class="cardpage-qrbox" style="margin-top: 18px"><img v-if="qr" :src="qr" alt="Scan to save contact" width="220" height="220" style="display: block" /></div>
-      <div style="font-size: 11px; color: var(--cd-dim); margin: 10px 0 16px">Scan with your camera to save, or tap below.</div>
-      <button class="cd-abtn g" @click="addToContacts"><CdIcon emoji="📇" icon="lucide:user-plus" :size="15" /> Add to Contacts</button>
-      <NuxtLink to="/auth/register" class="cardpage-cta">Get your own CardDesk →</NuxtLink>
     </div>
-    <CdBrandFooter />
   </div>
 </template>
 
 <style scoped>
 .cardpage {
+  position: relative;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: var(--cd-bg, #060810);
-  color: var(--cd-text, #fff);
 }
-/* Palette-tinted aurora — same recipe as the auth screens / landing, so the
-   public card people land on to connect wears the liquid-glass theme too. */
-html[data-theme="glass"][data-mode="dark"] .cardpage {
-  background:
-    radial-gradient(120% 70% at 0% 0%, hsl(var(--cd-tint-1-h, 220) var(--cd-tint-1-s, 60%) 32% / 0.4) 0%, transparent 55%),
-    radial-gradient(120% 70% at 100% 10%, hsl(var(--cd-tint-3-h, 300) var(--cd-tint-3-s, 60%) 34% / 0.32) 0%, transparent 52%),
-    radial-gradient(150% 90% at 50% 100%, hsl(var(--cd-tint-4-h, 160) var(--cd-tint-4-s, 55%) 32% / 0.34) 0%, transparent 60%),
-    var(--cd-bg);
+/* CardView is full-bleed and brings its own themed backdrop. */
+.cardpage :deep(.cv) {
+  flex: 1;
 }
-html[data-theme="glass"][data-mode="light"] .cardpage {
-  background:
-    radial-gradient(120% 70% at 0% 0%, hsl(var(--cd-tint-1-h, 220) var(--cd-tint-1-s, 60%) 90% / 0.55) 0%, transparent 55%),
-    radial-gradient(120% 70% at 100% 10%, hsl(var(--cd-tint-3-h, 300) var(--cd-tint-3-s, 60%) 90% / 0.45) 0%, transparent 52%),
-    radial-gradient(150% 90% at 50% 100%, hsl(var(--cd-tint-4-h, 160) var(--cd-tint-4-s, 55%) 92% / 0.5) 0%, transparent 60%),
-    var(--cd-bg);
+/* Leave room under the content for the floating Share button. */
+.cardpage :deep(.cv-main) {
+  padding-bottom: 104px;
 }
-.cardbox {
-  position: relative;
-  width: 100%;
-  max-width: 360px;
-  text-align: center;
-  background: var(--cd-bg2, #0d1018);
-  border: 1px solid var(--cd-bdr, #1e2430);
-  border-radius: 24px;
-  padding: 28px 24px;
-}
-/* Liquid-glass widget surface (matches .auth-card / .lp-glass). */
-html[data-theme="glass"][data-mode="dark"] .cardbox {
-  background:
-    linear-gradient(135deg,
-      hsl(var(--glass-h) var(--glass-s) 65% / 0.14) 0%,
-      hsl(var(--glass-h) var(--glass-s) 45% / 0.05) 50%,
-      hsl(var(--glass-h2) var(--glass-s) 50% / 0.10) 100%),
-    rgba(30, 30, 34, 0.55);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
-  border: 1px solid hsl(var(--glass-h) 30% 75% / 0.16);
-  box-shadow: var(--glass-inset), var(--glass-shadow-pop);
-}
-html[data-theme="glass"][data-mode="light"] .cardbox {
-  background:
-    linear-gradient(135deg,
-      hsl(var(--glass-h) var(--glass-s) 60% / 0.10) 0%,
-      hsl(var(--glass-h) var(--glass-s) 50% / 0.03) 50%,
-      hsl(var(--glass-h2) var(--glass-s) 55% / 0.08) 100%),
-    rgba(255, 255, 255, 0.62);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
-  border: 1px solid hsl(var(--glass-h) 40% 78% / 0.4);
-  box-shadow: var(--glass-inset), var(--glass-shadow-pop);
-}
-.cardpage-brand {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 19px;
-  letter-spacing: 0.06em;
-  color: var(--cd-muted);
-  margin-bottom: 18px;
-}
-.cardpage-avatar {
-  width: 76px;
-  height: 76px;
-  border-radius: 50%;
-  margin: 0 auto 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--cd-green);
-  background: color-mix(in srgb, var(--cd-green) 14%, transparent);
-  border: 2px solid color-mix(in srgb, var(--cd-green) 55%, transparent);
-}
-.cardpage-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.cardpage-links {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 14px;
-}
-.cardpage-links a {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--cd-bg, #060810);
-  border: 1px solid var(--cd-bdr, #1e2430);
-  color: var(--cd-text, #fff);
-  text-decoration: none;
-}
-.cardpage-links a:hover { border-color: var(--cd-accent); color: var(--cd-accent); }
-.cardpage-qrbox {
-  background: #fff;
-  border-radius: 16px;
-  padding: 14px;
-  display: inline-block;
-}
+/* Match the page background to each theme so over-scroll never flashes white. */
+.cardpage[data-card-theme='carddesk'] { background: #080b12; }
+.cardpage[data-card-theme='glass'] { background: #0a0b0f; }
+.cardpage[data-card-theme='editorial'] { background: #f5f3ef; }
+.cardpage[data-card-theme='tech'] { background: #ffffff; }
+
 .cardpage-cta {
-  display: block;
-  margin-top: 16px;
-  font-size: 12px;
-  color: var(--cd-dim);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: currentColor;
+  opacity: 0.5;
   text-decoration: none;
 }
-.cardpage-cta:hover { color: var(--cd-accent); }
+.cardpage-cta:hover {
+  opacity: 0.85;
+}
+.cardpage-error {
+  margin: auto;
+  text-align: center;
+  color: var(--cd-text, #fff);
+  padding: 40px;
+}
+.cardpage-error-link {
+  display: inline-block;
+  margin-top: 16px;
+  color: #00bfff;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+/* ── Design preview switcher (dev/preview only) ── */
+/* Clear both the raised floating button and the switcher bar. */
+.cardpage.is-preview :deep(.cv-main) {
+  padding-bottom: 230px;
+}
+.cardpage-switch {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  transform: translateX(-50%);
+  z-index: 400;
+  width: min(440px, calc(100vw - 24px));
+  padding: 10px 12px 12px;
+  border-radius: 20px;
+  background: rgba(14, 16, 22, 0.82);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 20px 50px -16px rgba(0, 0, 0, 0.6);
+}
+.cardpage-switch-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  margin-bottom: 8px;
+}
+.cardpage-switch-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+}
+.cardpage-switch-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 4px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s;
+}
+.cardpage-switch-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.08);
+}
+.cardpage-switch-btn.on {
+  border-color: #4da6ff;
+  background: rgba(77, 166, 255, 0.14);
+}
+.cardpage-switch-swatch {
+  width: 100%;
+  aspect-ratio: 1.5 / 1;
+  border-radius: 8px;
+  background-size: cover;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+.cardpage-switch-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+}
 </style>

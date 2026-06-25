@@ -36,6 +36,7 @@ export function useQuickActions() {
   const { contacts, followUpStatus } = useContacts()
   const { nav } = useNavigation()
   const { show: openShareSheet } = useShareSheet()
+  const { show: openPresent } = usePresentCard()
   const eventMode = useEventMode()
 
   const overdueCount = computed(
@@ -99,7 +100,7 @@ export function useQuickActions() {
       label: 'My card',
       mark: 'card',
       tint: 'var(--cd-green)',
-      run: () => openShareSheet('card'),
+      run: () => openPresent(),
     },
   ])
 

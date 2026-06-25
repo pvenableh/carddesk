@@ -4,6 +4,7 @@ const { logout } = useAuth()
 const router = useRouter()
 const { nav } = useNavigation()
 const { show: openShareSheet } = useShareSheet()
+const { show: openPresent } = usePresentCard()
 const { show: openFeedback } = useFeedbackSheet()
 // Event Mode lives in the header now (left cluster) so it's one tap from any
 // screen instead of buried in the Vibe › Next pane.
@@ -73,8 +74,8 @@ function onClickOutside(e: MouseEvent) {
           <span v-if="eventMode.active.value" class="cd-sbar-event-dot"></span>
         </button>
       </CdTooltip>
-      <CdTooltip label="Share your card or invite someone" placement="bottom-start">
-        <button class="cd-sbar-btn cd-sbar-share" type="button" aria-label="Share card or invite" @click="openShareSheet('card')"><CdCardMark :size="17" :gradient="false" /></button>
+      <CdTooltip label="Show my card" placement="bottom-start">
+        <button class="cd-sbar-btn cd-sbar-share" type="button" aria-label="Show my card" @click="openPresent()"><CdCardMark :size="17" :gradient="false" /></button>
       </CdTooltip>
     </div>
     <button class="cd-sbar-logo" type="button" aria-label="Home" @click="goHome"><span class="cd-sbar-logo-brand">CARD</span><span class="cd-sbar-logo-accent">DESK</span></button>

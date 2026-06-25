@@ -88,6 +88,23 @@ const alertCs = computed(() =>
 const { pending: pendingScans, hydrate: hydratePendingScans } = usePendingScans()
 const { info: infoToast } = useToast()
 
+// PWA home-screen shortcut ("Show my card") + deep link land on /?card=present.
+// Pop the present takeover straight away, then strip the query so refreshes/back
+// don't keep re-opening it.
+const route = useRoute()
+const router = useRouter()
+const { show: openPresent } = usePresentCard()
+onMounted(() => {
+  if (!loggedIn.value) return
+  if (route.query.card === 'present') {
+    openPresent()
+    router.replace({ query: { ...route.query, card: undefined } })
+  } else if (route.query.go === 'scan') {
+    nav('add')
+    router.replace({ query: { ...route.query, go: undefined } })
+  }
+})
+
 onMounted(async () => {
   if (!loggedIn.value) return
   // Offline scan stash: restore any cards captured without a connection, and
@@ -169,6 +186,9 @@ onMounted(async () => {
 
     <!-- Global share sheet (My Card / Invite) -->
     <PhoneShareSheet />
+
+    <!-- Full-screen "present my card" (big QR) — one tap from header / PWA shortcut -->
+    <PhoneCardPresent />
 
     <!-- Scoring cheat-sheet flyout -->
     <PhoneScoreGuide />
