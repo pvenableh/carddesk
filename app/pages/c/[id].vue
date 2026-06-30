@@ -12,7 +12,8 @@ interface PublicCard extends CardViewData {
   id: string
   name: string
 }
-const { data: card, error } = await useFetch<PublicCard>(() => `/api/cards/${id.value}`)
+// Explicit key (3rd arg) avoids Nuxt's buggy auto-key injection — see app/pages/account.vue.
+const { data: card, error } = await useFetch<PublicCard>(() => `/api/cards/${id.value}`, {}, 'public-card')
 
 const shareUrl = computed(() => (import.meta.client ? window.location.href : ''))
 

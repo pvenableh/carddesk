@@ -12,7 +12,8 @@ interface EmbedPayload {
   card: (CardViewData & { id: string; name: string }) | null
   booking: { enabled: boolean; url: string | null }
 }
-const { data, error } = await useFetch<EmbedPayload>(() => `/api/embed/${id.value}`)
+// Explicit key (3rd arg) avoids Nuxt's buggy auto-key injection — see app/pages/account.vue.
+const { data, error } = await useFetch<EmbedPayload>(() => `/api/embed/${id.value}`, {}, 'embed-card')
 
 const card = computed(() => data.value?.card ?? null)
 const booking = computed(() => data.value?.booking ?? { enabled: false, url: null })

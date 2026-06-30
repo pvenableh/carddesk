@@ -55,7 +55,10 @@ const tab = ref<'profile' | 'card'>(route.query.tab === 'card' ? 'card' : 'profi
 // The card is seeded server-side from the account profile, but is edited
 // independently here. `accountCard` is the live account-derived truth we offer
 // to sync into the card whenever the two drift apart.
-const { data: card, refresh: refreshCard } = await useFetch<any>('/api/cards/me')
+// Pass an explicit key (3rd arg) so Nuxt's keyed-functions compiler skips its
+// auto-key injection — that injection mis-places the key on emoji-heavy SFCs
+// (UTF-16 vs byte-offset bug) and corrupts the compiled render function.
+const { data: card, refresh: refreshCard } = await useFetch<any>('/api/cards/me', {}, 'account-card-me')
 
 // ── Embed on your website ──
 // Snippet to paste the card (+ Earnest-gated booking) onto any site.
@@ -630,7 +633,7 @@ async function suggestGoal() {
           </div>
           <div style="display: inline-flex; gap: 4px; padding: 4px; background: var(--cd-bg2); border: 1.5px solid var(--cd-bdr); border-radius: 10px; margin-bottom: 10px">
             <button
-              v-for="m in (['script', 'popup', 'iframe', 'link'] as const)"
+              v-for="m in ['script', 'popup', 'iframe', 'link']"
               :key="m"
               type="button"
               style="font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 7px; border: 0; cursor: pointer; background: transparent; color: var(--cd-muted)"
