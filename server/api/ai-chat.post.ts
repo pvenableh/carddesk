@@ -19,6 +19,7 @@ import { getEarnestContext } from '../utils/earnest-context'
 import { enforceCredits, chargeCredits } from '../utils/ai-credits'
 import { CLAUDE_MODELS } from '../utils/ai-models'
 import { logAnthropicError } from '../utils/ai-errors'
+import { EARNEST_VOICE_CHARTER } from '../utils/voice'
 
 const MODEL = CLAUDE_MODELS.default
 const MAX_OUTPUT_TOKENS = 700
@@ -125,7 +126,7 @@ export default defineEventHandler(async (event) => {
     : ''
 
   const system =
-    `${BASE_PERSONA}\n\n${scopeInstructions(scope)}` +
+    `${BASE_PERSONA}\n\n${EARNEST_VOICE_CHARTER}\n\n${scopeInstructions(scope)}` +
     buildUserBlock(profile) +
     focus +
     buildContextBlock(scope, body?.context) +

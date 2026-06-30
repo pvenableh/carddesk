@@ -5,6 +5,7 @@ import { enforceCredits, chargeCredits } from "../utils/ai-credits";
 import { CLAUDE_MODELS } from "../utils/ai-models";
 
 import { logAnthropicError } from "../utils/ai-errors";
+import { EARNEST_VOICE_CHARTER } from "../utils/voice";
 /**
  * Reconnect re-opener — drafts ONE short, sendable message to restart a quiet
  * relationship. Wired to the Reconnect Roulette reveal: the spin creates the
@@ -29,7 +30,11 @@ export default defineEventHandler(async (event) => {
   let profile: any = null;
   try { profile = await fetchUserProfile(token); } catch { /* proceed without */ }
 
-  const prompt = `You are a networking coach. Draft ONE short re-opener message the user can send right now to restart a quiet professional relationship. It must sound like a normal human text/email opener — warm, specific, zero corporate fluff, no apology spiral about the silence. 2-3 sentences max. End with a light, easy-to-answer question or suggestion.
+  const prompt = `You are a networking coach.
+
+${EARNEST_VOICE_CHARTER}
+
+Draft ONE short re-opener message the user can send right now to restart a quiet professional relationship. It must sound like a normal human text/email opener — warm, specific, zero corporate fluff, no apology spiral about the silence. 2-3 sentences max. End with a light, easy-to-answer question or suggestion. Reference only details that actually appear in the contact's data below; do not invent shared history, events, or specifics.
 
 The contact:
 - Name: ${contact.name}

@@ -6,6 +6,7 @@ import { enforceCredits, chargeCredits } from "../utils/ai-credits";
 import { CLAUDE_MODELS } from "../utils/ai-models";
 
 import { logAnthropicError } from "../utils/ai-errors";
+import { EARNEST_VOICE_CHARTER } from "../utils/voice";
 export default defineEventHandler(async (event) => {
   const token = await getValidToken(event);
   const config = useRuntimeConfig();
@@ -32,7 +33,11 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const { industries, channels, ratings, responseRate, contacts, xp, pipeline } = body;
 
-  const prompt = `You are a sharp networking strategist inside a CRM app called CardDesk. Analyze this user's network data and give exactly 4 personalized insights — specific, actionable observations about their network with advice on how to connect better.
+  const prompt = `You are a sharp networking strategist inside a CRM app called CardDesk.
+
+${EARNEST_VOICE_CHARTER}
+
+Analyze this user's network data and give exactly 4 personalized insights — specific, actionable observations about their network with advice on how to connect better.
 
 Each insight should be a single punchy sentence with a specific recommendation. Reference real numbers and industries from their data.
 

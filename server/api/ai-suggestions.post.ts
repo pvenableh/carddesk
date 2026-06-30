@@ -6,6 +6,7 @@ import { enforceCredits, chargeCredits } from "../utils/ai-credits";
 import { CLAUDE_MODELS } from "../utils/ai-models";
 
 import { logAnthropicError } from "../utils/ai-errors";
+import { EARNEST_VOICE_CHARTER } from "../utils/voice";
 export default defineEventHandler(async (event) => {
   const token = await getValidToken(event);
   const body = await readBody(event);
@@ -29,7 +30,11 @@ export default defineEventHandler(async (event) => {
     }
   } catch { /* proceed without */ }
 
-  const prompt = `You are a networking coach for a professional CRM app. Given this contact and context, suggest exactly 3 specific, actionable next steps the user should take. Each suggestion should be 1-2 sentences, practical, and personalized.
+  const prompt = `You are a networking coach for a professional CRM app.
+
+${EARNEST_VOICE_CHARTER}
+
+Given this contact and context, suggest exactly 3 specific, actionable next steps the user should take. Each suggestion should be 1-2 sentences, practical, and personalized.
 
 Contact:
 - Name: ${contact.name}

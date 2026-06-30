@@ -5,6 +5,7 @@ import { enforceCredits, chargeCredits } from "../utils/ai-credits";
 import { CLAUDE_MODELS } from "../utils/ai-models";
 
 import { logAnthropicError } from "../utils/ai-errors";
+import { EARNEST_VOICE_CHARTER } from "../utils/voice";
 export default defineEventHandler(async (event) => {
   const token = await getValidToken(event);
   const config = useRuntimeConfig();
@@ -25,7 +26,11 @@ export default defineEventHandler(async (event) => {
     ? `\nPipeline stats:\n- Contacts in pipeline: ${pipeline.total ?? 0}\n- Open opportunities: ${pipeline.opportunities ?? 0}\n- Stalled: ${pipeline.stalled ?? 0}\n- Clients won: ${pipeline.clients ?? 0}\n- Partners: ${pipeline.partners ?? 0}\n- Not now: ${pipeline.lost ?? 0}\n- Pipeline value: $${pipeline.value ?? 0}`
     : "";
 
-  const toughPrompt = `You are a direct, no-nonsense networking coach. Generate exactly 3 "tough love" motivational cards for a professional who needs a push to follow up with their network. Each card should have a punchy quote and a follow-up body that's 1-2 sentences.
+  const toughPrompt = `You are a direct, no-nonsense networking coach.
+
+${EARNEST_VOICE_CHARTER}
+
+Generate exactly 3 "tough love" motivational cards for a professional who needs a push to follow up with their network. Each card should have a punchy quote and a follow-up body that's 1-2 sentences.
 
 Personalize based on their real data:
 - Name: ${[profile.first_name, profile.last_name].filter(Boolean).join(" ") || "You"}
@@ -41,7 +46,11 @@ Reference specific numbers and their goal. Include pipeline-aware coaching like 
 
 Return ONLY a JSON array: [{"q": "punchy quote", "b": "1-2 sentence body with <em>/<strong> tags"}]`;
 
-  const hypePrompt = `You are an incredibly supportive, hype-man networking coach. Generate exactly 3 celebration/encouragement cards for a professional who's doing great at networking. Each card should have an uplifting quote and a body that makes them feel like a rockstar.
+  const hypePrompt = `You are a warm, supportive networking coach.
+
+${EARNEST_VOICE_CHARTER}
+
+Generate exactly 3 genuine celebration/encouragement cards for a professional who's been doing well at networking. Each card should have an uplifting quote and a body that recognizes their real progress. The warmth is real, but the praise must be earned by their actual numbers — celebrate the specific wins in their data rather than declaring them a "rockstar" or "unstoppable".
 
 Personalize based on their real data:
 - Name: ${[profile.first_name, profile.last_name].filter(Boolean).join(" ") || "You"}
@@ -54,7 +63,7 @@ Personalize based on their real data:
 - Level: ${xp?.level ?? 1}
 ${pipelineInfo}
 
-Reference specific numbers and achievements. Include pipeline wins like "You closed X deals this month! Your pipeline is hot!" Make them feel unstoppable. Use <em> and <strong> HTML tags for emphasis in the body.
+Reference their specific, real numbers and achievements — e.g. "You closed <strong>X</strong> deals this month" or "<strong>Y</strong>-day streak and counting". State each win at its true magnitude; don't inflate it. If a number is modest, frame it honestly (progress, not a blowout). Use <em> and <strong> HTML tags for emphasis in the body.
 
 Return ONLY a JSON array: [{"q": "uplifting quote", "b": "1-2 sentence body with <em>/<strong> tags"}]`;
 

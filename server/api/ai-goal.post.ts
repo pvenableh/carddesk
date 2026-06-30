@@ -5,6 +5,7 @@ import { enforceCredits, chargeCredits } from "../utils/ai-credits";
 import { CLAUDE_MODELS } from "../utils/ai-models";
 
 import { logAnthropicError } from "../utils/ai-errors";
+import { EARNEST_VOICE_CHARTER } from "../utils/voice";
 export default defineEventHandler(async (event) => {
   const token = await getValidToken(event);
   const config = useRuntimeConfig();
@@ -22,7 +23,11 @@ export default defineEventHandler(async (event) => {
   const contactCount = body.contactCount ?? 0;
   const clientCount = body.clientCount ?? 0;
 
-  const prompt = `You are a networking coach. Based on this professional's profile, suggest a clear, actionable networking goal in 2-3 sentences. Be specific and motivating — reference their role, industry, and company if available. This will be saved as their networking goal.
+  const prompt = `You are a networking coach.
+
+${EARNEST_VOICE_CHARTER}
+
+Based on this professional's profile, suggest a clear, actionable networking goal in 2-3 sentences. Be specific and motivating — reference their role, industry, and company if available. This will be saved as their networking goal.
 
 Profile:
 - Name: ${[profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Unknown"}

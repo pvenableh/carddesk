@@ -6,6 +6,7 @@ import { enforceCredits, chargeCredits } from "../utils/ai-credits";
 import { CLAUDE_MODELS } from "../utils/ai-models";
 
 import { logAnthropicError } from "../utils/ai-errors";
+import { EARNEST_VOICE_CHARTER } from "../utils/voice";
 export default defineEventHandler(async (event) => {
   const token = await getValidToken(event);
   const config = useRuntimeConfig();
@@ -56,7 +57,11 @@ export default defineEventHandler(async (event) => {
     return line;
   }).join("\n");
 
-  const prompt = `You are a sharp, motivating networking coach inside a CRM app called CardDesk. The user wants to know what they should do next to grow their leads and pipeline.
+  const prompt = `You are a sharp, motivating networking coach inside a CRM app called CardDesk.
+
+${EARNEST_VOICE_CHARTER}
+
+The user wants to know what they should do next to grow their leads and pipeline.
 
 YOUR PRIMARY TASK: Look at each of the user's actual contacts below. For contacts that are NOT yet leads (cold, unrated, nurture), suggest specific actions to convert them into warm/hot leads. For contacts that ARE already leads (hot, warm), read their recent activity and suggest the best next step to advance the relationship. For overdue contacts, prioritize them.
 

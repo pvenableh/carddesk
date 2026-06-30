@@ -6,6 +6,7 @@ import { enforceCredits, chargeCredits } from "../utils/ai-credits";
 import { CLAUDE_MODELS } from "../utils/ai-models";
 
 import { logAnthropicError } from "../utils/ai-errors";
+import { EARNEST_VOICE_CHARTER } from "../utils/voice";
 /**
  * Earnest AI "Daily Vibe" — a short, personalized pep-talk for the Vibe screen.
  * Replaces the old hardcoded mood rotator. It reads the user's real momentum
@@ -41,7 +42,11 @@ export default defineEventHandler(async (event) => {
 
   const firstName = profile.first_name || (profile.name ? String(profile.name).split(" ")[0] : "") || "there";
 
-  const prompt = `You are Earnest — a warm, emotionally-intelligent networking coach inside the CardDesk app. The user just opened their "Vibe" dashboard. Give them ONE short daily check-in: read their real momentum and respond like a coach who actually knows them. This is about mood and motivation, NOT a task list.
+  const prompt = `You are Earnest — a warm, emotionally-intelligent networking coach inside the CardDesk app.
+
+${EARNEST_VOICE_CHARTER}
+
+The user just opened their "Vibe" dashboard. Give them ONE short daily check-in: read their real momentum and respond like a coach who actually knows them. This is about mood and motivation, NOT a task list.
 
 Their name is ${firstName}.
 
@@ -58,9 +63,9 @@ Today's momentum:
 Recent activity (most recent first):
 ${recentActivity?.length ? recentActivity.map((a: any) => `- ${a.type} with ${a.contactName}${a.isResponse ? " [they replied]" : ""}`).join("\n") : "- nothing logged recently"}
 
-VOICE: human, encouraging, specific to their numbers. Never generic. Never a checklist. 1-2 sentences for the body. If they're on a streak, honor it. If they've gone quiet, be gentle, not guilt-trippy. If they have hot leads waiting, give a confident nudge. Lead with their actual situation.
+VOICE: human, warm, and specific to their actual numbers. Never generic. Never a checklist. 1-2 sentences for the body. Encouragement must come from what's actually in their data — honor a real streak, name a real reply, point at the real count of hot leads waiting. Do not inflate small numbers into big wins or invent momentum that isn't there. If they've gone quiet, be gentle, not guilt-trippy. If there's genuinely nothing notable today, keep it light and honest rather than manufacturing excitement. Lead with their actual situation.
 
-Pick a "mood" that matches their state, one of: "fire" (crushing it / strong streak), "steady" (consistent, encouraging), "gentle" (quiet week, low energy, be kind), "nudge" (hot leads or overdue waiting — motivate action).${earnestContext}
+Pick a "mood" that matches their state, one of: "fire" (a genuinely strong streak or week, by their numbers), "steady" (consistent, encouraging), "gentle" (quiet week, low energy, be kind), "nudge" (hot leads or overdue follow-ups actually waiting — motivate action).${earnestContext}
 
 Return ONLY a JSON object: {"mood": "fire|steady|gentle|nudge", "emoji": "a single fitting emoji", "title": "punchy 3-6 word headline", "body": "1-2 warm, specific sentences", "cta": "optional 2-4 word action label or empty string"}`;
 
