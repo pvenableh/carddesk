@@ -1,0 +1,35 @@
+name: Embed health
+
+# Asserts the CardDesk embed surfaces stay reachable and framable in production:
+#   - /embed.js               (the loader) → 200 + framable
+#   - /embed-test.html        (the harness) → 200
+#   - /embed/<id>             (optional, needs HEALTH_CARD_ID repo variable)
+#   - Earnest /book framing   (optional, needs HEALTH_BOOK_URL repo variable)
+#
+# Runs on a daily schedule and on demand. To also run right after a Vercel
+# deploy, add a Vercel Deploy Hook that fires a `repository_dispatch` event of
+# type `deployed` and uncomment the trigger below.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 13 * * *' # daily, ~13:17 UTC
+  # repository_dispatch:
+  #   types: [deployed]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Embed health check
+        env:
+          HEALTH_BASE: https://carddesk.earnest.guru
+          # Optional — set these as repo Variables (Settings → Secrets and
+          # variables → Actions → Variables) to deepen the checks.
+          HEALTH_CARD_ID: ${{ vars.HEALTH_CARD_ID }}
+          HEALTH_BOOK_URL: ${{ vars.HEALTH_BOOK_URL }}
+        run: node scripts/health-embed.mjs

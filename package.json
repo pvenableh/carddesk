@@ -9,7 +9,8 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "generate-icons": "node scripts/generate-icons.js",
-    "generate:types": "dotenv -- sh -c 'npx directus-sdk-typegen -u $DIRECTUS_URL -t $DIRECTUS_SERVER_TOKEN -o ./types/directus.ts'"
+    "generate:types": "dotenv -- sh -c 'npx directus-sdk-typegen -u $DIRECTUS_URL -t $DIRECTUS_SERVER_TOKEN -o ./types/directus.ts'",
+    "health:embed": "node scripts/health-embed.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",

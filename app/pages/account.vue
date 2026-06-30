@@ -57,6 +57,33 @@ const tab = ref<'profile' | 'card'>(route.query.tab === 'card' ? 'card' : 'profi
 // to sync into the card whenever the two drift apart.
 const { data: card, refresh: refreshCard } = await useFetch<any>('/api/cards/me')
 
+// ── Embed on your website ──
+// Snippet to paste the card (+ Earnest-gated booking) onto any site.
+const embedMode = ref<'script' | 'popup' | 'iframe' | 'link'>('script')
+const embedOrigin = computed(() => (import.meta.client ? window.location.origin : 'https://carddesk.earnest.guru'))
+const embedId = computed(() => String(user.value?.id || ''))
+const embedSnippet = computed(() => {
+  const origin = embedOrigin.value
+  const cid = embedId.value
+  const loader = `<script async src="${origin}/embed.js"><\/script>`
+  if (embedMode.value === 'link') return `${origin}/embed/${cid}`
+  if (embedMode.value === 'iframe') {
+    return `<iframe src="${origin}/embed/${cid}" width="380" height="560" style="border:0;max-width:100%" loading="lazy" title="My CardDesk card"></iframe>`
+  }
+  if (embedMode.value === 'popup') {
+    return `<div class="carddesk-embed" data-card-id="${cid}" data-mode="popup" data-label="Book a Call"></div>\n${loader}`
+  }
+  return `<div class="carddesk-embed" data-card-id="${cid}"></div>\n${loader}`
+})
+async function copyEmbed() {
+  try {
+    await navigator.clipboard.writeText(embedSnippet.value)
+    success('Embed code copied')
+  } catch {
+    showError('Could not copy — select the code and copy it manually.')
+  }
+}
+
 const cardForm = reactive<Record<string, any>>({
   display_name: '', title: '', company: '', headline: '',
   email: '', phone: '', website: '', office_address: '', broadcast_activity: true,
@@ -593,6 +620,28 @@ async function suggestGoal() {
               {{ cardSaving ? 'Saving…' : 'Save card' }}
             </button>
           </div>
+        </div>
+
+        <!-- Embed on your website -->
+        <div class="acct-section">
+          <div class="acct-section-title">Embed on your website</div>
+          <div style="font-size: 12px; color: var(--cd-muted); margin-bottom: 12px; line-height: 1.5">
+            Drop your card — and, when Earnest scheduling is on, a “Book a call” button — straight onto your own site. It always matches your saved design.
+          </div>
+          <div style="display: inline-flex; gap: 4px; padding: 4px; background: var(--cd-bg2); border: 1.5px solid var(--cd-bdr); border-radius: 10px; margin-bottom: 10px">
+            <button
+              v-for="m in (['script', 'popup', 'iframe', 'link'] as const)"
+              :key="m"
+              type="button"
+              style="font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 7px; border: 0; cursor: pointer; background: transparent; color: var(--cd-muted)"
+              :style="embedMode === m ? 'background: var(--cd-accent); color: var(--cd-accent-ink, #032015)' : ''"
+              @click="embedMode = m"
+            >{{ m === 'script' ? 'Inline' : m === 'popup' ? 'Popup' : m === 'iframe' ? 'iframe' : 'Link' }}</button>
+          </div>
+          <pre style="background: var(--cd-bg2); border: 1.5px solid var(--cd-bdr); border-radius: 10px; padding: 12px; font-size: 11px; line-height: 1.5; color: var(--cd-text); overflow-x: auto; white-space: pre-wrap; word-break: break-all; margin: 0 0 10px">{{ embedSnippet }}</pre>
+          <button class="cd-abtn g" style="width: 100%; justify-content: center; font-size: 13px; padding: 11px" @click="copyEmbed">
+            <CdIcon icon="lucide:copy" :size="14" /> Copy embed code
+          </button>
         </div>
       </template>
 

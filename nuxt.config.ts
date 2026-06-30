@@ -122,6 +122,13 @@ export default defineNuxtConfig({
       periodicSyncForUpdates: 3600,
     },
   },
+  // The embed surfaces are meant to be iframed onto third-party sites. CardDesk
+  // sends no X-Frame-Options by default, but set frame-ancestors explicitly so
+  // framing is allowed-by-intent (and survives any future global CSP).
+  routeRules: {
+    '/embed/**': { headers: { 'Content-Security-Policy': 'frame-ancestors *' } },
+    '/embed.js': { headers: { 'Content-Security-Policy': 'frame-ancestors *', 'Cache-Control': 'public, max-age=3600' } },
+  },
   css: ['~/assets/css/tailwind.css', '~/assets/css/fonts.css', '~/assets/css/carddesk.css', '~/assets/css/auth.css'],
   vite: {
     plugins: [
