@@ -125,6 +125,35 @@ const previewCard = computed(() => ({
   logoUrl: cardLogoUrl.value || null,
 }))
 
+// ── Accurate card preview ──
+// The account page is capped at 400px, which is narrower than a phone, so the
+// live preview used to squeeze the card (text wrapped early, spacing off). We
+// instead render the real CardView at a true device width and uniformly scale
+// the whole thing down to fit the column, so the preview is a faithful
+// miniature. transform:scale doesn't shrink the layout box, so we also set the
+// wrapper's height to the scaled natural height to avoid empty space below.
+const PREVIEW_DEVICE_W = 390
+const previewWrapEl = ref<HTMLElement | null>(null)
+const previewDeviceEl = ref<HTMLElement | null>(null)
+const previewScale = ref(1)
+const previewHeight = ref(0)
+function measurePreview() {
+  const wrap = previewWrapEl.value
+  const device = previewDeviceEl.value
+  if (!wrap || !device) return
+  const scale = wrap.clientWidth / PREVIEW_DEVICE_W
+  previewScale.value = scale
+  previewHeight.value = device.offsetHeight * scale
+}
+let previewRO: ResizeObserver | null = null
+onMounted(() => {
+  previewRO = new ResizeObserver(() => measurePreview())
+  if (previewWrapEl.value) previewRO.observe(previewWrapEl.value)
+  if (previewDeviceEl.value) previewRO.observe(previewDeviceEl.value)
+  measurePreview()
+})
+onBeforeUnmount(() => previewRO?.disconnect())
+
 const cardInitials = computed(() =>
   (cardForm.display_name || '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('') || '?'
 )
@@ -511,9 +540,21 @@ async function suggestGoal() {
             <button class="acct-sync-btn" @click="syncFromAccount">Sync to card</button>
           </div>
 
-          <!-- Live preview of the shareable card in the chosen design -->
-          <div class="acct-card-preview">
-            <CardView :card="previewCard" :interactive="false" />
+          <!-- Live preview of the shareable card in the chosen design. Rendered
+               at a true device width and scaled to fit so it's a faithful
+               miniature rather than a squeezed narrow card. -->
+          <div
+            ref="previewWrapEl"
+            class="acct-card-preview"
+            :style="{ height: previewHeight ? previewHeight + 'px' : undefined }"
+          >
+            <div
+              ref="previewDeviceEl"
+              class="acct-card-preview-device"
+              :style="{ width: PREVIEW_DEVICE_W + 'px', transform: `scale(${previewScale})` }"
+            >
+              <CardView :card="previewCard" :interactive="false" />
+            </div>
           </div>
 
           <!-- Design picker -->
@@ -922,16 +963,14 @@ async function suggestGoal() {
   margin-bottom: 18px;
   /* Let CardView paint its own themed backdrop edge-to-edge. */
 }
+/* Device wrapper: rendered at a fixed phone width, then uniformly scaled down
+   (transform-origin top-left) by JS to fit the column. Keeps the real card
+   layout/type/spacing intact — no squeeze. */
+.acct-card-preview-device {
+  transform-origin: top left;
+}
 .acct-card-preview :deep(.cv) {
   min-height: 0;
-}
-.acct-card-preview :deep(.cv-main) {
-  padding: 30px 18px;
-  max-width: 340px;
-}
-/* With a cover the banner provides the top edge — drop the column's top pad. */
-.acct-card-preview :deep(.cv--cover .cv-main) {
-  padding-top: 0;
 }
 /* ── Design / theme picker ── */
 .acct-themes {

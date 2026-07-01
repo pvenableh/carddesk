@@ -1347,17 +1347,46 @@ onBeforeUnmount(() => {
 .cv[data-card-theme='editorial'] .cv-row-go {
   display: none;
 }
-/* Solid bronze Save button with white type, subtle radius. */
+/* Bronze OUTLINE pill Save button — fills bronze on hover. */
 .cv[data-card-theme='editorial'] .cv-save {
-  background: #8b7355;
-  color: #ffffff;
-  border: 1px solid #8b7355;
-  border-radius: 8px;
+  background: transparent;
+  color: #8b7355;
+  border: 1.5px solid #8b7355;
+  border-radius: 100px;
   box-shadow: none;
 }
 .cv[data-card-theme='editorial'] .cv-save:hover {
-  background: #7a6549;
-  border-color: #7a6549;
+  background: #8b7355;
+  color: #ffffff;
+  border-color: #8b7355;
+}
+/* Book-a-call secondary: bronze pill to match Save (editorial's --c-accent is
+   dark ink, so tint it with the bronze brass instead for a cohesive pair). */
+.cv[data-card-theme='editorial'] .cv-book {
+  border-radius: 100px;
+  border-color: color-mix(in srgb, #8b7355 45%, transparent);
+  background: color-mix(in srgb, #8b7355 12%, transparent);
+  color: #8b7355;
+}
+.cv[data-card-theme='editorial'] .cv-book:hover {
+  background: color-mix(in srgb, #8b7355 20%, transparent);
+}
+/* Lift the content onto a subtle paper card so it reads like a printed card
+   resting on the page (soft, diffuse shadow + hairline rule; sharp corners). */
+.cv[data-card-theme='editorial'] .cv-main {
+  background: #fffdf9;
+  border: 1px solid #e7e1d7;
+  border-radius: 3px;
+  box-shadow: 0 22px 48px -26px rgba(64, 52, 34, 0.4), 0 6px 16px -10px rgba(64, 52, 34, 0.16);
+  margin-top: clamp(16px, 4vh, 32px);
+  margin-bottom: clamp(16px, 4vh, 32px);
+}
+/* The teleported "Share my card" FAB picks up Editorial's uppercase button type. */
+.cv-fab[data-card-theme='editorial'] {
+  font-family: 'Proxima Nova', system-ui, sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
 }
 
 /* ============================================================================
