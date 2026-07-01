@@ -125,7 +125,7 @@ useSeoMeta({ robots: 'noindex, nofollow' })
 }
 .embed-book-btn:hover { transform: translateY(-1px); }
 /* Theme-aware button colors. */
-.embed[data-card-theme='carddesk'] .embed-book-btn { background: #00ff95; color: #032015; }
+.embed[data-card-theme='carddesk'] .embed-book-btn { background: #70ffd7; color: #032015; }
 .embed[data-card-theme='glass'] .embed-book-btn { background: rgba(255, 255, 255, 0.12); color: #fff; border-color: rgba(255, 255, 255, 0.25); backdrop-filter: blur(8px); }
 .embed[data-card-theme='editorial'] .embed-book-btn { background: #2b2620; color: #f5f3ef; }
 .embed[data-card-theme='tech'] .embed-book-btn { background: #1e99c1; color: #fff; }

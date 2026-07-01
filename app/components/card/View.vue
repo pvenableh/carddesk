@@ -32,6 +32,8 @@ export interface CardViewData {
   coverUrl?: string | null
   logoUrl?: string | null
   card_theme?: string | null
+  /** Earnest-gated booking link-out; enabled only for scheduling-on users. */
+  booking?: { enabled: boolean; url: string | null } | null
   [key: string]: any
 }
 
@@ -57,7 +59,7 @@ const theme = computed(() => normalizeCardTheme(props.card.card_theme))
 // Accent that the QR animation (scan line / corners) + the QR overlay follow,
 // so they match the selected design rather than always being CardDesk green.
 const THEME_QR_ACCENT: Record<string, string> = {
-  carddesk: '#00ff95',
+  carddesk: '#70ffd7',
   glass: '#00bfff',
   editorial: '#8b7355',
   tech: '#1e99c1',
@@ -65,6 +67,9 @@ const THEME_QR_ACCENT: Record<string, string> = {
 const qrAccent = computed(() => THEME_QR_ACCENT[theme.value] ?? '#00b87a')
 // Title reads as the role line; company is rendered separately as a badge.
 const roleLine = computed(() => props.card.title || '')
+// Earnest booking: shown only when the cardholder has public scheduling on.
+// Link-out (new tab) — keeps the card open behind Earnest's full scheduler.
+const booking = computed(() => props.card.booking || null)
 const socialLinks = computed(() => SOCIALS.filter((s) => props.card[s.key]))
 
 // Tidy a URL for display: drop protocol + trailing slash (huestudios.com).
@@ -213,6 +218,19 @@ onBeforeUnmount(() => {
         <CdIcon emoji="📇" icon="lucide:user-plus" :size="17" />
         <span>Save contact</span>
       </button>
+
+      <!-- Earnest-gated "Book a call" — link-out to the cardholder's Earnest
+           booking page (new tab, card stays open). Hidden for card-only users. -->
+      <a
+        v-if="interactive && booking?.enabled && booking?.url"
+        class="cv-book"
+        :href="booking.url"
+        target="_blank"
+        rel="noopener"
+      >
+        <CdIcon emoji="📅" icon="lucide:calendar" :size="17" />
+        <span>Book a call</span>
+      </a>
 
       <!-- Contact details (label + value rows) -->
       <div v-if="rows.length" class="cv-rows">
@@ -603,6 +621,37 @@ onBeforeUnmount(() => {
 .cv-save:active {
   transform: scale(0.98);
 }
+/* Secondary CTA: Earnest booking link-out. Accent-tinted so it reads as a real
+   action under Save contact without competing with it; fully theme-driven via
+   --c-accent, so it inherits each design's colour automatically. */
+.cv-book {
+  width: 100%;
+  margin-top: 12px;
+  padding: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border-radius: var(--c-btn-radius);
+  border: 1px solid color-mix(in srgb, var(--c-accent) 40%, transparent);
+  background: color-mix(in srgb, var(--c-accent) 14%, transparent);
+  color: var(--c-accent);
+  font-family: var(--c-btn-font, var(--c-font));
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: var(--c-btn-spacing, 0);
+  text-transform: var(--c-btn-transform, none);
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease;
+}
+.cv-book:hover {
+  transform: translateY(-2px);
+  background: color-mix(in srgb, var(--c-accent) 22%, transparent);
+}
+.cv-book:active {
+  transform: scale(0.98);
+}
 
 /* Contact detail rows — icon + label + the actual value (Blinq-style). */
 .cv-rows {
@@ -749,7 +798,7 @@ onBeforeUnmount(() => {
   transform: translateY(-2px);
   box-shadow: 0 20px 44px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.16) inset;
 }
-.cv-fab :deep(svg) { color: var(--qr-accent, #00ff95); }
+.cv-fab :deep(svg) { color: var(--qr-accent, #70ffd7); }
 @keyframes cv-fab-in {
   from { opacity: 0; transform: translateY(16px); }
 }
@@ -764,7 +813,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   padding: calc(env(safe-area-inset-top, 0px) + 20px) 22px calc(env(safe-area-inset-bottom, 0px) + 20px);
   background:
-    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--qr-accent, #00ff95) 12%, transparent) 0%, transparent 55%),
+    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--qr-accent, #70ffd7) 12%, transparent) 0%, transparent 55%),
     rgba(6, 8, 14, 0.94);
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
@@ -811,7 +860,7 @@ onBeforeUnmount(() => {
   color: rgba(255, 255, 255, 0.7);
   margin: 6px 0 18px;
 }
-.cv-qrov-sub :deep(svg) { color: var(--qr-accent, #00ff95); }
+.cv-qrov-sub :deep(svg) { color: var(--qr-accent, #70ffd7); }
 .cv-qrov-box {
   width: min(80vw, 300px) !important;
   height: min(80vw, 300px) !important;
@@ -856,11 +905,11 @@ onBeforeUnmount(() => {
 }
 .cv-qrov-act:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.1); }
 .cv-qrov-act.primary {
-  background: var(--qr-accent, #00ff95);
+  background: var(--qr-accent, #70ffd7);
   color: #0a0a0a;
   border-color: transparent;
 }
-.cv-qrov-act.primary:hover { background: color-mix(in srgb, var(--qr-accent, #00ff95) 82%, #fff); }
+.cv-qrov-act.primary:hover { background: color-mix(in srgb, var(--qr-accent, #70ffd7) 82%, #fff); }
 .cv-qrov-enter-active,
 .cv-qrov-leave-active { transition: opacity 0.24s ease; }
 .cv-qrov-enter-from,
@@ -945,7 +994,7 @@ onBeforeUnmount(() => {
   --c-ink: #f1f5ff;
   --c-muted: #9aa8c6;
   --c-faint: #6c7b9c;
-  --c-accent: #00ff95;
+  --c-accent: #70ffd7;
   --c-accent-ink: #032015;
   --c-bg: #080b12;
   --c-surface: rgba(255, 255, 255, 0.05);
@@ -955,21 +1004,50 @@ onBeforeUnmount(() => {
   --c-name-weight: 400;
   --c-name-size: 36px;
   --c-name-spacing: 0.02em;
-  --c-photo-bg: color-mix(in srgb, #00ff95 16%, transparent);
-  --c-photo-bdr: 2px solid color-mix(in srgb, #00ff95 60%, transparent);
-  --c-photo-shadow: 0 0 0 6px rgba(0, 255, 149, 0.06), 0 14px 30px -12px rgba(0, 255, 149, 0.4);
+  --c-photo-bg: color-mix(in srgb, #70ffd7 16%, transparent);
+  --c-photo-bdr: 2px solid color-mix(in srgb, #70ffd7 60%, transparent);
+  --c-photo-shadow: 0 0 0 6px rgba(112, 255, 215, 0.06), 0 14px 30px -12px rgba(112, 255, 215, 0.4);
   --c-rule-h: 2px;
   --c-headline-style: italic;
   --c-soc-bg: rgba(255, 255, 255, 0.96);
   --c-soc-bdr: transparent;
   --c-soc-shadow: 0 5px 14px -6px rgba(0, 0, 0, 0.55);
-  --c-save-shadow: 0 14px 30px -12px rgba(0, 255, 149, 0.5);
+  --c-save-shadow: 0 14px 30px -12px rgba(112, 255, 215, 0.5);
 }
 .cv[data-card-theme='carddesk'] .cv-bg {
   --c-bg-grad:
-    radial-gradient(120% 75% at 0% 0%, rgba(0, 255, 149, 0.2) 0%, transparent 52%),
+    radial-gradient(120% 75% at 0% 0%, rgba(112, 255, 215, 0.2) 0%, transparent 52%),
     radial-gradient(120% 75% at 100% 8%, rgba(122, 92, 255, 0.24) 0%, transparent 52%),
     radial-gradient(150% 95% at 50% 100%, rgba(77, 166, 255, 0.18) 0%, transparent 60%);
+}
+/* CardDesk hierarchy (mirrors Glass): Save = mint outline over dark glass,
+   the teleported "Share my card" FAB = solid mint fill. */
+.cv[data-card-theme='carddesk'] .cv-save {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+  color: var(--c-accent);
+  border: 1.5px solid color-mix(in srgb, var(--c-accent) 80%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 8px 20px -14px color-mix(in srgb, var(--c-accent) 40%, transparent);
+}
+.cv[data-card-theme='carddesk'] .cv-save:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.04) 100%);
+  border-color: var(--c-accent);
+}
+.cv-fab[data-card-theme='carddesk'] {
+  background: var(--qr-accent, #70ffd7);
+  color: #032015;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 14px 34px -10px color-mix(in srgb, var(--qr-accent, #70ffd7) 45%, transparent);
+}
+.cv-fab[data-card-theme='carddesk']:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 20px 44px -12px color-mix(in srgb, var(--qr-accent, #70ffd7) 55%, transparent);
+}
+.cv-fab[data-card-theme='carddesk'] :deep(svg) {
+  color: #032015;
 }
 
 /* ============================================================================
@@ -1048,9 +1126,22 @@ onBeforeUnmount(() => {
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
-/* Lighten the veil over the orbs in Glass so they read through clearly. */
+/* Calmer orbs in Glass: dimmer + softer + a stronger dark veil, so the ambient
+   colour reads as a subtle wash rather than vivid, fast-moving lights. */
 .cv[data-card-theme='glass'] .cv-veil {
-  opacity: 0.1;
+  opacity: 0.42;
+}
+.cv[data-card-theme='glass'] .cv-blob {
+  opacity: 0.26;
+  filter: blur(100px);
+  animation-name: cv-float-glass;
+  animation-duration: 26s;
+}
+/* Gentler drift + a much smaller brightness swing than the default cv-float. */
+@keyframes cv-float-glass {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.26; }
+  33% { transform: translate(4%, -5%) scale(1.1); opacity: 0.46; }
+  66% { transform: translate(-5%, 4%) scale(0.94); opacity: 0.22; }
 }
 /* Glossy glass detail rows + aux button. */
 .cv[data-card-theme='glass'] .cv-row-main,
@@ -1067,20 +1158,22 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(8px) saturate(150%);
   -webkit-backdrop-filter: blur(8px) saturate(150%);
 }
-/* Liquid-glass primary button — translucent accent with a glossy highlight. */
+/* Liquid-glass primary button — outlined in the accent over a frosted glass
+   fill (not an accent flood), so it reads as the outline CTA against the orbs. */
 .cv[data-card-theme='glass'] .cv-save {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--c-accent) 72%, transparent) 0%, color-mix(in srgb, var(--c-accent) 46%, transparent) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.05) 100%);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1.5px solid color-mix(in srgb, var(--c-accent) 80%, transparent);
   backdrop-filter: blur(16px) saturate(170%);
   -webkit-backdrop-filter: blur(16px) saturate(170%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
     inset 0 -12px 20px -14px rgba(0, 20, 40, 0.3),
     0 8px 20px -14px color-mix(in srgb, var(--c-accent) 40%, transparent);
 }
 .cv[data-card-theme='glass'] .cv-save:hover {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--c-accent) 82%, transparent) 0%, color-mix(in srgb, var(--c-accent) 56%, transparent) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.08) 100%);
+  border-color: var(--c-accent);
 }
 /* The QR chrome is teleported to <body>, so it's tagged with data-card-theme
    and styled here with the same thin/tracked treatment in Glass. */
@@ -1089,6 +1182,28 @@ onBeforeUnmount(() => {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.12em;
+  /* Match the liquid-glass primary CTA so the FAB doesn't vanish into the
+     dark glass background instead of reading as a solid black pill. */
+  background: linear-gradient(180deg, color-mix(in srgb, var(--qr-accent, #00bfff) 72%, transparent) 0%, color-mix(in srgb, var(--qr-accent, #00bfff) 46%, transparent) 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(16px) saturate(170%);
+  -webkit-backdrop-filter: blur(16px) saturate(170%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -12px 20px -14px rgba(0, 20, 40, 0.3),
+    0 12px 30px -12px color-mix(in srgb, var(--qr-accent, #00bfff) 50%, transparent);
+}
+.cv-fab[data-card-theme='glass']:hover {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--qr-accent, #00bfff) 82%, transparent) 0%, color-mix(in srgb, var(--qr-accent, #00bfff) 56%, transparent) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -12px 20px -14px rgba(0, 20, 40, 0.3),
+    0 18px 40px -12px color-mix(in srgb, var(--qr-accent, #00bfff) 58%, transparent);
+}
+/* The icon sits on the accent fill now — keep it white, not accent-on-accent. */
+.cv-fab[data-card-theme='glass'] :deep(svg) {
+  color: #ffffff;
 }
 .cv-qrov[data-card-theme='glass'] .cv-qrov-name {
   font-family: 'Proxima Nova', system-ui, sans-serif;

@@ -1,6 +1,6 @@
 import { readItems, readUsers } from '@directus/sdk'
 import { getDirectus } from '../../utils/directus'
-import { assetUrl, getAvatarUrls } from '../../utils/cards'
+import { assetUrl, getAvatarUrls, resolveBooking } from '../../utils/cards'
 import { SOCIAL_KEYS } from '~/types/socials'
 
 /**
@@ -59,5 +59,8 @@ export default defineEventHandler(async (event) => {
     imageUrl: (await getAvatarUrls([id]))[id] ?? null,
     coverUrl: assetUrl(c.cover_image),
     logoUrl: assetUrl(c.logo_image),
+    // Earnest-gated "Book a call" — present only for users with public
+    // scheduling on; CardDesk-only users get { enabled:false } and no button.
+    booking: await resolveBooking(id),
   }
 })
