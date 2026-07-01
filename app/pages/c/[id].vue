@@ -102,9 +102,10 @@ useSeoMeta({
 .cardpage :deep(.cv) {
   flex: 1;
 }
-/* Leave room under the content for the floating Share button. */
+/* Leave room under the content for the floating Share button, plus extra
+   breathing room so the last rows sit comfortably above it (not right at it). */
 .cardpage :deep(.cv-main) {
-  padding-bottom: 104px;
+  padding-bottom: 148px;
 }
 /* Match the page background to each theme so over-scroll never flashes white. */
 .cardpage[data-card-theme='carddesk'] { background: #080b12; }
@@ -126,6 +127,11 @@ useSeoMeta({
 }
 .cardpage-cta:hover {
   opacity: 0.85;
+}
+/* Editorial's card font is serif; keep this footer CTA in a clean sans to match
+   its uppercase sans labels/buttons. */
+.cardpage[data-card-theme='editorial'] .cardpage-cta {
+  font-family: 'Proxima Nova', system-ui, sans-serif;
 }
 .cardpage-error {
   margin: auto;

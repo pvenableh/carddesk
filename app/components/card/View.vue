@@ -34,6 +34,8 @@ export interface CardViewData {
   card_theme?: string | null
   /** Earnest-gated booking link-out; enabled only for scheduling-on users. */
   booking?: { enabled: boolean; url: string | null } | null
+  /** Minimal/flat layout — strips the boxed row widgets on glass + tech. */
+  flat_layout?: boolean | null
   [key: string]: any
 }
 
@@ -178,7 +180,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="cv" :data-card-theme="theme" :class="{ 'cv--cover': !!card.coverUrl }">
+  <div class="cv" :data-card-theme="theme" :data-flat="card.flat_layout ? 'true' : 'false'" :class="{ 'cv--cover': !!card.coverUrl }">
     <div class="cv-bg" aria-hidden="true">
       <!-- Ambient colour field — only painted in the Glass direction. -->
       <span class="cv-blob" style="--bx: -6%; --by: -8%; --bs: 46vw; --bc: #08bdbd"></span>
@@ -274,8 +276,9 @@ onBeforeUnmount(() => {
         </a>
       </div>
 
-      <!-- Address — last, below the social connections -->
-      <div v-if="card.office_address" class="cv-rows cv-address-row">
+      <!-- Address — last, below the social connections. Hidden when the owner
+           toggles it off (show_address:false); shown for legacy cards (null). -->
+      <div v-if="card.office_address && card.show_address !== false" class="cv-rows cv-address-row">
         <div class="cv-row">
           <a class="cv-row-main" :href="mapsHref" target="_blank" rel="noopener" @click="onChip">
             <span class="cv-row-ico"><CdIcon emoji="📍" icon="lucide:map-pin" :size="16" /></span>
@@ -1124,7 +1127,12 @@ onBeforeUnmount(() => {
   background: linear-gradient(180deg, rgba(14, 16, 22, 0.4) 0%, rgba(10, 11, 16, 0.58) 100%);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  /* Very subtle liquid-glass edge: a hairline translucent border + the existing
+     top highlight, so the sheet reads as a pane of glass without a hard line. */
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 /* Calmer orbs in Glass: dimmer + softer + a stronger dark veil, so the ambient
    colour reads as a subtle wash rather than vivid, fast-moving lights. */
@@ -1296,10 +1304,12 @@ onBeforeUnmount(() => {
 .cv[data-card-theme='editorial'] .cv-company {
   font-size: 11px;
 }
+/* Cool paper gradient — a soft, subtle greige a touch cooler than the warm
+   card panel, so the card still lifts off the page but the tone is calmer. */
 .cv[data-card-theme='editorial'] .cv-bg::before {
   background:
-    radial-gradient(120% 80% at 50% -8%, rgba(255, 253, 248, 0.85) 0%, transparent 55%),
-    radial-gradient(110% 70% at 50% 120%, rgba(139, 115, 85, 0.08) 0%, transparent 55%);
+    radial-gradient(120% 70% at 50% 120%, rgba(92, 98, 106, 0.05) 0%, transparent 55%),
+    radial-gradient(140% 100% at 50% -6%, #f3f2ee 0%, #ebe9e2 60%, #e4e2d9 100%);
 }
 /* ── Editorial: clean borderless contact list (no boxes/labels), sans values,
    bronze icons, outline Save button. ── */
@@ -1381,6 +1391,12 @@ onBeforeUnmount(() => {
   margin-top: clamp(16px, 4vh, 32px);
   margin-bottom: clamp(16px, 4vh, 32px);
 }
+/* With a cover photo, keep the sheet's rounded top + lift so the curved top
+   still reads behind the profile photo (the flat radius/margin above erased it). */
+.cv[data-card-theme='editorial'].cv--cover .cv-main {
+  margin-top: -30px;
+  border-radius: 20px 20px 3px 3px;
+}
 /* The teleported "Share my card" FAB picks up Editorial's uppercase button type. */
 .cv-fab[data-card-theme='editorial'] {
   font-family: 'Proxima Nova', system-ui, sans-serif;
@@ -1423,6 +1439,10 @@ onBeforeUnmount(() => {
   --c-role-font: var(--c-mono);
   --c-role-weight: 500;
   --c-role-spacing: 0.02em;
+  /* Mono, uppercase buttons to match the tech direction's terminal-ish type. */
+  --c-btn-font: var(--c-mono);
+  --c-btn-spacing: 0.08em;
+  --c-btn-transform: uppercase;
   --c-headline-size: 16px;
   --c-soc-bg: #f7f7f9;
   --c-soc-bdr: #dcdce1;
@@ -1450,9 +1470,69 @@ onBeforeUnmount(() => {
   border-color: #1e99c1;
   color: #13708f;
 }
+/* Mono detail-row labels (PHONE / EMAIL / …) for the tech direction. */
+.cv[data-card-theme='tech'] .cv-row-label {
+  font-family: var(--c-mono);
+}
+/* FAB is teleported outside .cv, so --c-mono won't resolve — use the stack. */
+.cv-fab[data-card-theme='tech'] {
+  font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 .cv[data-card-theme='tech'] .cv-bg::before {
   background:
     linear-gradient(180deg, #f7f7f9 0%, transparent 220px),
     radial-gradient(120% 60% at 50% 0%, rgba(30, 153, 193, 0.06) 0%, transparent 60%);
+}
+/* Lift the white card off the near-white page with a soft, diffuse shadow +
+   hairline so it reads with depth (Linear/Vercel-card feel). */
+.cv[data-card-theme='tech'] .cv-main {
+  background: #ffffff;
+  border: 1px solid #ececef;
+  border-radius: var(--c-radius);
+  box-shadow: 0 20px 44px -24px rgba(24, 24, 27, 0.22), 0 6px 16px -10px rgba(24, 24, 27, 0.1);
+  margin-top: clamp(16px, 4vh, 32px);
+  margin-bottom: clamp(16px, 4vh, 32px);
+}
+/* With a cover photo, keep the sheet's rounded top + lift (mirrors editorial). */
+.cv[data-card-theme='tech'].cv--cover .cv-main {
+  margin-top: -30px;
+  border-radius: 20px 20px var(--c-radius) var(--c-radius);
+}
+
+/* ============================================================================
+   FLAT LAYOUT (data-flat='true') — optional minimal treatment for Glass + Tech:
+   strip the boxed detail-row "widgets" (backgrounds / borders / chevrons) and
+   the glass card edge so the info reads as a clean list, like Editorial.
+   ========================================================================== */
+.cv[data-flat='true'][data-card-theme='glass'] .cv-row-main,
+.cv[data-flat='true'][data-card-theme='glass'] .cv-row-aux,
+.cv[data-flat='true'][data-card-theme='tech'] .cv-row-main,
+.cv[data-flat='true'][data-card-theme='tech'] .cv-row-aux {
+  background: none;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 8px 2px;
+}
+.cv[data-flat='true'][data-card-theme='glass'] .cv-row-main:hover,
+.cv[data-flat='true'][data-card-theme='glass'] .cv-row-aux:hover,
+.cv[data-flat='true'][data-card-theme='tech'] .cv-row-main:hover,
+.cv[data-flat='true'][data-card-theme='tech'] .cv-row-aux:hover {
+  transform: none;
+  border-color: transparent;
+}
+/* Drop the trailing chevrons for the minimal list feel. */
+.cv[data-flat='true'][data-card-theme='glass'] .cv-row-go,
+.cv[data-flat='true'][data-card-theme='tech'] .cv-row-go {
+  display: none;
+}
+/* Remove the subtle liquid-glass card edge in flat mode. */
+.cv[data-flat='true'][data-card-theme='glass'].cv--cover .cv-main {
+  border-color: transparent;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 </style>

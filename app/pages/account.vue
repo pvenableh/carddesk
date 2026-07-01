@@ -89,8 +89,8 @@ async function copyEmbed() {
 
 const cardForm = reactive<Record<string, any>>({
   display_name: '', title: '', company: '', headline: '',
-  email: '', phone: '', website: '', office_address: '', broadcast_activity: true,
-  card_theme: 'carddesk',
+  email: '', phone: '', website: '', office_address: '', show_address: true, broadcast_activity: true,
+  card_theme: 'carddesk', flat_layout: false,
   ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, ''])),
 })
 const cardImageUrl = ref<string | null>(null)
@@ -107,8 +107,10 @@ watchEffect(() => {
   cardForm.phone = card.value.phone ?? ''
   cardForm.website = card.value.website ?? ''
   cardForm.office_address = card.value.office_address ?? ''
+  cardForm.show_address = card.value.show_address ?? true
   for (const k of SOCIAL_KEYS) cardForm[k] = card.value[k] ?? ''
   cardForm.broadcast_activity = card.value.broadcast_activity ?? true
+  cardForm.flat_layout = card.value.flat_layout ?? false
   cardForm.card_theme = normalizeCardTheme(card.value.card_theme)
   cardImageUrl.value = card.value.imageUrl ?? null
   cardCoverUrl.value = card.value.coverUrl ?? null
@@ -175,6 +177,21 @@ const cardDiffs = computed(() =>
 function syncFromAccount() {
   for (const f of cardDiffs.value) cardForm[f.key] = f.value()
 }
+
+// Informational hint for the floating save bar: do the editable text fields /
+// toggles / theme differ from the saved card? (Photo/cover/logo persist on
+// upload, so they're not part of this hint — the Save button is always live.)
+const CARD_DIRTY_KEYS = ['display_name', 'title', 'company', 'headline', 'email', 'phone', 'website', 'office_address', ...SOCIAL_KEYS]
+const cardDirty = computed(() => {
+  const c = card.value
+  if (!c) return false
+  if (CARD_DIRTY_KEYS.some((k) => (cardForm[k] ?? '') !== (c[k] ?? ''))) return true
+  if (normalizeCardTheme(cardForm.card_theme) !== normalizeCardTheme(c.card_theme)) return true
+  if (!!cardForm.show_address !== (c.show_address ?? true)) return true
+  if (!!cardForm.broadcast_activity !== (c.broadcast_activity ?? true)) return true
+  if (!!cardForm.flat_layout !== (c.flat_layout ?? false)) return true
+  return false
+})
 
 const cardSaving = ref(false)
 async function saveCard() {
@@ -352,7 +369,7 @@ async function suggestGoal() {
 </script>
 
 <template>
-  <div class="acct-page">
+  <div class="acct-page" :class="{ 'acct-page--savebar': tab === 'card' }">
     <div class="acct-container">
       <NuxtLink to="/" class="cd-back"><CdIcon emoji="‹" icon="lucide:chevron-left" :size="14" /> Back</NuxtLink>
 
@@ -577,6 +594,21 @@ async function suggestGoal() {
           </div>
           <div class="acct-theme-hint">{{ CARD_THEMES.find((t) => t.id === cardForm.card_theme)?.hint }}</div>
 
+          <!-- Minimal-layout toggle — only affects the glass & tech designs. -->
+          <div v-if="cardForm.card_theme === 'glass' || cardForm.card_theme === 'tech'" class="acct-card-toggle" style="margin-top: 10px">
+            <div>
+              <div style="font-size: 13px; font-weight: 700">Minimal rows</div>
+              <div style="font-size: 11px; color: var(--cd-dim)">Hide the boxed row backgrounds &amp; borders for a cleaner look.</div>
+            </div>
+            <button
+              class="cd-abtn"
+              :class="cardForm.flat_layout ? 'g' : ''"
+              style="width: auto; font-size: 11px; padding: 6px 12px; flex-shrink: 0"
+              :style="cardForm.flat_layout ? '' : 'background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr)'"
+              @click="cardForm.flat_layout = !cardForm.flat_layout"
+            >{{ cardForm.flat_layout ? 'On' : 'Off' }}</button>
+          </div>
+
           <!-- Cover / banner image -->
           <div class="acct-cover">
             <div class="acct-cover-img" :class="{ empty: !cardCoverUrl }">
@@ -639,8 +671,21 @@ async function suggestGoal() {
             <input v-model="cardForm.phone" class="cd-inp" type="tel" placeholder="+1 555 000 0000" />
             <label class="cd-lbl">Website</label>
             <input v-model="cardForm.website" class="cd-inp" placeholder="https://acme.com" />
-            <label class="cd-lbl">Office Address <span style="color: var(--cd-dim); font-weight: 600; text-transform: none; letter-spacing: 0">· shown on your shared card</span></label>
+            <label class="cd-lbl">Office Address</label>
             <textarea v-model="cardForm.office_address" class="cd-inp" style="min-height: 48px; resize: vertical" placeholder="123 Market St, Suite 400&#10;San Francisco, CA 94105"></textarea>
+            <div class="acct-card-toggle" style="margin-top: 8px">
+              <div>
+                <div style="font-size: 13px; font-weight: 700">Show address on card</div>
+                <div style="font-size: 11px; color: var(--cd-dim)">Display your office address on the shared card.</div>
+              </div>
+              <button
+                class="cd-abtn"
+                :class="cardForm.show_address ? 'g' : ''"
+                style="width: auto; font-size: 11px; padding: 6px 12px; flex-shrink: 0"
+                :style="cardForm.show_address ? '' : 'background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr)'"
+                @click="cardForm.show_address = !cardForm.show_address"
+              >{{ cardForm.show_address ? 'On' : 'Off' }}</button>
+            </div>
             <template v-for="s in SOCIALS" :key="s.key">
               <label class="cd-lbl">{{ s.label }}</label>
               <input v-model="cardForm[s.key]" class="cd-inp" :placeholder="s.placeholder" />
@@ -660,9 +705,6 @@ async function suggestGoal() {
               >{{ cardForm.broadcast_activity ? 'On' : 'Off' }}</button>
             </div>
 
-            <button class="cd-abtn g" style="font-size: 15px; padding: 13px; margin-top: 8px" :disabled="cardSaving" @click="saveCard">
-              {{ cardSaving ? 'Saving…' : 'Save card' }}
-            </button>
           </div>
         </div>
 
@@ -687,6 +729,15 @@ async function suggestGoal() {
             <CdIcon icon="lucide:copy" :size="14" /> Copy embed code
           </button>
         </div>
+
+        <!-- Floating save bar — keeps "Save card" reachable while editing the
+             (long) card form, instead of buried at the very bottom. -->
+        <div class="acct-savebar">
+          <span class="acct-savebar-note">{{ cardDirty ? 'Unsaved changes' : 'Your card is up to date' }}</span>
+          <button class="cd-abtn g acct-savebar-btn" :disabled="cardSaving" @click="saveCard">
+            {{ cardSaving ? 'Saving…' : 'Save card' }}
+          </button>
+        </div>
       </template>
 
       <CdBrandFooter />
@@ -702,6 +753,42 @@ async function suggestGoal() {
   color: var(--cd-text);
   font-family: 'Barlow', sans-serif;
   padding: calc(env(safe-area-inset-top, 16px) + 16px) 16px 32px;
+}
+/* Reserve space so the fixed save bar never covers the footer / embed button. */
+.acct-page--savebar {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+}
+/* Floating save bar (card tab). */
+.acct-savebar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  z-index: 60;
+  width: calc(100% - 32px);
+  max-width: 400px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px 10px 16px;
+  background: color-mix(in srgb, var(--cd-bg2, #16181d) 88%, transparent);
+  border: 1.5px solid var(--cd-bdr);
+  border-radius: 16px;
+  box-shadow: 0 18px 44px -14px rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(150%);
+}
+.acct-savebar-note {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cd-muted);
+}
+.acct-savebar-btn {
+  width: auto;
+  flex-shrink: 0;
+  font-size: 14px;
+  padding: 11px 22px;
 }
 .acct-container {
   max-width: 400px;

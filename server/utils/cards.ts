@@ -5,7 +5,7 @@ import { SOCIAL_KEYS } from '~/types/socials'
 
 export const CARD_FIELDS = [
   'id', 'user', 'display_name', 'title', 'company', 'email',
-  'phone', 'website', ...SOCIAL_KEYS, 'headline', 'office_address', 'image', 'cover_image', 'logo_image', 'broadcast_activity', 'card_theme',
+  'phone', 'website', ...SOCIAL_KEYS, 'headline', 'office_address', 'show_address', 'flat_layout', 'image', 'cover_image', 'logo_image', 'broadcast_activity', 'card_theme',
 ]
 
 /**

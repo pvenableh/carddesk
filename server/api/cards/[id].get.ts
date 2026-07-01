@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   const cards = (await admin.request(
     readItems('cd_cards' as any, {
       filter: { user: { _eq: id } } as any,
-      fields: ['display_name', 'title', 'company', 'email', 'phone', 'website', ...SOCIAL_KEYS, 'headline', 'office_address', 'image', 'cover_image', 'logo_image', 'card_theme'],
+      fields: ['display_name', 'title', 'company', 'email', 'phone', 'website', ...SOCIAL_KEYS, 'headline', 'office_address', 'show_address', 'flat_layout', 'image', 'cover_image', 'logo_image', 'card_theme'],
       limit: 1,
     }),
   )) as any[]
@@ -52,6 +52,10 @@ export default defineEventHandler(async (event) => {
     ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, c[k] ?? null])),
     headline: c.headline ?? null,
     office_address: c.office_address ?? null,
+    // Default to shown for legacy cards / profile fallbacks (null → true).
+    show_address: c.show_address ?? true,
+    // Minimal/flat row layout (glass + tech). Default off (boxed widgets).
+    flat_layout: c.flat_layout ?? false,
     card_theme: c.card_theme || 'carddesk',
     // Photo: card image if set, otherwise the user's Earnest profile avatar
     // (getAvatarUrls prefers the card image, then the profile avatar) so a card
