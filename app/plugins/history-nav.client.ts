@@ -30,7 +30,7 @@ interface View {
 }
 
 const SCREENS = new Set<Screen>([
-  'vibe', 'session', 'cold', 'home', 'contacts', 'detail', 'add', 'feed', 'chat', 'history',
+  'vibe', 'session', 'cold', 'home', 'contacts', 'detail', 'add', 'feed', 'chat', 'history', 'import', 'jam',
 ])
 // Only these screens carry a selected contact id in the URL.
 const ID_SCREENS = new Set<Screen>(['detail', 'cold'])
