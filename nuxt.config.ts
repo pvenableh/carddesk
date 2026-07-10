@@ -90,6 +90,25 @@ export default defineNuxtConfig({
         { src: '/icons/icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
         { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
       ],
+      // Web Share Target — on platforms that support it (Android / desktop
+      // Chrome, installed as a PWA), CardDesk shows up in the native share sheet
+      // when someone shares a contact card. The shared `.vcf` (or text/url) is
+      // POSTed to /share-target, which the service worker intercepts, stashes,
+      // and hands to the Import screen. iOS Safari has no share-target support,
+      // so there the file-import path on the Import screen is the way in.
+      share_target: {
+        action: '/share-target',
+        method: 'POST',
+        enctype: 'multipart/form-data',
+        params: {
+          title: 'title',
+          text: 'text',
+          url: 'url',
+          files: [
+            { name: 'cards', accept: ['text/vcard', 'text/x-vcard', 'text/directory', '.vcf'] },
+          ],
+        },
+      },
       // Long-press the home-screen icon → jump straight to a big scannable QR of
       // your card (our answer to Blinq's lock-screen widget, within PWA limits).
       shortcuts: [

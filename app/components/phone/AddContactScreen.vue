@@ -299,6 +299,19 @@ async function doSaveContact() {
         {{ pendingScans.length }} card{{ pendingScans.length > 1 ? 's' : '' }} captured offline — tap to process
       </button>
 
+      <!-- Import a shared card: the inbound path for cards people AirDrop / send
+           you (a .vcf). Sits right under the scan zone as a peer capture method. -->
+      <button
+        v-if="scanStep === 'idle' && !scanning"
+        type="button"
+        class="cd-add-import"
+        @click="nav('import')"
+      >
+        <CdIcon icon="lucide:contact" :size="15" />
+        <span>Import a shared card <span class="cd-add-import-ext">.vcf · AirDrop</span></span>
+        <CdIcon icon="lucide:arrow-right" :size="13" />
+      </button>
+
       <!-- Event Mode context: show the active auto-tag, or offer to turn it on.
            Scanning at a conference is the core loop — this keeps the mode one
            tap away from where the cards actually get captured. -->
@@ -508,6 +521,20 @@ async function doSaveContact() {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.4; transform: scale(0.75); }
 }
+/* ── Import-a-shared-card link (peer to the scan zone) ── */
+.cd-add-import {
+  display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 8px;
+  padding: 11px 13px; border-radius: 12px; cursor: pointer;
+  background: color-mix(in srgb, var(--cd-accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-accent) 26%, transparent);
+  color: var(--cd-text); font-family: inherit; font-size: 13px; font-weight: 700;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cd-add-import :deep(svg) { color: var(--cd-accent); flex-shrink: 0; }
+.cd-add-import > span { flex: 1; text-align: left; }
+.cd-add-import-ext { color: var(--cd-dim); font-weight: 600; font-size: 11px; }
+.cd-add-import:hover { border-color: color-mix(in srgb, var(--cd-accent) 45%, transparent); }
+
 .cd-add-share { display: flex; gap: 8px; margin-top: 8px; }
 .cd-add-share-btn {
   flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px;

@@ -65,6 +65,50 @@ registerRoute(
   }),
 )
 
+// 2b) Web Share Target receiver. The manifest points share_target.action at
+// /share-target (POST, multipart). That path has no server route — this handler
+// owns it: it reads the shared .vcf file(s)/text, stashes the raw payload in a
+// cache the page can read, and 303-redirects into the app, which ingests it on
+// load (see index.vue → ingestSharedCard) and opens the Import screen.
+//
+// Scoped tightly to POST /share-target so every other request falls through to
+// the Workbox routes above untouched.
+const SHARE_CACHE = 'cd-share'
+const SHARE_KEY = '/__shared_vcard'
+
+self.addEventListener('fetch', (event: FetchEvent) => {
+  const req = event.request
+  if (req.method !== 'POST') return
+  let pathname = ''
+  try { pathname = new URL(req.url).pathname } catch { return }
+  if (pathname !== '/share-target') return
+
+  event.respondWith(
+    (async () => {
+      try {
+        const form = await req.formData()
+        const parts: string[] = []
+        for (const f of form.getAll('cards')) {
+          if (f && typeof (f as Blob).text === 'function') parts.push(await (f as Blob).text())
+        }
+        const text = form.get('text')
+        const url = form.get('url')
+        if (typeof text === 'string' && text.trim()) parts.push(text.trim())
+        if (typeof url === 'string' && url.trim()) parts.push(url.trim())
+        const cache = await caches.open(SHARE_CACHE)
+        await cache.put(
+          SHARE_KEY,
+          new Response(parts.join('\n'), { headers: { 'Content-Type': 'text/plain' } }),
+        )
+      } catch (err) {
+        // Redirect anyway — the page simply finds no payload and does nothing.
+        console.error('[sw] share-target ingest failed', err)
+      }
+      return Response.redirect(new URL('/?shared=1', self.location.origin).toString(), 303)
+    })(),
+  )
+})
+
 // 3) SW lifecycle. We deliberately DON'T skipWaiting on install: a freshly
 // built SW stays in "waiting" so the app can surface a "Refresh" prompt
 // (registerType:'prompt' + $pwa.needRefresh → AppUpdateToast). It activates

@@ -66,6 +66,12 @@ function goScan() {
   closePanel()
   nav('add')
 }
+// Import shared cards (AirDrop / .vcf) — same idea as scanning, different intake.
+// Drop the sheet and open the Import screen; it auto-tags to this event.
+function goImport() {
+  closePanel()
+  nav('import')
+}
 async function finish() {
   if (finishing.value) return
   finishing.value = true
@@ -287,6 +293,17 @@ async function doDelete(ev: any) {
           <CdIcon icon="lucide:arrow-right" :size="18" />
         </button>
 
+        <!-- Import shared cards: the inbound path for AirDrop'd / sent .vcf cards.
+             A peer to scanning — also auto-tagged to this event. -->
+        <button class="em-import glass-thin" @click="goImport">
+          <span class="em-import-ico"><CdIcon icon="lucide:contact" :size="20" /></span>
+          <span class="em-import-copy">
+            <span class="em-import-title">Import shared cards</span>
+            <span class="em-import-sub">Someone AirDrop or send you a .vcf? Pull them in.</span>
+          </span>
+          <CdIcon icon="lucide:arrow-right" :size="16" />
+        </button>
+
         <!-- Share back: hand out your own card / send an invite without leaving
              the capture loop. The global ShareSheet layers above this panel. -->
         <div class="em-share">
@@ -445,6 +462,23 @@ async function doDelete(ev: any) {
 .em-scan-copy { flex: 1; display: flex; flex-direction: column; }
 .em-scan-title { font-weight: 800; font-size: 1.05rem; }
 .em-scan-sub { font-size: 0.78rem; color: var(--cd-muted); }
+
+/* import-shared-cards row — secondary intake alongside the scan CTA */
+.em-import {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  border-radius: 16px; padding: 13px 14px; margin-bottom: 12px; cursor: pointer;
+  color: var(--cd-text); text-align: left; transition: transform 0.12s ease, border-color 0.15s;
+}
+.em-import:active { transform: scale(0.99); }
+.em-import-ico {
+  width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; color: var(--cd-accent);
+  background: color-mix(in srgb, var(--cd-accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-accent) 28%, transparent);
+}
+.em-import-copy { flex: 1; display: flex; flex-direction: column; }
+.em-import-title { font-weight: 800; font-size: 0.98rem; }
+.em-import-sub { font-size: 0.75rem; color: var(--cd-muted); }
 
 /* share-back row (My card / Invite) — secondary to the scan CTA */
 .em-share { display: flex; gap: 10px; margin-bottom: 18px; }

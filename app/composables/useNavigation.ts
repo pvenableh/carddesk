@@ -1,4 +1,4 @@
-export type Screen = "vibe" | "session" | "cold" | "home" | "contacts" | "detail" | "add" | "feed" | "chat" | "history" | "jam"
+export type Screen = "vibe" | "session" | "cold" | "home" | "contacts" | "detail" | "add" | "import" | "feed" | "chat" | "history" | "jam"
 
 // Bottom-nav screens animate as tabs (slide by their bar position). `add` (the
 // scan button) sits in the middle of the bar, so it's a tab here too —
@@ -7,7 +7,7 @@ export type Screen = "vibe" | "session" | "cold" | "home" | "contacts" | "detail
 // Session left the bar in the 7→5 nav consolidation and is reached from the
 // Vibe screen. Event Mode is a slide-up panel (like chat) owned by
 // useEventMode.panelOpen, not a screen here.
-const PUSH_SCREENS = new Set<Screen>(["detail", "cold", "chat", "session", "history", "jam"])
+const PUSH_SCREENS = new Set<Screen>(["detail", "cold", "chat", "session", "history", "jam", "import"])
 // Must mirror NAV_ORDER in BottomNav.vue so the slide direction matches the
 // visual left→right position of each tab: vibe · network · scan · feed · stats.
 const TAB_INDEX: Record<string, number> = {

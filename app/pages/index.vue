@@ -7,6 +7,7 @@ import PhoneHomeScreen from '~/components/phone/HomeScreen.vue'
 import PhoneContactsScreen from '~/components/phone/ContactsScreen.vue'
 import PhoneDetailScreen from '~/components/phone/DetailScreen.vue'
 import PhoneAddContactScreen from '~/components/phone/AddContactScreen.vue'
+import PhoneImportContactsScreen from '~/components/phone/ImportContactsScreen.vue'
 import PhoneEventModeScreen from '~/components/phone/EventModeScreen.vue'
 import PhoneFeedScreen from '~/components/phone/FeedScreen.vue'
 import PhoneChatScreen from '~/components/phone/ChatScreen.vue'
@@ -73,6 +74,7 @@ const screenComponents: Record<Screen, Component> = {
   contacts: PhoneContactsScreen,
   detail: PhoneDetailScreen,
   add: PhoneAddContactScreen,
+  import: PhoneImportContactsScreen,
   feed: PhoneFeedScreen,
   chat: PhoneChatScreen,
   history: PhoneHistoryScreen,
@@ -94,6 +96,27 @@ const { info: infoToast } = useToast()
 const route = useRoute()
 const router = useRouter()
 const { show: openPresent } = usePresentCard()
+const { parseText: parseSharedVcard } = useVCardImport()
+const { set: setPendingImport } = usePendingImport()
+
+// A card shared into CardDesk via the Web Share Target lands as a payload the
+// service worker stashed in the `cd-share` cache (see public/sw.ts). Read it,
+// parse it, and open the Import screen with the contacts pre-loaded.
+async function ingestSharedCard() {
+  if (typeof caches === 'undefined') return
+  try {
+    const cache = await caches.open('cd-share')
+    const res = await cache.match('/__shared_vcard')
+    if (!res) return
+    const text = await res.text()
+    await cache.delete('/__shared_vcard')
+    const cards = parseSharedVcard(text)
+    if (cards.length) { setPendingImport(cards); nav('import') }
+  } catch (err) {
+    console.error('[share-target] ingest failed', err)
+  }
+}
+
 onMounted(() => {
   if (!loggedIn.value) return
   if (route.query.card === 'present') {
@@ -102,6 +125,9 @@ onMounted(() => {
   } else if (route.query.go === 'scan') {
     nav('add')
     router.replace({ query: { ...route.query, go: undefined } })
+  } else if (route.query.shared) {
+    router.replace({ query: { ...route.query, shared: undefined } })
+    ingestSharedCard()
   }
 })
 

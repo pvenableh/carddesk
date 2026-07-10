@@ -595,7 +595,11 @@ html[data-theme="glass"][data-mode="light"] .lp-glass {
 .lp-nav {
   max-width: 1080px;
   margin: 0 auto;
-  padding: 20px 24px;
+  /* The PWA runs with a black-translucent status bar (see nuxt.config head), so
+     the page renders UP under the iPhone notch/status bar. Pad the top by the
+     safe-area inset so the "Sign in" / "Get started" row clears it and stays
+     tappable — installed to the Home Screen it sat behind the status bar. */
+  padding: max(20px, env(safe-area-inset-top, 0px)) max(24px, env(safe-area-inset-right, 0px)) 20px max(24px, env(safe-area-inset-left, 0px));
   display: flex;
   align-items: center;
   justify-content: space-between;
