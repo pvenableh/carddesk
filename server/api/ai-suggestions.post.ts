@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
 
   const account = await enforceCredits(event, "ai-suggestions");
 
-  const { contact, activities, profile } = body;
+  const { contact, activities, profile, activePlans } = body;
 
   // Fetch Earnest org context if available
   let earnestContext = "";
@@ -45,12 +45,16 @@ Contact:
 - Rating: ${contact.rating || "Unrated"}
 - Pipeline Stage: ${contact.pipeline_stage || "Not in pipeline"}
 - Goal: ${contact.opportunity_goal === "partner" ? "Become a referral/collaboration PARTNER (trade work, co-bid)" : contact.opportunity_goal === "client" ? "Win them as a CLIENT (they hire us)" : "Not set yet"}
+- Objective (the specific win to drive toward): ${contact.objective || "Not set yet"}
 - Estimated Value: ${contact.estimated_value ? "$" + contact.estimated_value.toLocaleString() : "N/A"}
 - Notes: ${contact.notes || "None"}
 
 Activity History:
 ${activities?.length ? activities.map((a: any) => `- ${a.date}: ${a.label}${a.note ? ` (${a.note})` : ""}${a.is_response ? " [REPLIED]" : ""}`).join("\n") : "No activities logged yet."}
 Days since last activity: ${body.daysSinceLastActivity ?? "N/A"}
+
+Active Plans (steps the user ALREADY has queued — do NOT re-suggest these; build on them or fill the gaps):
+${activePlans?.length ? activePlans.map((p: any) => `- Plan "${p.title}"${p.open_tasks?.length ? ":\n" + p.open_tasks.map((t: any) => `    · ${t.title}${t.due_at ? ` (due ${t.due_at})` : ""}`).join("\n") : " (no open tasks)"}`).join("\n") : "None yet."}
 
 User Profile:
 - Name: ${[profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Unknown"}

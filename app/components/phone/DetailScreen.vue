@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RATINGS, ACT_TYPES, getRating, getAct, cEmoji, industryTagStyle } from '~/composables/useConstants'
+import { RATINGS, ACT_TYPES, INDUSTRIES, getRating, getAct, cEmoji, industryTagStyle } from '~/composables/useConstants'
 import { todayStr, fmtFull } from '~/composables/useFormatters'
 import { PIPELINE_STAGES, LOST_REASONS, GOAL_OPTIONS, CONVERSION_REASONS } from '~/composables/usePipeline'
 import { SOCIALS, SOCIAL_KEYS, socialUrl } from '~/types/socials'
@@ -102,6 +102,55 @@ const goalInfo = computed(() => GOAL_OPTIONS.find((g) => g.key === (selContact.v
 async function doSetGoalTag(goal: OpportunityGoal | null) {
   if (selContact.value) await setGoalTag(selContact.value.id, goal)
   showGoalTagSheet.value = false
+}
+
+// Free-text objective — the specific win to chase with this contact. Quick-edit
+// via its own sheet (mirrors the goal tag) so it's one tap from the hero.
+const showObjectiveSheet = ref(false)
+const objectiveDraft = ref('')
+function openObjectiveSheet() {
+  objectiveDraft.value = (selContact.value as any)?.objective ?? ''
+  showObjectiveSheet.value = true
+}
+async function doSaveObjective() {
+  if (!selContact.value) return
+  const next = objectiveDraft.value.trim()
+  await updateContact(selContact.value.id, { objective: next || null } as any)
+  showObjectiveSheet.value = false
+}
+
+// Active plans + open tasks for this contact, kept loaded so the Ask Earnest
+// context (contactContext) can hand them to Earnest. Refreshes when the open
+// card changes or any plan/task mutates (usePlans `dirty`).
+const { listPlans: listContactPlans, listTasks: listContactTasks, dirty: plansDirty } = usePlans()
+const contactPlans = ref<{ title: string; open_tasks: { title: string; due_at: string | null }[] }[]>([])
+async function loadContactPlans() {
+  const c = selContact.value as any
+  if (!c?.id) { contactPlans.value = []; return }
+  try {
+    const [plans, tasks] = await Promise.all([
+      listContactPlans({ contact: c.id, status: 'active' }),
+      listContactTasks({ contact: c.id, status: 'pending' }),
+    ])
+    contactPlans.value = plans.map((p: any) => ({
+      title: p.title,
+      open_tasks: tasks
+        .filter((t: any) => t.plan === p.id)
+        .map((t: any) => ({ title: t.title, due_at: t.due_at ?? null })),
+    }))
+  } catch {
+    contactPlans.value = []
+  }
+}
+watch(() => (selContact.value as any)?.id, loadContactPlans, { immediate: true })
+watch(plansDirty, loadContactPlans)
+
+// Industry — a live tag in the hero; tap to change from a picker (mirrors the
+// rating / pursuing pickers), so it doesn't require opening the full edit form.
+const showIndustrySheet = ref(false)
+async function doSetIndustry(ind: string | null) {
+  if (selContact.value) await updateContact(selContact.value.id, { industry: ind || null } as any)
+  showIndustrySheet.value = false
 }
 
 // Move to a plain forward step, or branch to the goal/lost sub-sheets.
@@ -207,7 +256,8 @@ function startEdit() {
     // Clone so editing the rows doesn't mutate the cached contact in place.
     phones: Array.isArray(c.phones) ? c.phones.map((p: any) => ({ ...p })) : [],
     website: c.website, industry: c.industry,
-    met_at: c.met_at, location: c.location, address: c.address, rating: c.rating, notes: c.notes,
+    met_at: c.met_at, location: c.location, address: c.address, rating: c.rating,
+    objective: c.objective, notes: c.notes,
     ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, c[k]])),
   }
   // Start expanded only if there's already a handle to show.
@@ -387,9 +437,15 @@ async function loadSuggestions() {
     const data = await $fetch<Array<{ icon: string; title: string; body: string }>>('/api/ai-suggestions', {
       method: 'POST',
       body: {
-        contact: { name: c.name, title: c.title, company: c.company, industry: c.industry, location: c.location, rating: c.rating, notes: c.notes },
+        contact: {
+          name: c.name, title: c.title, company: c.company, industry: c.industry,
+          location: c.location, rating: c.rating, notes: c.notes,
+          pipeline_stage: c.pipeline_stage, opportunity_goal: c.opportunity_goal,
+          objective: c.objective, estimated_value: c.estimated_value,
+        },
         activities: sortedActs.value.slice(0, 10).map((a: any) => ({ date: a.date, label: a.label, note: a.note, is_response: a.is_response })),
         daysSinceLastActivity: daysSince(c),
+        activePlans: contactPlans.value,
         profile: profile.value,
       },
     })
@@ -482,8 +538,15 @@ function contactContext() {
   return {
     name: c.name, title: c.title, company: c.company, industry: c.industry,
     rating: c.rating, pipeline_stage: c.pipeline_stage, estimated_value: c.estimated_value,
+    // opportunity_goal = who we're pursuing them as (client/partner);
+    // objective = the specific free-text win to drive toward.
+    pursuing_as: c.opportunity_goal ?? null,
+    objective: c.objective ?? null,
     met_at: c.met_at, location: c.location, is_client: c.is_client, notes: c.notes,
     days_since_last_activity: daysSince(c),
+    // Active plans + their still-open tasks, so Earnest can reference the plan
+    // of attack instead of re-proposing steps the user already has.
+    active_plans: contactPlans.value,
     recent_activities: sortedActs.value.slice(0, 8).map((a: any) => ({
       date: a.date, label: a.label, note: a.note, is_response: a.is_response,
     })),
@@ -493,7 +556,7 @@ function contactContext() {
 function contactFocus(): string {
   const c = selContact.value as any
   if (!c) return ''
-  return `the contact "${c.name}"${c.company ? ` from ${c.company}` : ''} — their CRM profile (rating, pipeline stage, notes, and full activity history)`
+  return `the contact "${c.name}"${c.company ? ` from ${c.company}` : ''} — their CRM profile (rating, pipeline stage, what they're being pursued as, the objective/win to drive toward, any active plans and open tasks, notes, and full activity history)`
 }
 
 // Shared so the in-page button and the floating Ask Earnest button hand Earnest
@@ -575,6 +638,11 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             <div><label class="cd-lbl">Title</label><input v-model="editForm.title" class="cd-inp" /></div>
             <div><label class="cd-lbl">Company</label><input v-model="editForm.company" class="cd-inp" /></div>
           </div>
+          <label class="cd-lbl">Industry</label>
+          <select v-model="editForm.industry" class="cd-inp">
+            <option value="">—</option>
+            <option v-for="ind in INDUSTRIES" :key="ind" :value="ind">{{ ind }}</option>
+          </select>
           <div class="cd-frow">
             <div><label class="cd-lbl">Email</label><input v-model="editForm.email" class="cd-inp" type="email" /></div>
             <div><label class="cd-lbl">Phone <span style="color: var(--cd-dim); font-weight: 600; text-transform: none; letter-spacing: 0">· primary</span></label><input v-model="editForm.phone" class="cd-inp" type="tel" /></div>
@@ -606,6 +674,16 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
               <label class="cd-lbl">{{ s.label }}</label><input v-model="editForm[s.key]" class="cd-inp" :placeholder="s.placeholder" />
             </template>
           </template>
+          <label class="cd-lbl" style="display: flex; align-items: center; gap: 6px">
+            <CdIcon emoji="🎯" icon="lucide:target" :size="12" /> Objective
+            <span style="margin-left: auto; font-size: 10px; font-weight: 500; color: var(--cd-dim)">{{ (editForm.objective || '').length }}/80</span>
+          </label>
+          <input
+            v-model="editForm.objective"
+            class="cd-inp"
+            maxlength="80"
+            placeholder="e.g. Sign a small-business design package"
+          />
           <label class="cd-lbl">Notes</label>
           <textarea v-model="editForm.notes" class="cd-inp" style="min-height: 60px; resize: vertical"></textarea>
           <button class="cd-abtn g" style="margin-top: 4px" @click="doSaveEdit">Save Changes</button>
@@ -680,7 +758,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
               <!-- Optional goal tag — pill, shown once a goal is set, until graduated. -->
               <CdTooltip
                 v-if="goalInfo && !(selContact as any).is_client && !(selContact as any).is_partner"
-                :label="`Goal: ${goalInfo.label} — tap to change`"
+                :label="`Pursuing as ${goalInfo.label} — tap to change`"
                 placement="bottom"
               >
                 <button
@@ -690,12 +768,12 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
                   :style="goalInfo.key === 'partner' ? 'color: #7f77dd; border-color: rgba(127,119,221,0.4); background: rgba(127,119,221,0.12)' : 'color: #4da6ff; border-color: rgba(77,166,255,0.4); background: rgba(77,166,255,0.1)'"
                   @click="showGoalTagSheet = true"
                 >
-                  <CdIcon :emoji="goalInfo.emoji" :icon="goalInfo.lucide" :size="10" /> {{ goalInfo.label }} goal
+                  <CdIcon :emoji="goalInfo.emoji" :icon="goalInfo.lucide" :size="10" /> Pursuing {{ goalInfo.label.toLowerCase() }}
                 </button>
               </CdTooltip>
               <CdTooltip
                 v-else-if="!(selContact as any).is_client && !(selContact as any).is_partner"
-                label="Tag what you're going for with this contact"
+                label="Tag whether you're pursuing them as a client or partner"
                 placement="bottom"
               >
                 <button
@@ -703,15 +781,44 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
                   class="cd-rpill"
                   style="cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 3px; color: var(--cd-dim); border-style: dashed; border-color: var(--cd-bdr); background: none"
                   @click="showGoalTagSheet = true"
-                ><CdIcon emoji="🎯" icon="lucide:target" :size="9" /> Goal</button>
+                ><CdIcon emoji="🧭" icon="lucide:compass" :size="9" /> Pursuing?</button>
               </CdTooltip>
-              <span v-if="(selContact as any).industry" class="cd-tag-ind" :style="industryTagStyle((selContact as any).industry)">{{ (selContact as any).industry }}</span>
+              <button
+                v-if="(selContact as any).industry"
+                type="button"
+                class="cd-tag-ind"
+                style="cursor: pointer; font-family: inherit"
+                :style="industryTagStyle((selContact as any).industry)"
+                title="Tap to change industry"
+                @click="showIndustrySheet = true"
+              >{{ (selContact as any).industry }}</button>
+              <button
+                v-else
+                type="button"
+                class="cd-tag-ind"
+                style="cursor: pointer; font-family: inherit; border-style: dashed; color: var(--cd-dim); background: none"
+                title="Set industry"
+                @click="showIndustrySheet = true"
+              ><CdIcon emoji="🏷️" icon="lucide:tag" :size="9" /> Industry</button>
               <span v-if="(selContact as any).location" class="cd-tag-ind"><CdIcon emoji="📍" icon="lucide:map-pin" :size="9" /> {{ (selContact as any).location }}</span>
               <span v-if="(selContact as any).met_at" class="cd-tag-ind">@ {{ (selContact as any).met_at }}</span>
               <!-- Who introduced this contact — settable inline, lives among the hero tags. -->
               <PhoneContactReferral :contact="(selContact as any)" placement="header" />
             </div>
           </div>
+
+          <!-- Free-text objective — the specific win to chase. Tap to set/edit. -->
+          <button
+            type="button"
+            class="cd-obj-banner"
+            :class="{ empty: !(selContact as any).objective }"
+            @click="openObjectiveSheet"
+          >
+            <CdIcon emoji="🎯" icon="lucide:target" :size="14" />
+            <span v-if="(selContact as any).objective" class="cd-obj-txt">{{ (selContact as any).objective }}</span>
+            <span v-else class="cd-obj-txt cd-obj-empty">Set an objective for {{ (selContact as any).name?.split(' ')[0] || 'this contact' }}</span>
+            <CdIcon icon="lucide:pencil" :size="12" style="margin-left: auto; opacity: 0.6" />
+          </button>
 
           <div class="cd-fu-banner" :class="followUpStatus(selContact)">
             <span style="font-size: 20px; flex-shrink: 0"><CdIcon :emoji="fuInfo(selContact)?.ico ?? ''" :icon="fuInfo(selContact)?.lucide" :size="20" /></span>
@@ -1064,12 +1171,63 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
       </div>
     </Transition>
 
+    <!-- Industry picker — color-coded, mirrors the rating/pursuing pickers -->
+    <Transition name="cd-pop">
+      <div v-if="showIndustrySheet" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showIndustrySheet = false">
+        <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 16px; width: 100%; max-width: 768px">
+          <div style="font-size: 14px; font-weight: 800; margin-bottom: 2px">Industry for {{ selContact?.name }}</div>
+          <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">Color-codes their tag and the orbit.</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <button
+              v-for="ind in INDUSTRIES"
+              :key="ind"
+              type="button"
+              style="padding: 8px 12px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-text); font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit"
+              :style="(selContact as any)?.industry === ind ? industryTagStyle(ind) : ''"
+              @click="doSetIndustry(ind)"
+            >{{ ind }}</button>
+          </div>
+          <button
+            v-if="(selContact as any)?.industry"
+            style="width: 100%; padding: 10px; margin-top: 12px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer"
+            @click="doSetIndustry(null)"
+          >Clear</button>
+          <button style="width: 100%; padding: 10px; margin-top: 6px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showIndustrySheet = false">Cancel</button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Free-text objective quick-edit -->
+    <Transition name="cd-pop">
+      <div v-if="showObjectiveSheet" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showObjectiveSheet = false">
+        <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 16px; width: 100%; max-width: 768px">
+          <div style="font-size: 14px; font-weight: 800; margin-bottom: 2px">Objective with {{ selContact?.name }}</div>
+          <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">The specific win you're chasing — keep it short.</div>
+          <input
+            v-model="objectiveDraft"
+            class="cd-inp"
+            maxlength="80"
+            placeholder="e.g. Sign a small-business design package"
+            @keyup.enter="doSaveObjective"
+          />
+          <div style="text-align: right; font-size: 10px; color: var(--cd-dim); margin: 4px 2px 12px">{{ objectiveDraft.length }}/80</div>
+          <button class="cd-abtn g" style="width: 100%" @click="doSaveObjective">Save objective</button>
+          <button
+            v-if="(selContact as any)?.objective"
+            style="width: 100%; padding: 10px; margin-top: 8px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer"
+            @click="objectiveDraft = ''; doSaveObjective()"
+          >Clear objective</button>
+          <button style="width: 100%; padding: 10px; margin-top: 6px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showObjectiveSheet = false">Cancel</button>
+        </div>
+      </div>
+    </Transition>
+
     <!-- Optional goal tag picker (independent of stage) -->
     <Transition name="cd-pop">
       <div v-if="showGoalTagSheet" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showGoalTagSheet = false">
         <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 16px; width: 100%; max-width: 768px">
-          <div style="font-size: 14px; font-weight: 800; margin-bottom: 2px">What are you going for with {{ selContact?.name }}?</div>
-          <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">Optional — just a reminder of what you're aiming for.</div>
+          <div style="font-size: 14px; font-weight: 800; margin-bottom: 2px">Pursuing {{ selContact?.name }} as…</div>
+          <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">Optional — are you chasing them as a client or a partner?</div>
           <div style="display: flex; flex-direction: column; gap: 8px">
             <button
               v-for="g in GOAL_OPTIONS"
@@ -1087,7 +1245,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             v-if="(selContact as any)?.opportunity_goal"
             style="width: 100%; padding: 10px; margin-top: 10px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer"
             @click="doSetGoalTag(null)"
-          >Clear goal</button>
+          >Clear</button>
           <button style="width: 100%; padding: 10px; margin-top: 6px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showGoalTagSheet = false">Cancel</button>
         </div>
       </div>
@@ -1097,7 +1255,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
     <Transition name="cd-pop">
       <div v-if="showGoalSheet" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showGoalSheet = false">
         <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 16px; width: 100%; max-width: 768px">
-          <div style="font-size: 14px; font-weight: 800; margin-bottom: 2px">What's the goal with {{ selContact?.name }}?</div>
+          <div style="font-size: 14px; font-weight: 800; margin-bottom: 2px">Pursuing {{ selContact?.name }} as…</div>
           <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">This tailors the ideas Earnest gives you. You can change it later.</div>
           <div style="display: flex; flex-direction: column; gap: 8px">
             <button

@@ -214,6 +214,10 @@ export interface CdContact {
   pipeline_stage?: PipelineStage
   /** Goal tag chosen at the Opportunity stage — are we chasing a client or a partner? */
   opportunity_goal?: OpportunityGoal | null
+  /** Free-text objective — the specific win you're chasing with this contact
+   *  (e.g. "Sign a small-business design package"). Capped at 80 chars; shown
+   *  on cards + detail and fed into AI next-step suggestions. */
+  objective?: string | null
   earnest_lead_id?: string
   estimated_value?: number
   lost_reason?: string

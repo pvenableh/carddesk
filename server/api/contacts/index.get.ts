@@ -35,6 +35,7 @@ export default defineEventHandler(async (event) => {
           "partner_at",
           "pipeline_stage",
           "opportunity_goal",
+          "objective",
           "estimated_value",
           "lost_reason",
           "conversion_reason",

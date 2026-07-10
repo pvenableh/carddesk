@@ -32,25 +32,41 @@ export const NETWORKING_GOALS = [
 export const INDUSTRIES = [
   "Technology",
   "Finance",
-  "Healthcare",
-  "Real Estate",
-  "Legal",
-  "Marketing",
   "Venture Capital",
+  "Consulting",
+  "Legal",
+  "Real Estate",
+  "Construction & Development",
+  "Healthcare",
+  "Fitness & Wellness",
+  "Marketing",
+  "Media & Entertainment",
+  "Fashion & Beauty",
+  "Art & Design",
+  "Hospitality",
+  "Sports",
   "Other",
 ] as const
 
 /** Distinct, dark-theme-friendly hue per industry — used to color-code the
  *  orbit (connection lines + node borders) and industry chips. */
 export const INDUSTRY_COLORS: Record<string, string> = {
-  Technology: "#38bdf8",      // sky
-  Finance: "#34d399",         // emerald
-  Healthcare: "#f43f5e",      // rose
-  "Real Estate": "#f59e0b",   // amber
-  Legal: "#a78bfa",           // violet
-  Marketing: "#e879f9",       // fuchsia
-  "Venture Capital": "#2dd4bf", // teal
-  Other: "#94a3b8",           // slate
+  Technology: "#38bdf8",              // sky
+  Finance: "#34d399",                 // emerald
+  "Venture Capital": "#2dd4bf",       // teal
+  Consulting: "#60a5fa",              // blue
+  Legal: "#a78bfa",                   // violet
+  "Real Estate": "#f59e0b",           // amber
+  "Construction & Development": "#fb923c", // orange
+  Healthcare: "#f43f5e",              // rose
+  "Fitness & Wellness": "#a3e635",    // lime
+  Marketing: "#e879f9",               // fuchsia
+  "Media & Entertainment": "#f87171", // red
+  "Fashion & Beauty": "#f472b6",      // pink
+  "Art & Design": "#c084fc",          // purple
+  Hospitality: "#818cf8",             // indigo
+  Sports: "#facc15",                  // yellow
+  Other: "#94a3b8",                   // slate
 }
 
 /** Industry → color, or null when unknown (caller falls back to a name hash). */
