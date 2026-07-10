@@ -6,6 +6,22 @@ import ConnectionsView from './ConnectionsView.vue'
 const { contacts, updateContact, followUpStatus, lastActivity, daysSince, loading: contactsLoading, error: contactsError, fetchContacts } = useContacts()
 const { nav, goDetail } = useNavigation()
 const { getContactsByStage, getStageInfo, setGoalTag, moveToStage } = usePipeline()
+const { listPlans, dirty: plansDirty } = usePlans()
+
+// Which contacts have an active plan — drives the "plan" badge on cards. One
+// lightweight fetch of the user's active plans, reduced to a Set of contact
+// ids; refreshed whenever a plan/task mutates anywhere (usePlans `dirty`).
+const planContactIds = ref<Set<string>>(new Set())
+async function loadPlanFlags() {
+  try {
+    const plans = await listPlans({ status: 'active' })
+    planContactIds.value = new Set(plans.filter((p) => p.contact).map((p) => p.contact as string))
+  } catch {
+    // Non-fatal: if this fails the badge just doesn't show.
+  }
+}
+onMounted(loadPlanFlags)
+watch(plansDirty, loadPlanFlags)
 
 type RatingFilter = '' | 'hot' | 'warm' | 'nurture' | 'cold'
 
@@ -299,6 +315,9 @@ async function runExport() {
           <div style="flex: 1; min-width: 0">
             <div class="cd-cnm">{{ c.name }}</div>
             <div class="cd-csb">{{ [c.title, c.company].filter(Boolean).join(' · ') }}</div>
+            <div v-if="(c as any).objective" class="cd-cobj" :title="(c as any).objective">
+              <CdIcon emoji="🎯" icon="lucide:target" :size="10" /> {{ (c as any).objective }}
+            </div>
           </div>
           <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0">
             <button v-if="c.rating" type="button" class="cd-rpill" :class="c.rating" style="cursor: pointer; font-family: inherit" title="Tap to change temperature" @click.stop="ratingFor = c">
@@ -309,9 +328,10 @@ async function runExport() {
             </button>
             <span v-if="(c as any).is_client" class="cd-mpill" style="color: var(--cd-green); border-color: rgba(0,255,135,0.3); background: rgba(0,255,135,0.1)"><CdIcon emoji="💰" icon="lucide:badge-check" :size="9" /> client</span>
             <span v-else-if="(c as any).is_partner" class="cd-mpill" style="color: #7f77dd; border-color: rgba(127,119,221,0.35); background: rgba(127,119,221,0.12)"><CdIcon emoji="🤝" icon="lucide:handshake" :size="9" /> partner</span>
-            <button v-else-if="(c as any).opportunity_goal === 'partner'" type="button" class="cd-mpill" style="color: #7f77dd; border-color: rgba(127,119,221,0.4); background: rgba(127,119,221,0.08); border-style: dashed; cursor: pointer; font-family: inherit" @click.stop="goalFor = c"><CdIcon emoji="🤝" icon="lucide:handshake" :size="9" /> partner goal</button>
-            <button v-else-if="(c as any).opportunity_goal === 'client'" type="button" class="cd-mpill" style="color: #4da6ff; border-color: rgba(77,166,255,0.4); background: rgba(77,166,255,0.08); border-style: dashed; cursor: pointer; font-family: inherit" @click.stop="goalFor = c"><CdIcon emoji="💼" icon="lucide:briefcase" :size="9" /> client goal</button>
+            <button v-else-if="(c as any).opportunity_goal === 'partner'" type="button" class="cd-mpill" style="color: #7f77dd; border-color: rgba(127,119,221,0.4); background: rgba(127,119,221,0.08); border-style: dashed; cursor: pointer; font-family: inherit" @click.stop="goalFor = c"><CdIcon emoji="🤝" icon="lucide:handshake" :size="9" /> pursuing partner</button>
+            <button v-else-if="(c as any).opportunity_goal === 'client'" type="button" class="cd-mpill" style="color: #4da6ff; border-color: rgba(77,166,255,0.4); background: rgba(77,166,255,0.08); border-style: dashed; cursor: pointer; font-family: inherit" @click.stop="goalFor = c"><CdIcon emoji="💼" icon="lucide:briefcase" :size="9" /> pursuing client</button>
             <span v-if="c.linked_user" class="cd-mpill" style="color: var(--cd-purple, #b87dff); border-color: rgba(184,125,255,0.3); background: rgba(184,125,255,0.1)"><CdIcon emoji="🪐" icon="lucide:orbit" :size="9" /> joined</span>
+            <span v-if="planContactIds.has(c.id)" class="cd-mpill" style="color: var(--cd-accent); border-color: rgba(0,255,135,0.3); background: rgba(0,255,135,0.09)" title="Has an active plan"><CdIcon emoji="📋" icon="lucide:list-checks" :size="9" /> plan</span>
           </div>
           <!-- Peek toggle: reveals the last touchpoint inline without leaving the list. -->
           <button
@@ -406,8 +426,8 @@ async function runExport() {
               <div class="cd-csb" style="font-size: 10px">{{ c.company || '' }}</div>
             </div>
             <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0">
-              <span v-if="(c as any).opportunity_goal === 'partner'" style="font-size: 13px" aria-label="Goal: partner"><CdIcon emoji="🤝" icon="lucide:handshake" :size="12" /></span>
-              <span v-else-if="(c as any).opportunity_goal === 'client'" style="font-size: 13px" aria-label="Goal: client"><CdIcon emoji="💼" icon="lucide:briefcase" :size="12" /></span>
+              <span v-if="(c as any).opportunity_goal === 'partner'" style="font-size: 13px" aria-label="Pursuing as partner"><CdIcon emoji="🤝" icon="lucide:handshake" :size="12" /></span>
+              <span v-else-if="(c as any).opportunity_goal === 'client'" style="font-size: 13px" aria-label="Pursuing as client"><CdIcon emoji="💼" icon="lucide:briefcase" :size="12" /></span>
               <span v-if="c.estimated_value" style="font-size: 9px; font-weight: 700; color: var(--cd-accent)">
                 ${{ c.estimated_value.toLocaleString() }}
               </span>
@@ -487,7 +507,7 @@ async function runExport() {
     <Transition name="cd-pop">
       <div v-if="goalFor" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="goalFor = null">
         <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 16px; width: 100%; max-width: 768px">
-          <div style="font-size: 14px; font-weight: 800; margin-bottom: 2px">What are you going for?</div>
+          <div style="font-size: 14px; font-weight: 800; margin-bottom: 2px">Pursuing as…</div>
           <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">{{ goalFor.name }}</div>
           <div style="display: flex; flex-direction: column; gap: 6px">
             <button

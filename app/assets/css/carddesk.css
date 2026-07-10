@@ -1205,6 +1205,20 @@ select.cd-inp {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Per-contact objective on a list card — one glanceable line, truncated with
+   an ellipsis; the full text lives on the detail screen. */
+.cd-cobj {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cd-accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 /* Network list card — reuses .cd-crd for all theme chrome, but switches to a
    column so the card itself GROWS to hold the inline "last touchpoint" peek
    (mirrors the .cd-cold-card accordion). Padding moves off the container and
@@ -1592,6 +1606,42 @@ html[data-theme="glass"] .cd-net-card {
   gap: 9px;
   margin-bottom: 12px;
 }
+
+/* Free-text objective banner in the contact hero — the specific win to chase. */
+.cd-obj-banner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 255, 135, 0.22);
+  background: rgba(0, 255, 135, 0.05);
+  color: var(--cd-text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.cd-obj-banner:hover { border-color: rgba(0, 255, 135, 0.4); }
+.cd-obj-banner.empty {
+  border-style: dashed;
+  border-color: var(--cd-bdr);
+  background: none;
+  color: var(--cd-dim);
+  font-weight: 600;
+}
+.cd-obj-txt {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cd-obj-empty { font-weight: 600; }
 .cd-fu-banner.overdue {
   background: rgba(255, 107, 53, 0.08);
   border: 1px solid rgba(255, 107, 53, 0.3);
