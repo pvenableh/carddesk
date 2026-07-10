@@ -77,7 +77,9 @@ function onPointerUp() {
 }
 
 const panelStyle = computed(() => {
-  const base = { maxWidth: props.maxWidth, padding: props.padding } as Record<string, string>
+  // Padding rides in on a CSS var so the stylesheet keeps its safe-area-aware
+  // bottom (an inline `padding` shorthand would clobber padding-bottom).
+  const base = { maxWidth: props.maxWidth, '--cd-sheet-pad': props.padding } as Record<string, string>
   if (dragY.value > 0) {
     base.transform = `translateY(${dragY.value}px)`
     // No transition while the finger drives it; the base CSS transition takes
@@ -161,7 +163,10 @@ onBeforeUnmount(() => {
   border-bottom: none;
   border-radius: 16px 16px 0 0;
   box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.28);
-  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  /* Top/horizontal padding comes from the --cd-sheet-pad var (per-sheet); the
+   * bottom always clears the home indicator on notched devices. */
+  padding: var(--cd-sheet-pad, 16px);
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   transition: transform 0.34s cubic-bezier(0.32, 0.72, 0, 1);
   touch-action: pan-y;
 }
