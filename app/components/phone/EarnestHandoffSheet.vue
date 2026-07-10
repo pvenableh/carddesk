@@ -49,13 +49,7 @@ function signUp() {
 </script>
 
 <template>
-  <Transition name="cd-pop">
-    <div
-      v-if="open"
-      style="position: fixed; inset: 0; z-index: 101; display: flex; align-items: flex-end; justify-content: center"
-      @click.self="close"
-    >
-      <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 18px 16px; width: 100%; max-width: 768px">
+  <PhoneSheet :open="open" padding="18px 16px" @update:open="close">
         <div style="font-size: 30px; text-align: center; margin-bottom: 6px">
           <CdIcon :emoji="goal === 'client' ? '💰' : '🤝'" :icon="goal === 'client' ? 'lucide:badge-check' : 'lucide:handshake'" :size="30" />
         </div>
@@ -96,7 +90,5 @@ function signUp() {
           style="width: 100%; padding: 10px; margin-top: 8px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer"
           @click="close"
         >{{ status === 'done' ? 'Done' : 'Maybe later' }}</button>
-      </div>
-    </div>
-  </Transition>
+  </PhoneSheet>
 </template>

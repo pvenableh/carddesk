@@ -1110,9 +1110,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
     </template>
 
     <!-- Pipeline Stage Sheet -->
-    <Transition name="cd-pop">
-      <div v-if="showStageSheet" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showStageSheet = false">
-        <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 16px; width: 100%; max-width: 768px">
+    <PhoneSheet v-model:open="showStageSheet">
           <div style="font-size: 14px; font-weight: 800; margin-bottom: 2px">Where are you with {{ selContact?.name }}?</div>
           <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">Move them along — we handle the rest.</div>
           <div style="display: flex; flex-direction: column; gap: 6px">
@@ -1138,14 +1136,10 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             <CdIcon emoji="🌙" icon="lucide:moon" :size="14" /> Not now — didn't work out
           </button>
           <button style="width: 100%; padding: 10px; margin-top: 10px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showStageSheet = false">Cancel</button>
-        </div>
-      </div>
-    </Transition>
+    </PhoneSheet>
 
     <!-- Lost Reason Sheet -->
-    <Transition name="cd-pop">
-      <div v-if="showLostReasonSheet" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showLostReasonSheet = false">
-        <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 16px; width: 100%; max-width: 768px">
+    <PhoneSheet v-model:open="showLostReasonSheet">
           <div style="font-size: 14px; font-weight: 800; margin-bottom: 4px">Why was this deal lost?</div>
           <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">Logging reasons helps you learn. +10 XP</div>
           <div style="display: flex; flex-direction: column; gap: 6px">
@@ -1167,14 +1161,10 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             @click="doLogLostReason"
           ><CdIcon emoji="📝" icon="lucide:clipboard-check" :size="14" /> Log Lost Reason</button>
           <button style="width: 100%; padding: 10px; margin-top: 6px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showLostReasonSheet = false; showStageSheet = true">← Back</button>
-        </div>
-      </div>
-    </Transition>
+    </PhoneSheet>
 
     <!-- Industry picker — color-coded, mirrors the rating/pursuing pickers -->
-    <Transition name="cd-pop">
-      <div v-if="showIndustrySheet" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showIndustrySheet = false">
-        <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 16px; width: 100%; max-width: 768px">
+    <PhoneSheet v-model:open="showIndustrySheet">
           <div style="font-size: 14px; font-weight: 800; margin-bottom: 2px">Industry for {{ selContact?.name }}</div>
           <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">Color-codes their tag and the orbit.</div>
           <div style="display: flex; flex-wrap: wrap; gap: 8px">
@@ -1193,14 +1183,10 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             @click="doSetIndustry(null)"
           >Clear</button>
           <button style="width: 100%; padding: 10px; margin-top: 6px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showIndustrySheet = false">Cancel</button>
-        </div>
-      </div>
-    </Transition>
+    </PhoneSheet>
 
     <!-- Free-text objective quick-edit -->
-    <Transition name="cd-pop">
-      <div v-if="showObjectiveSheet" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showObjectiveSheet = false">
-        <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 16px; width: 100%; max-width: 768px">
+    <PhoneSheet v-model:open="showObjectiveSheet">
           <div style="font-size: 14px; font-weight: 800; margin-bottom: 2px">Objective with {{ selContact?.name }}</div>
           <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">The specific win you're chasing — keep it short.</div>
           <input
@@ -1218,14 +1204,10 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             @click="objectiveDraft = ''; doSaveObjective()"
           >Clear objective</button>
           <button style="width: 100%; padding: 10px; margin-top: 6px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showObjectiveSheet = false">Cancel</button>
-        </div>
-      </div>
-    </Transition>
+    </PhoneSheet>
 
     <!-- Optional goal tag picker (independent of stage) -->
-    <Transition name="cd-pop">
-      <div v-if="showGoalTagSheet" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showGoalTagSheet = false">
-        <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 16px; width: 100%; max-width: 768px">
+    <PhoneSheet v-model:open="showGoalTagSheet">
           <div style="font-size: 14px; font-weight: 800; margin-bottom: 2px">Pursuing {{ selContact?.name }} as…</div>
           <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">Optional — are you chasing them as a client or a partner?</div>
           <div style="display: flex; flex-direction: column; gap: 8px">
@@ -1247,14 +1229,10 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             @click="doSetGoalTag(null)"
           >Clear</button>
           <button style="width: 100%; padding: 10px; margin-top: 6px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showGoalTagSheet = false">Cancel</button>
-        </div>
-      </div>
-    </Transition>
+    </PhoneSheet>
 
     <!-- Goal picker — shown when entering the Opportunity stage -->
-    <Transition name="cd-pop">
-      <div v-if="showGoalSheet" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showGoalSheet = false">
-        <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 16px; width: 100%; max-width: 768px">
+    <PhoneSheet v-model:open="showGoalSheet">
           <div style="font-size: 14px; font-weight: 800; margin-bottom: 2px">Pursuing {{ selContact?.name }} as…</div>
           <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">This tailors the ideas Earnest gives you. You can change it later.</div>
           <div style="display: flex; flex-direction: column; gap: 8px">
@@ -1269,14 +1247,10 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             </button>
           </div>
           <button style="width: 100%; padding: 10px; margin-top: 10px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showGoalSheet = false; showStageSheet = true">← Back</button>
-        </div>
-      </div>
-    </Transition>
+    </PhoneSheet>
 
     <!-- Graduate sheet — captures what sealed it, then hands off to Earnest -->
-    <Transition name="cd-pop">
-      <div v-if="showGraduateSheet" style="position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center" @click.self="showGraduateSheet = false">
-        <div style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 14px 14px 0 0; padding: 18px 16px; width: 100%; max-width: 768px">
+    <PhoneSheet v-model:open="showGraduateSheet" padding="18px 16px">
           <div style="font-size: 30px; text-align: center; margin-bottom: 6px"><CdIcon emoji="🎓" icon="lucide:graduation-cap" :size="30" /></div>
           <div style="font-size: 16px; font-weight: 800; text-align: center; margin-bottom: 10px">Graduate {{ selContact?.name }}</div>
           <!-- Goal toggle -->
@@ -1309,9 +1283,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             <CdIcon emoji="🎉" icon="lucide:party-popper" :size="14" /> Graduate to {{ graduateGoal }} +200 XP
           </button>
           <button style="width: 100%; padding: 10px; margin-top: 8px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: transparent; color: var(--cd-dim); font-size: 13px; cursor: pointer" @click="showGraduateSheet = false">Cancel</button>
-        </div>
-      </div>
-    </Transition>
+    </PhoneSheet>
 
     <!-- Post-graduation Earnest hand-off (deep-link or sign-up nudge) -->
     <PhoneEarnestHandoffSheet v-model:open="showEarnestHandoff" :contact="selContact" :goal="graduateGoal" />
