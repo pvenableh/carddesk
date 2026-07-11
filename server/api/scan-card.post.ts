@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getValidToken } from "../utils/auth";
 import { enforceCredits, chargeCredits } from "../utils/ai-credits";
+import { logEarnestAiUsage } from "../utils/earnest-ai-usage";
 import { CLAUDE_MODELS } from "../utils/ai-models";
 import { logAnthropicError } from "../utils/ai-errors";
 import { SOCIAL_KEYS } from "~/types/socials";
@@ -87,6 +88,21 @@ Rules: name=full name combined. social handles = the URL or @handle if printed o
       inputTokens: response.usage?.input_tokens ?? 0,
       outputTokens: response.usage?.output_tokens ?? 0,
       metadata: { multiSide: isMultiSide },
+    });
+    // Mirror the real token spend into Earnest's shared org-level rollup
+    // (ai_usage_logs). Fire-and-forget — off the scan's hot path.
+    logEarnestAiUsage({
+      orgId: account.orgId,
+      userId: account.userId,
+      model: CLAUDE_MODELS.vision,
+      inputTokens: response.usage?.input_tokens ?? 0,
+      outputTokens: response.usage?.output_tokens ?? 0,
+      endpoint: "carddesk/scan",
+      metadata: {
+        scanId: response.id ?? null,
+        cardId: body.cardId ?? null,
+        multiSide: isMultiSide,
+      },
     });
     const text = response.content
       .filter((b) => b.type === "text")
