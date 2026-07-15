@@ -172,6 +172,15 @@ export default defineNuxtConfig({
     // Add Contact screen. Server-side only (never exposed). Leave unset to disable
     // the whole feature (no key → no calls → no billing).
     googlePlacesApiKey: process.env.GOOGLE_PLACES_API_KEY || '',
+    // nuxt-auth-utils session cookie. Without an explicit maxAge the sealed
+    // session is a browser-session cookie — dropped when the browser/PWA fully
+    // closes, which read as a surprise logout. Pin it to ~7 days to match
+    // Directus's refresh-token window; an expired refresh is handled gracefully
+    // in server/utils/auth.ts (re-login only on an explicit token rejection).
+    session: {
+      maxAge: 60 * 60 * 24 * 7,
+      cookie: { sameSite: 'lax' },
+    },
     public: {
       directusUrl: process.env.DIRECTUS_URL || 'http://localhost:8055',
       websocketUrl: process.env.DIRECTUS_WEBSOCKET_URL || 'ws://localhost:8055/websocket',

@@ -9,11 +9,14 @@ export function useContacts() {
   const loading = useState('cd_contacts_loading', () => false)
   const error = useState<string | null>('cd_contacts_error', () => null)
 
-  async function fetchContacts() {
-    loading.value = true; error.value = null
+  // `silent` skips the shared loading/error toggles so a background reconcile
+  // (e.g. after logging a touchpoint or closing an Earnest chat) never flashes
+  // the list's spinner or trips its empty/error state if it happens to fail.
+  async function fetchContacts(opts?: { silent?: boolean }) {
+    if (!opts?.silent) { loading.value = true; error.value = null }
     try { contacts.value = await $fetch<CdContact[]>('/api/contacts') }
-    catch (err: any) { error.value = err?.data?.message ?? 'Failed to load contacts' }
-    finally { loading.value = false }
+    catch (err: any) { if (!opts?.silent) error.value = err?.data?.message ?? 'Failed to load contacts' }
+    finally { if (!opts?.silent) loading.value = false }
   }
 
   async function createContact(payload: Partial<CdContact>): Promise<CdContact> {
@@ -41,7 +44,15 @@ export function useContacts() {
 
   async function updateContact(id: string, payload: Partial<CdContact>) {
     const updated = await $fetch<CdContact>(`/api/contacts/${id}`, { method: 'PATCH', body: payload })
-    contacts.value = contacts.value.map((c) => c.id === id ? { ...c, ...updated } : c)
+    contacts.value = contacts.value.map((c) => {
+      if (c.id !== id) return c
+      // The contacts PATCH returns the o2m `activities` relation as bare id
+      // strings (Directus serializes unselected aliases as keys), which would
+      // clobber the fully-hydrated timeline we hold in state — every existing
+      // touchpoint would lose its label/note/date until the next full refresh.
+      // This endpoint never edits activities, so always keep the ones we have.
+      return { ...c, ...updated, activities: (c as any).activities }
+    })
     return updated
   }
 

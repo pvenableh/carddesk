@@ -9,7 +9,45 @@
 const { scope, title, messages, loading, suggestions, send, context, contactId, sessionId, close } = useChat()
 const { profile } = useProfile()
 const { extractPlan, resolveDrafts } = usePlans()
-const { info } = useToast()
+const { contacts } = useContacts()
+const { info, success, error: showError } = useToast()
+
+// The active contact (contact-scoped chats) — used to prefill the mailto. The
+// chat context intentionally omits the email, so resolve it from the store.
+const chatContact = computed<any>(() =>
+  contactId.value ? contacts.value.find((c) => c.id === contactId.value) ?? null : null,
+)
+const contactEmail = computed<string>(() => (chatContact.value?.email ?? '').trim())
+
+// Strip the light markdown we render (**bold**, `code`, "- " bullets) back to
+// clean plain text so a copied/emailed reply doesn't carry asterisks/backticks.
+function plain(content: string): string {
+  return content
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/^\s*[-*]\s+/gm, '• ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+async function copyPlain(content: string) {
+  try {
+    await navigator.clipboard.writeText(plain(content))
+    success('Copied — paste it anywhere.')
+  } catch {
+    showError("Couldn't copy — select the text manually.")
+  }
+}
+
+// Open the user's mail client with the contact addressed and the reply as the
+// body. Subject stays short and editable; the contact's name/company give it a
+// sensible default the user can tweak before sending.
+function emailHref(content: string): string {
+  const c = chatContact.value
+  const subject = c ? `Following up${c.company ? ` — ${c.company}` : ''}` : 'Following up'
+  const params = `subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plain(content))}`
+  return `mailto:${contactEmail.value}?${params}`
+}
 
 // Best-effort contact name for nicer plan titles (only meaningful in contact scope).
 const contactName = computed<string>(
@@ -192,16 +230,24 @@ onMounted(scrollToBottom)
           <div v-if="m.role === 'assistant'" class="chat-ai-badge"><CdEarnestMark :size="13" /></div>
           <div class="chat-bubble-wrap">
             <div class="chat-bubble" v-html="render(m.content)" />
-            <button
-              v-if="m.role === 'assistant' && looksActionable(m.content)"
-              class="chat-planbtn"
-              type="button"
-              :disabled="extractingIdx !== null"
-              @click="makePlan(m.content, i)"
-            >
-              <CdIcon :icon="extractingIdx === i ? 'lucide:loader-2' : 'lucide:flag'" :size="12" :class="{ 'chat-spin': extractingIdx === i }" />
-              {{ extractingIdx === i ? 'Building plan…' : 'Make a plan' }}
-            </button>
+            <div v-if="m.role === 'assistant'" class="chat-msg-acts">
+              <button class="chat-msgbtn" type="button" @click="copyPlain(m.content)">
+                <CdIcon emoji="📋" icon="lucide:copy" :size="12" /> Copy
+              </button>
+              <a v-if="contactEmail" class="chat-msgbtn" :href="emailHref(m.content)">
+                <CdIcon emoji="📧" icon="lucide:mail" :size="12" /> Email
+              </a>
+              <button
+                v-if="looksActionable(m.content)"
+                class="chat-msgbtn"
+                type="button"
+                :disabled="extractingIdx !== null"
+                @click="makePlan(m.content, i)"
+              >
+                <CdIcon :icon="extractingIdx === i ? 'lucide:loader-2' : 'lucide:flag'" :size="12" :class="{ 'chat-spin': extractingIdx === i }" />
+                {{ extractingIdx === i ? 'Building plan…' : 'Make a plan' }}
+              </button>
+            </div>
           </div>
         </div>
         <div v-if="loading" class="chat-msg is-ai">
@@ -347,17 +393,18 @@ onMounted(scrollToBottom)
   max-width: 100%; padding: 10px 14px; border-radius: 16px; font-size: 0.92rem; line-height: 1.5;
   overflow-wrap: anywhere;
 }
-/* "Make a plan" — subtle action tucked under an actionable assistant reply */
-.chat-planbtn {
-  align-self: flex-start; display: inline-flex; align-items: center; gap: 5px;
+/* Copy / Email / Make-a-plan — subtle actions tucked under an assistant reply */
+.chat-msg-acts { display: flex; flex-wrap: wrap; gap: 6px; align-self: flex-start; }
+.chat-msgbtn {
+  display: inline-flex; align-items: center; gap: 5px; text-decoration: none;
   padding: 5px 10px; border-radius: 999px; cursor: pointer;
   background: color-mix(in srgb, var(--cd-accent) 10%, transparent);
   border: 1px solid color-mix(in srgb, var(--cd-accent) 28%, transparent);
   color: var(--cd-accent); font-family: inherit; font-size: 0.72rem; font-weight: 700;
   transition: background 0.14s;
 }
-.chat-planbtn:hover:not(:disabled) { background: color-mix(in srgb, var(--cd-accent) 18%, transparent); }
-.chat-planbtn:disabled { opacity: 0.55; cursor: default; }
+.chat-msgbtn:hover:not(:disabled) { background: color-mix(in srgb, var(--cd-accent) 18%, transparent); }
+.chat-msgbtn:disabled { opacity: 0.55; cursor: default; }
 .chat-spin { animation: chat-spin 0.8s linear infinite; }
 @keyframes chat-spin { to { transform: rotate(360deg); } }
 .is-ai .chat-bubble {

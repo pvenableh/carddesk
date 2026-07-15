@@ -7,7 +7,7 @@ import { cleanPhones } from '~/types/contact'
 import type { PipelineStage, OpportunityGoal } from '~/types/directus'
 import confettiLib from 'canvas-confetti'
 
-const { contacts, updateContact, uploadContactImage, removeContactImage, hibernate, logActivity, markResponded, updateActivity, deleteActivity, lastActivity, daysSince, followUpStatus } = useContacts()
+const { contacts, updateContact, uploadContactImage, removeContactImage, hibernate, logActivity, markResponded, updateActivity, deleteActivity, lastActivity, daysSince, followUpStatus, fetchContacts } = useContacts()
 const { state: xp, earn, deduct, completeMission } = useXp()
 const { success, error: showError } = useToast()
 const { selectedId, editing, nav } = useNavigation()
@@ -319,6 +319,10 @@ async function doLogAct(isResp: boolean) {
     completeMission('followup')
     if (c.rating === 'hot') completeMission('hot')
   }
+  // Reconcile with the server once the optimistic row is in place: picks up the
+  // auto-warm stage move, the true date_created ordering, and anything else the
+  // write derived. Silent + fire-and-forget so the XP/confetti stay instant.
+  fetchContacts({ silent: true }).catch(() => {})
 }
 
 async function doMarkResponded(actId: string) {
@@ -530,7 +534,18 @@ async function removeSession(s: any) {
 }
 
 // ── Earnest AI chat (continuable, contextual) ──
-const { open: openChat, resume: resumeChat } = useChat()
+const { open: openChat, resume: resumeChat, isOpen: chatOpen } = useChat()
+
+// When an Earnest conversation closes, reconcile this contact: the just-ended
+// chat becomes a new AI-history entry, and it may have spun up a plan/tasks that
+// change the "active plan" badge — so refresh history, plans, and contacts.
+watch(chatOpen, (isOpen, wasOpen) => {
+  if (wasOpen && !isOpen && (selContact.value as any)?.id) {
+    loadHistory()
+    loadContactPlans()
+    fetchContacts({ silent: true }).catch(() => {})
+  }
+})
 
 function contactContext() {
   const c = selContact.value as any
