@@ -110,6 +110,17 @@ export function useContacts() {
     analytics.contactResponded()
   }
 
+  // Undo an accidental "mark as responded" — clears the response flag/note.
+  async function unmarkResponded(contactId: string, activityId: string) {
+    const updated = await $fetch<CdActivity>(`/api/activities/${activityId}`, {
+      method: 'PATCH', body: { is_response: false, response_note: null },
+    })
+    contacts.value = contacts.value.map((c) => {
+      if (c.id !== contactId) return c
+      return { ...c, activities: (c.activities as CdActivity[]).map((a) => a.id === activityId ? { ...a, ...updated } : a) }
+    })
+  }
+
   async function updateActivity(contactId: string, activityId: string, payload: Partial<CdActivity>) {
     const updated = await $fetch<CdActivity>(`/api/activities/${activityId}`, {
       method: 'PATCH', body: payload,
@@ -153,6 +164,6 @@ export function useContacts() {
 
   return {
     contacts, loading, error, fetchContacts, createContact, updateContact, uploadContactImage, removeContactImage,
-    hibernate, wake, logActivity, markResponded, updateActivity, deleteActivity, lastActivity, daysSince, followUpStatus,
+    hibernate, wake, logActivity, markResponded, unmarkResponded, updateActivity, deleteActivity, lastActivity, daysSince, followUpStatus,
   }
 }

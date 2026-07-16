@@ -294,6 +294,7 @@ async function runExport() {
         <div style="font-size: 18px; font-weight: 800; margin-bottom: 12px">No contacts yet</div>
         <CdButton tier="primary" @click="nav('add')"><CdIcon emoji="📷" icon="lucide:camera" :size="14" /> Scan First Card</CdButton>
       </div>
+      <TransitionGroup tag="div" class="cd-card-list" name="cd-card">
       <div
         v-for="c in filteredCs"
         :key="c.id"
@@ -380,6 +381,7 @@ async function runExport() {
           </div>
         </Transition>
       </div>
+      </TransitionGroup>
       </div>
 
       <CdBrandFooter />
@@ -410,6 +412,7 @@ async function runExport() {
           <div v-if="!lane.contacts.length" style="font-size: 11px; color: var(--cd-dim); text-align: center; padding: 20px 0">
             {{ dragOverStage === lane.key ? 'Drop here' : 'No contacts' }}
           </div>
+          <TransitionGroup tag="div" class="cd-card-list" name="cd-card">
           <div
             v-for="c in lane.contacts"
             :key="c.id"
@@ -433,6 +436,7 @@ async function runExport() {
               </span>
             </div>
           </div>
+          </TransitionGroup>
         </div>
       </div>
 

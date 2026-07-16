@@ -216,6 +216,7 @@ async function remove(c: NetworkConnection) { await respond(c.id, 'remove') }
     <!-- Incoming requests -->
     <template v-if="incoming.length">
       <div class="cd-eyebrow" style="color: var(--cd-muted); margin: 4px 2px 8px">Requests · {{ incoming.length }}</div>
+      <TransitionGroup tag="div" class="cd-card-list" name="cd-card">
       <div v-for="c in incoming" :key="c.id" class="cd-crd">
         <div class="cd-cav"><CdIcon emoji="👤" icon="lucide:user" :size="19" /></div>
         <div style="flex: 1; min-width: 0">
@@ -227,6 +228,7 @@ async function remove(c: NetworkConnection) { await respond(c.id, 'remove') }
           <button class="cd-abtn" style="width: auto; font-size: 11px; padding: 6px 10px; background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr)" @click="decline(c)">×</button>
         </div>
       </div>
+      </TransitionGroup>
     </template>
 
     <!-- The orbit — connection planets + contact dots — and the leaderboard -->
@@ -250,7 +252,8 @@ async function remove(c: NetworkConnection) { await respond(c.id, 'remove') }
     <!-- Outgoing pending -->
     <template v-if="outgoing.length">
       <div class="cd-eyebrow" style="color: var(--cd-muted); margin: 14px 2px 8px">Pending · {{ outgoing.length }}</div>
-      <div v-for="c in outgoing" :key="c.id" class="cd-crd" style="opacity: 0.7">
+      <TransitionGroup tag="div" class="cd-card-list" name="cd-card">
+      <div v-for="c in outgoing" :key="c.id" class="cd-crd cd-crd-pending">
         <div class="cd-cav"><CdIcon emoji="👤" icon="lucide:user" :size="19" /></div>
         <div style="flex: 1; min-width: 0">
           <div class="cd-cnm">{{ c.user.name }}</div>
@@ -258,6 +261,7 @@ async function remove(c: NetworkConnection) { await respond(c.id, 'remove') }
         </div>
         <button class="cd-abtn" style="width: auto; font-size: 11px; padding: 6px 11px; background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr); flex-shrink: 0" @click="remove(c)">Cancel</button>
       </div>
+      </TransitionGroup>
     </template>
 
     <!-- Empty -->
@@ -361,6 +365,11 @@ async function remove(c: NetworkConnection) { await respond(c.id, 'remove') }
 </template>
 
 <style scoped>
+/* Pending outgoing requests read as dimmed; opacity lives on a class (not an
+   inline style) so the list enter/leave transforms still animate the row. */
+.cd-crd-pending {
+  opacity: 0.7;
+}
 .orbit-hint {
   display: flex;
   align-items: center;

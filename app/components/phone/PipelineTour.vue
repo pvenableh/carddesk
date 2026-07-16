@@ -38,7 +38,7 @@ function next() {
           <span
             v-for="(s, i) in STEPS"
             :key="i"
-            :style="`width: ${i === step ? 18 : 6}px; height: 6px; border-radius: 9999px; background: ${i === step ? 'var(--cd-accent)' : 'var(--cd-bdr)'}; transition: all 0.2s`"
+            :style="`width: ${i === step ? 18 : 6}px; height: 6px; border-radius: 9999px; background: ${i === step ? 'var(--cd-accent)' : 'var(--cd-bdr)'}; transition: width 0.28s var(--cd-ease-ios), background 0.2s var(--cd-ease)`"
           />
         </div>
 

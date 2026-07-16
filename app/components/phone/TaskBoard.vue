@@ -149,6 +149,7 @@ watch(() => dirty.value, load)
     <template v-else-if="view === 'list'">
       <div v-for="g in groups" :key="g.key" class="tb-group">
         <div class="tb-group-hd" :class="g.key">{{ g.label }} <span class="tb-group-n">{{ g.items.length }}</span></div>
+        <TransitionGroup tag="div" class="cd-card-list" name="cd-card">
         <div v-for="t in g.items" :key="t.id" class="tb-task">
           <button class="tb-check" type="button" :disabled="busy[t.id]" aria-label="Mark done" @click="complete(t)" />
           <button class="tb-main" type="button" @click="openContact(t)">
@@ -160,6 +161,7 @@ watch(() => dirty.value, load)
             </div>
           </button>
         </div>
+        </TransitionGroup>
       </div>
     </template>
 
@@ -235,7 +237,7 @@ watch(() => dirty.value, load)
 .tb-group .tb-task:first-of-type, .tb-cal-day .tb-task:first-of-type { border-top: 0; }
 .tb-check {
   flex-shrink: 0; width: 19px; height: 19px; border-radius: 6px; cursor: pointer;
-  border: 1.5px solid var(--cd-bdr); background: var(--cd-bg); transition: all 0.12s;
+  border: 1.5px solid var(--cd-bdr); background: var(--cd-bg); transition: background 0.15s var(--spring-bounce), border-color 0.15s var(--cd-ease), transform 0.15s var(--spring-bounce);
 }
 .tb-check:hover { border-color: var(--cd-accent); background: color-mix(in srgb, var(--cd-accent) 16%, transparent); }
 .tb-check:disabled { opacity: 0.5; }
@@ -258,7 +260,9 @@ watch(() => dirty.value, load)
   position: relative; aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
   border: 1px solid transparent; border-radius: 8px; background: none; color: var(--cd-muted);
   font-family: inherit; font-size: 12px; cursor: pointer;
+  transition: background 0.15s var(--cd-ease), color 0.15s var(--cd-ease), border-color 0.15s var(--cd-ease), transform 0.15s var(--cd-ease);
 }
+.tb-cell:not(.empty):active { transform: scale(0.92); }
 .tb-cell.empty { cursor: default; }
 .tb-cell.has { color: var(--cd-text); font-weight: 700; }
 .tb-cell.today { border-color: color-mix(in srgb, var(--cd-accent) 40%, transparent); }

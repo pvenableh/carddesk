@@ -82,6 +82,7 @@ function text(e: FeedEvent): string {
       <div style="font-size: 12px; color: var(--cd-dim); max-width: 240px">Scan a card or connect with people — your network's wins show up here.</div>
     </div>
 
+    <TransitionGroup tag="div" class="cd-card-list" name="cd-card">
     <div v-for="e in events" :key="e.id" class="cd-feed-item">
       <div class="cd-feed-ic"><CdIcon :emoji="(ICON[e.type] || ICON.card_scanned).emoji" :icon="(ICON[e.type] || ICON.card_scanned).icon" :size="16" /></div>
       <div style="flex: 1; min-width: 0">
@@ -97,13 +98,14 @@ function text(e: FeedEvent): string {
           >
             <button
               class="cd-react"
-              :class="{ on: e.myReactions.includes(emoji) }"
+              :class="{ on: e.myReactions.includes(emoji), reacted: !!e.reactions[emoji] }"
               @click="react(e.id, emoji)"
-            >{{ emoji }}<span v-if="e.reactions[emoji]" class="cd-react-n">{{ e.reactions[emoji] }}</span></button>
+            ><span class="cd-react-e">{{ emoji }}</span><span v-if="e.reactions[emoji]" class="cd-react-n">{{ e.reactions[emoji] }}</span></button>
           </CdTooltip>
         </div>
       </div>
     </div>
+    </TransitionGroup>
     </div>
 
     <CdBrandFooter />
@@ -144,10 +146,23 @@ function text(e: FeedEvent): string {
   border: 1px solid var(--cd-bdr);
   cursor: pointer;
   line-height: 1;
+  transition: background 0.18s var(--cd-ease), border-color 0.18s var(--cd-ease), transform 0.18s var(--spring-bounce);
+}
+.cd-react:active {
+  transform: scale(0.9);
 }
 .cd-react.on {
   background: color-mix(in srgb, var(--cd-accent) 12%, transparent);
   border-color: var(--cd-accent);
+}
+/* Emoji reads neutral (desaturated) until someone — you or anyone else — has
+   reacted; then it lights up in full colour. */
+.cd-react-e {
+  filter: grayscale(1) opacity(0.45);
+  transition: filter 0.18s var(--cd-ease);
+}
+.cd-react.reacted .cd-react-e {
+  filter: none;
 }
 .cd-react-n {
   font-size: 10px;

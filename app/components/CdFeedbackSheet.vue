@@ -146,7 +146,7 @@ async function submit() {
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: color 0.15s var(--cd-ease), background 0.15s var(--cd-ease), border-color 0.15s var(--cd-ease);
 }
 .cd-fb-kind:hover { color: var(--cd-text); }
 .cd-fb-kind.active {

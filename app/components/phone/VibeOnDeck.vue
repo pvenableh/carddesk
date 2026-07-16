@@ -104,7 +104,7 @@ watch(() => dirty.value, load)
 .od-task:first-child { border-top: 0; }
 .od-check {
   flex-shrink: 0; width: 19px; height: 19px; border-radius: 6px; cursor: pointer;
-  border: 1.5px solid var(--cd-bdr); background: var(--cd-bg); transition: all 0.12s;
+  border: 1.5px solid var(--cd-bdr); background: var(--cd-bg); transition: background 0.15s var(--spring-bounce), border-color 0.15s var(--cd-ease), transform 0.15s var(--spring-bounce);
 }
 .od-check:hover { border-color: var(--cd-accent); background: color-mix(in srgb, var(--cd-accent) 16%, transparent); }
 .od-check:disabled { opacity: 0.5; }
