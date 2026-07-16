@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { RATINGS, RATING_ORDER, getRating, getAct, cEmoji } from '~/composables/useConstants'
+import { RATINGS, RATING_ORDER, getRating, getAct, cEmoji, industryTagStyle } from '~/composables/useConstants'
 import { PIPELINE_STAGES, GOAL_OPTIONS } from '~/composables/usePipeline'
 import ConnectionsView from './ConnectionsView.vue'
 
-const { contacts, updateContact, followUpStatus, lastActivity, daysSince, loading: contactsLoading, error: contactsError, fetchContacts } = useContacts()
+const { contacts, updateContact, togglePin, followUpStatus, lastActivity, lastMeaningfulActivity, daysSince, loading: contactsLoading, error: contactsError, fetchContacts } = useContacts()
 const { nav, goDetail } = useNavigation()
 const { getContactsByStage, getStageInfo, setGoalTag, moveToStage } = usePipeline()
 const { listPlans, dirty: plansDirty } = usePlans()
@@ -79,8 +79,14 @@ async function setListGoal(goal: 'client' | 'partner' | null) {
 
 const cSearch = ref('')
 const cFilter = ref<RatingFilter>('')
+const iFilter = ref('')
 const cSort = ref('recent')
 const viewMode = ref<'rating' | 'pipeline'>('rating')
+
+// Inline pin toggle — pins a contact to the top of the list without leaving it.
+async function togglePinned(c: any) {
+  await togglePin(c.id)
+}
 
 // First-run pipeline coachmark — auto-starts the first time the lanes are shown.
 const { maybeAutoStart: maybeStartTour, startTour } = usePipelineTour()
@@ -116,18 +122,43 @@ const ratingTabItems = computed(() => [
   })),
 ])
 
+// Industry filter — only offer industries that actually appear among the
+// active contacts, so the chip row stays short and relevant. Hidden entirely
+// when there's 0–1 distinct industry to filter by.
+const industryTabItems = computed(() => {
+  const counts = new Map<string, number>()
+  for (const c of contacts.value) {
+    if (c.hibernated) continue
+    const ind = (c as any).industry
+    if (ind) counts.set(ind, (counts.get(ind) ?? 0) + 1)
+  }
+  const present = [...counts.entries()].sort((a, b) => b[1] - a[1])
+  if (present.length < 2) return []
+  return [
+    { key: '', label: 'All' },
+    ...present.map(([ind, count]) => ({ key: ind, label: ind, dotColor: industryTagStyle(ind).color, count })),
+  ]
+})
+// Reset the industry filter if the selected industry drops out of the list.
+watch(industryTabItems, (items) => {
+  if (iFilter.value && !items.some((i) => i.key === iFilter.value)) iFilter.value = ''
+})
+
 const filteredCs = computed(() => {
   const q = cSearch.value.toLowerCase()
   let list = contacts.value.filter(
     (c) =>
       !c.hibernated &&
       (c.name?.toLowerCase().includes(q) || c.company?.toLowerCase().includes(q)) &&
-      (!cFilter.value || c.rating === cFilter.value)
+      (!cFilter.value || c.rating === cFilter.value) &&
+      (!iFilter.value || (c as any).industry === iFilter.value)
   )
   if (cSort.value === 'hot')
     list = [...list].sort((a, b) => (RATING_ORDER[a.rating ?? ''] ?? 4) - (RATING_ORDER[b.rating ?? ''] ?? 4))
   if (cSort.value === 'name')
     list = [...list].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
+  // Pinned contacts always float to the top, keeping their relative order.
+  list = [...list].sort((a, b) => Number((b as any).pinned ?? false) - Number((a as any).pinned ?? false))
   return list
 })
 
@@ -266,6 +297,12 @@ async function runExport() {
         <div v-if="viewMode === 'rating'" class="cd-hscroll" style="padding-bottom: 2px">
           <CdTabs v-model="cFilter" :items="ratingTabItems" size="sm" />
         </div>
+
+        <!-- Industry filter (only in rating mode, and only when there's more than
+             one industry to choose from) -->
+        <div v-if="viewMode === 'rating' && industryTabItems.length" class="cd-hscroll" style="padding-bottom: 2px; margin-top: 6px">
+          <CdTabs v-model="iFilter" :items="industryTabItems" size="sm" />
+        </div>
       </template>
     </div>
 
@@ -334,6 +371,19 @@ async function runExport() {
             <span v-if="c.linked_user" class="cd-mpill" style="color: var(--cd-purple, #b87dff); border-color: rgba(184,125,255,0.3); background: rgba(184,125,255,0.1)"><CdIcon emoji="🪐" icon="lucide:orbit" :size="9" /> joined</span>
             <span v-if="planContactIds.has(c.id)" class="cd-mpill" style="color: var(--cd-accent); border-color: rgba(0,255,135,0.3); background: rgba(0,255,135,0.09)" title="Has an active plan"><CdIcon emoji="📋" icon="lucide:list-checks" :size="9" /> plan</span>
           </div>
+          <!-- Pin toggle: floats this contact to the top of the list. -->
+          <button
+            v-if="!selectMode"
+            type="button"
+            class="cd-pin-tog"
+            :class="{ on: (c as any).pinned }"
+            :aria-label="(c as any).pinned ? 'Unpin contact' : 'Pin contact to top'"
+            :aria-pressed="(c as any).pinned || false"
+            :title="(c as any).pinned ? 'Pinned — tap to unpin' : 'Pin to top'"
+            @click.stop="togglePinned(c)"
+          >
+            <CdIcon emoji="📌" icon="lucide:pin" :size="15" />
+          </button>
           <!-- Peek toggle: reveals the last touchpoint inline without leaving the list. -->
           <button
             v-if="!selectMode"
@@ -353,20 +403,20 @@ async function runExport() {
             <!-- Mirrors the detail-screen timeline entry: colored type dot on the
                  left (with a fading line hinting at older history) + an indented
                  touchpoint card on the right. -->
-            <div v-if="lastActivity(c)" class="cd-peek-tl">
+            <div v-if="lastMeaningfulActivity(c)" class="cd-peek-tl">
               <div v-if="(c.activities?.length || 0) > 1" class="cd-peek-line"></div>
-              <div class="cd-tl-dot" :class="lastActivity(c)!.type">
-                <CdIcon :emoji="getAct(lastActivity(c)!.type).icon" :icon="getAct(lastActivity(c)!.type).lucide" :size="17" />
+              <div class="cd-tl-dot" :class="lastMeaningfulActivity(c)!.type">
+                <CdIcon :emoji="getAct(lastMeaningfulActivity(c)!.type).icon" :icon="getAct(lastMeaningfulActivity(c)!.type).lucide" :size="17" />
               </div>
               <div class="cd-peek-card">
                 <div class="cd-peek-card-top">
-                  <div class="cd-peek-card-label">{{ lastActivity(c)!.label || getAct(lastActivity(c)!.type).label }}</div>
-                  <div class="cd-peek-when" :title="fmtFull(lastActivity(c)!.date)">
-                    <span class="cd-peek-rel">{{ fmtRelative(lastActivity(c)!.date) }}</span>
-                    <span class="cd-peek-abs">{{ fmtFull(lastActivity(c)!.date) }}</span>
+                  <div class="cd-peek-card-label">{{ lastMeaningfulActivity(c)!.label || getAct(lastMeaningfulActivity(c)!.type).label }}</div>
+                  <div class="cd-peek-when" :title="fmtFull(lastMeaningfulActivity(c)!.date)">
+                    <span class="cd-peek-rel">{{ fmtRelative(lastMeaningfulActivity(c)!.date) }}</span>
+                    <span class="cd-peek-abs">{{ fmtFull(lastMeaningfulActivity(c)!.date) }}</span>
                   </div>
                 </div>
-                <div v-if="lastActivity(c)!.note" class="cd-peek-card-note">{{ lastActivity(c)!.note }}</div>
+                <div v-if="lastMeaningfulActivity(c)!.note" class="cd-peek-card-note">{{ lastMeaningfulActivity(c)!.note }}</div>
               </div>
             </div>
             <div v-else class="cd-peek-tl">

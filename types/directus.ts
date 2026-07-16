@@ -204,6 +204,8 @@ export interface CdContact {
   rating: 'hot' | 'warm' | 'nurture' | 'cold' | null
   hibernated: boolean
   hibernated_at?: string
+  /** Pinned to the top of My Network for quick access. */
+  pinned?: boolean
   is_client: boolean
   client_at?: string
   notes?: string

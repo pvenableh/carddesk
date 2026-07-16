@@ -1296,6 +1296,36 @@ html[data-theme="glass"] .cd-net-card {
   transform: rotate(180deg);
   color: var(--cd-accent);
 }
+/* Pin toggle — sits just before the peek chevron. Muted/outline when unpinned,
+   accent-filled when pinned so a pinned card reads at a glance. */
+.cd-pin-tog {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin: -4px 0 -4px 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--cd-dim);
+  cursor: pointer;
+  border-radius: 8px;
+  opacity: 0.5;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+.cd-pin-tog:hover {
+  color: var(--cd-text, var(--cd-ice));
+  opacity: 1;
+}
+.cd-pin-tog.on {
+  color: var(--cd-accent);
+  opacity: 1;
+}
+.cd-pin-tog.on svg {
+  fill: color-mix(in srgb, currentColor 22%, transparent);
+}
 /* The expanded touchpoint section inside the grown card — set off by a top
    divider. Holds a single timeline entry styled like the detail screen. */
 .cd-peek {

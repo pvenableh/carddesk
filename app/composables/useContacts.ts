@@ -80,6 +80,12 @@ export function useContacts() {
     return updateContact(id, { hibernated: false } as any)
   }
 
+  /** Pin / unpin a contact to the top of My Network. Mirrors hibernate/wake. */
+  async function togglePin(id: string) {
+    const c = contacts.value.find((x) => x.id === id)
+    return updateContact(id, { pinned: !(c as any)?.pinned } as any)
+  }
+
   async function logActivity(payload: Partial<CdActivity> & { contact: string }): Promise<CdActivity> {
     const activity = await $fetch<CdActivity>('/api/activities', { method: 'POST', body: payload })
     // Stage changes are tracked separately as `pipeline_stage_move` — don't double-count.
@@ -146,6 +152,21 @@ export function useContacts() {
     return [...acts].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
   }
 
+  // Activity types that are book-keeping noise rather than a real touchpoint —
+  // "Moved to Warming" (stage_change) reads as the last action but tells you
+  // nothing about the relationship. The list peek prefers the newest *actionable*
+  // touchpoint (outreach, response, an added/scanned event) over these.
+  const NON_ACTIONABLE_TYPES = ['stage_change'] as const
+
+  /** Newest meaningful touchpoint for the list peek — skips stage-change noise,
+   *  falling back to the raw latest only if nothing else exists. */
+  function lastMeaningfulActivity(contact: CdContact): CdActivity | null {
+    const acts = (contact.activities as CdActivity[]) ?? []
+    if (!acts.length) return null
+    const sorted = [...acts].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    return sorted.find((a) => !(NON_ACTIONABLE_TYPES as readonly string[]).includes(a.type)) ?? sorted[0]
+  }
+
   function daysSince(contact: CdContact): number | null {
     const la = lastActivity(contact)
     if (!la) return null
@@ -164,6 +185,6 @@ export function useContacts() {
 
   return {
     contacts, loading, error, fetchContacts, createContact, updateContact, uploadContactImage, removeContactImage,
-    hibernate, wake, logActivity, markResponded, unmarkResponded, updateActivity, deleteActivity, lastActivity, daysSince, followUpStatus,
+    hibernate, wake, togglePin, logActivity, markResponded, unmarkResponded, updateActivity, deleteActivity, lastActivity, lastMeaningfulActivity, daysSince, followUpStatus,
   }
 }
