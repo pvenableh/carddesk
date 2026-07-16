@@ -1961,6 +1961,23 @@ html[data-theme="glass"] .cd-net-card {
   opacity: 0;
 }
 
+/* Network content swap (Orbit / List / Pipeline) — quick crossfade with a
+ * subtle lift, paired with <Transition mode="out-in"> so heights never overlap. */
+.cd-view-enter-active {
+  transition: opacity 0.24s ease, transform 0.24s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.cd-view-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.cd-view-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.cd-view-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
 /* Crossfade for tabbed panes that stay mounted (v-show) — the leaving pane
  * goes absolute so the incoming one sets the height and nothing jumps.
  * Used by the detail-screen coach tabs (Next / Plan / History). */

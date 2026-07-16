@@ -134,10 +134,9 @@ const industryTabItems = computed(() => {
   }
   const present = [...counts.entries()].sort((a, b) => b[1] - a[1])
   if (present.length < 2) return []
-  return [
-    { key: '', label: 'All' },
-    ...present.map(([ind, count]) => ({ key: ind, label: ind, dotColor: industryTagStyle(ind).color, count })),
-  ]
+  // No "All" chip — each tag toggles on/off, so cleared (iFilter === '') just
+  // means no chip is highlighted and everything shows.
+  return present.map(([ind, count]) => ({ key: ind, label: ind, dotColor: industryTagStyle(ind).color, count }))
 })
 // Reset the industry filter if the selected industry drops out of the list.
 watch(industryTabItems, (items) => {
@@ -266,32 +265,34 @@ async function runExport() {
         </div>
       </div>
 
-      <!-- Sub-tabs: My Deck (cards you've collected — the rolodex) | Orbit
-           (user↔user connections). "Deck" vs "Contacts" keeps the two near-
-           synonyms from blurring: deck = people you've met, orbit = people
-           playing CardDesk with you. -->
-      <CdTabs
-        v-model="netTab"
-        :items="[
-          { key: 'contacts', label: 'My Deck', emoji: '🃏', icon: 'lucide:credit-card' },
-          { key: 'connections', label: 'Orbit', emoji: '🪐', icon: 'lucide:orbit', count: incoming.length || null },
-        ]"
-        style="margin-bottom: 10px"
-      />
-
-      <template v-if="netTab === 'contacts'">
-        <input v-model="cSearch" class="cd-inp" placeholder="Search..." style="margin-bottom: 10px" />
-
-        <!-- View mode toggle: List (browse, filter by temperature) | Pipeline (board by stage).
-             key stays 'rating' to avoid churning the viewMode checks; only the label changed. -->
+      <!-- Tabs row: sub-tab (My Deck | Orbit) on the left, and the deck's
+           view-mode toggle (List | Pipeline) pinned to the right on the SAME
+           row. The view toggle only makes sense for the deck, so it's hidden
+           on Orbit.
+             My Deck = cards you've collected (rolodex); Orbit = user↔user
+             connections. viewMode key stays 'rating' to avoid churning the
+             existing checks; only the label reads "List". -->
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px">
         <CdTabs
+          v-model="netTab"
+          :items="[
+            { key: 'contacts', label: 'My Deck', emoji: '🃏', icon: 'lucide:credit-card' },
+            { key: 'connections', label: 'Orbit', emoji: '🪐', icon: 'lucide:orbit', count: incoming.length || null },
+          ]"
+        />
+        <CdTabs
+          v-if="netTab === 'contacts'"
           v-model="viewMode"
+          size="sm"
           :items="[
             { key: 'rating', label: 'List', emoji: '📋', icon: 'lucide:list' },
             { key: 'pipeline', label: 'Pipeline', emoji: '📊', icon: 'lucide:git-branch' },
           ]"
-          style="margin-bottom: 10px"
         />
+      </div>
+
+      <template v-if="netTab === 'contacts'">
+        <input v-model="cSearch" class="cd-inp" placeholder="Search..." style="margin-bottom: 10px" />
 
         <!-- Rating filter (only in rating mode) -->
         <div v-if="viewMode === 'rating'" class="cd-hscroll" style="padding-bottom: 2px">
@@ -301,16 +302,20 @@ async function runExport() {
         <!-- Industry filter (only in rating mode, and only when there's more than
              one industry to choose from) -->
         <div v-if="viewMode === 'rating' && industryTabItems.length" class="cd-hscroll" style="padding-bottom: 2px; margin-top: 6px">
-          <CdTabs v-model="iFilter" :items="industryTabItems" size="sm" />
+          <CdTabs v-model="iFilter" :items="industryTabItems" size="sm" toggle />
         </div>
       </template>
     </div>
 
-    <!-- Connections sub-tab -->
-    <ConnectionsView v-if="netTab === 'connections'" />
+    <!-- Main content switches between Orbit / List / Pipeline — crossfade so the
+         swap doesn't hard-cut. out-in: the old view fades out before the new one
+         fades in (heights differ, so a simultaneous fade would overlap). -->
+    <Transition name="cd-view" mode="out-in">
+      <!-- Connections sub-tab -->
+      <ConnectionsView v-if="netTab === 'connections'" key="orbit" />
 
-    <!-- Rating view -->
-    <div v-else-if="viewMode === 'rating'" class="cd-scrl" style="padding: 4px var(--cd-gutter) 8px">
+      <!-- Rating view -->
+      <div v-else-if="viewMode === 'rating'" key="list" class="cd-scrl" style="padding: 4px var(--cd-gutter) 8px">
       <div class="cd-foot-fill">
       <!-- A failed load must never read as "you have no contacts" — show the
            truth and a way to recover instead of an empty list. -->
@@ -439,8 +444,8 @@ async function runExport() {
       <CdBrandFooter />
     </div>
 
-    <!-- Pipeline view — kanban board; columns fill the container, drag a card to change its stage -->
-    <div v-else class="cd-scrl" style="padding: 4px var(--cd-gutter) 8px">
+      <!-- Pipeline view — kanban board; columns fill the container, drag a card to change its stage -->
+      <div v-else key="pipeline" class="cd-scrl" style="padding: 4px var(--cd-gutter) 8px">
       <div class="cd-foot-fill">
       <button
         style="display: inline-flex; align-items: center; gap: 5px; margin: 0 14px 8px; padding: 4px 0; background: none; border: none; color: var(--cd-dim); font-size: 11px; font-weight: 600; cursor: pointer"
@@ -513,7 +518,8 @@ async function runExport() {
       </div>
 
       <CdBrandFooter />
-    </div>
+      </div>
+    </Transition>
 
     <!-- Batch export sheet -->
     <div v-if="showExport" class="cd-exp-ov" @click.self="showExport = false">

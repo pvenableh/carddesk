@@ -26,6 +26,11 @@ const props = defineProps<{
   modelValue: K;
   items: CdTabItem<K>[];
   size?: 'sm' | 'md';
+  // When true, tapping the already-active tab clears the selection (emits
+  // `clearValue`, default ''). Turns the control into toggle-able filter chips
+  // where "nothing selected" is a valid state.
+  toggle?: boolean;
+  clearValue?: K;
 }>();
 
 const emit = defineEmits<{
@@ -33,7 +38,11 @@ const emit = defineEmits<{
 }>();
 
 function select(key: K) {
-  if (key !== props.modelValue) emit('update:modelValue', key);
+  if (key !== props.modelValue) {
+    emit('update:modelValue', key);
+  } else if (props.toggle) {
+    emit('update:modelValue', (props.clearValue ?? '') as K);
+  }
 }
 </script>
 
