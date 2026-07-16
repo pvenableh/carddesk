@@ -1331,6 +1331,35 @@ html[data-theme="glass"] .cd-net-card {
   fill: #ff3b30;
   stroke: #ff3b30;
 }
+/* Right-edge card toolbar — pin + expand stacked vertically, read as a soft
+   toolbar: a subtle left border separates it from the card body and a divider
+   sits between the two buttons. Overrides the buttons' row-layout margins. */
+.cd-card-tools {
+  flex-shrink: 0;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--cd-bdr);
+  border-radius: 9px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--cd-bdr) 14%, transparent);
+}
+.cd-card-tools .cd-pin-tog,
+.cd-card-tools .cd-peek-tog {
+  margin: 0;
+  width: 38px;
+  height: 30px;
+  border-radius: 0;
+}
+/* Divider between the two stacked buttons. Fixed neutral color so the pinned
+   state's red never bleeds into the border. */
+.cd-card-tools .cd-pin-tog {
+  border-bottom: 1px solid var(--cd-bdr);
+}
+.cd-card-tools .cd-pin-tog:hover,
+.cd-card-tools .cd-peek-tog:hover {
+  background: color-mix(in srgb, var(--cd-bdr) 22%, transparent);
+}
 /* The expanded touchpoint section inside the grown card — set off by a top
    divider. Holds a single timeline entry styled like the detail screen. */
 .cd-peek {
