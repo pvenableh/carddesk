@@ -9,10 +9,13 @@ defineProps<{
   icon?: string
   emoji?: string
   size?: string | number
+  // Force a render mode. Defaults to the module setting ("css"/mask). Pass
+  // "svg" when the glyph needs `fill` styling (e.g. a solid, filled pin).
+  mode?: 'css' | 'svg'
 }>()
 </script>
 
 <template>
-  <Icon v-if="icon" :name="icon" :size="size" />
+  <Icon v-if="icon" :name="icon" :size="size" :mode="mode" />
   <span v-else>{{ emoji }}</span>
 </template>

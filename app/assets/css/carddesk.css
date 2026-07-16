@@ -1319,12 +1319,17 @@ html[data-theme="glass"] .cd-net-card {
   color: var(--cd-text, var(--cd-ice));
   opacity: 1;
 }
-.cd-pin-tog.on {
-  color: var(--cd-accent);
+.cd-pin-tog.on,
+.cd-pin-tog.on:hover {
+  color: #ff3b30;
   opacity: 1;
 }
-.cd-pin-tog.on svg {
-  fill: color-mix(in srgb, currentColor 22%, transparent);
+/* svg-mode pin: filling the outline makes a solid red pushpin (vs. a thin
+   outline). Applies to the path geometry regardless of lucide's fill="none". */
+.cd-pin-tog.on svg,
+.cd-pin-tog.on svg * {
+  fill: #ff3b30;
+  stroke: #ff3b30;
 }
 /* The expanded touchpoint section inside the grown card — set off by a top
    divider. Holds a single timeline entry styled like the detail screen. */
@@ -1917,14 +1922,27 @@ html[data-theme="glass"] .cd-net-card {
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
 }
+/* Smooth accordion for the network-list touchpoint peek. Animating a real
+   height is what makes it feel un-janky: a wrapper grid row eases 0fr → 1fr
+   (no hardcoded max-height to overshoot), while the inner .cd-peek clips its
+   own padding/border as it collapses. */
+.cd-peek-wrap {
+  display: grid;
+  grid-template-rows: 1fr;
+}
+.cd-peek-wrap > .cd-peek {
+  min-height: 0;
+  overflow: hidden;
+}
 .cd-expand-enter-active,
 .cd-expand-leave-active {
-  transition: max-height 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+  transition: grid-template-rows 0.28s cubic-bezier(0.25, 0.1, 0.25, 1),
+    opacity 0.22s ease;
 }
 .cd-expand-enter-from,
 .cd-expand-leave-to {
+  grid-template-rows: 0fr;
   opacity: 0;
-  transform: translateY(-6px);
 }
 
 /* ── iOS-like screen transitions ── */

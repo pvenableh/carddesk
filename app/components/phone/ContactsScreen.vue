@@ -371,7 +371,7 @@ async function runExport() {
             <span v-if="c.linked_user" class="cd-mpill" style="color: var(--cd-purple, #b87dff); border-color: rgba(184,125,255,0.3); background: rgba(184,125,255,0.1)"><CdIcon emoji="🪐" icon="lucide:orbit" :size="9" /> joined</span>
             <span v-if="planContactIds.has(c.id)" class="cd-mpill" style="color: var(--cd-accent); border-color: rgba(0,255,135,0.3); background: rgba(0,255,135,0.09)" title="Has an active plan"><CdIcon emoji="📋" icon="lucide:list-checks" :size="9" /> plan</span>
           </div>
-          <!-- Pin toggle: floats this contact to the top of the list. -->
+          <!-- Pin toggle: floats this contact to the top of the list (red when pinned). -->
           <button
             v-if="!selectMode"
             type="button"
@@ -382,7 +382,7 @@ async function runExport() {
             :title="(c as any).pinned ? 'Pinned — tap to unpin' : 'Pin to top'"
             @click.stop="togglePinned(c)"
           >
-            <CdIcon emoji="📌" icon="lucide:pin" :size="15" />
+            <CdIcon emoji="📌" icon="lucide:pin" mode="svg" :size="15" />
           </button>
           <!-- Peek toggle: reveals the last touchpoint inline without leaving the list. -->
           <button
@@ -399,7 +399,8 @@ async function runExport() {
           </button>
         </div>
         <Transition name="cd-expand">
-          <div v-if="peeked.has(c.id)" class="cd-peek" @click.stop>
+          <div v-if="peeked.has(c.id)" class="cd-peek-wrap" @click.stop>
+          <div class="cd-peek">
             <!-- Mirrors the detail-screen timeline entry: colored type dot on the
                  left (with a fading line hinting at older history) + an indented
                  touchpoint card on the right. -->
@@ -428,6 +429,7 @@ async function runExport() {
             <button type="button" class="cd-peek-more" @click.stop="goDetail(c.id)">
               {{ lastActivity(c) ? 'View full history' : 'Log the first one' }} <CdIcon icon="lucide:arrow-right" :size="11" />
             </button>
+          </div>
           </div>
         </Transition>
       </div>
