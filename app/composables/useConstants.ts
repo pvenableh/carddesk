@@ -69,6 +69,33 @@ export const INDUSTRY_COLORS: Record<string, string> = {
   Other: "#94a3b8",                   // slate
 }
 
+/** Distinct lucide glyph per industry — used as the avatar fallback (in place
+ *  of a photo) and anywhere an industry needs a compact icon. */
+export const INDUSTRY_ICONS: Record<string, string> = {
+  Technology: "lucide:cpu",
+  Finance: "lucide:landmark",
+  "Venture Capital": "lucide:trending-up",
+  Consulting: "lucide:briefcase",
+  Legal: "lucide:scale",
+  "Real Estate": "lucide:building-2",
+  "Construction & Development": "lucide:hard-hat",
+  Healthcare: "lucide:stethoscope",
+  "Fitness & Wellness": "lucide:dumbbell",
+  Marketing: "lucide:megaphone",
+  "Media & Entertainment": "lucide:clapperboard",
+  "Fashion & Beauty": "lucide:shirt",
+  "Art & Design": "lucide:palette",
+  Hospitality: "lucide:hotel",
+  Sports: "lucide:medal",
+  Other: "lucide:shapes",
+}
+
+/** Industry → lucide icon name, or null when unset/unknown (caller falls back
+ *  to the default person/emoji avatar). */
+export function industryIcon(industry?: string | null): string | null {
+  return industry ? (INDUSTRY_ICONS[industry] ?? null) : null
+}
+
 /** Industry → color, or null when unknown (caller falls back to a name hash). */
 export function industryColor(industry?: string | null): string | null {
   return industry ? (INDUSTRY_COLORS[industry] ?? null) : null
