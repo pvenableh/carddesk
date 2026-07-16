@@ -380,7 +380,7 @@ watch(() => props.contactId, () => { loadedOnce.value = false; load() })
 .cp-check {
   flex-shrink: 0; width: 20px; height: 20px; margin-top: 1px; border-radius: 6px; cursor: pointer;
   border: 1.5px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-bg);
-  display: flex; align-items: center; justify-content: center; transition: all 0.12s;
+  display: flex; align-items: center; justify-content: center; transition: background 0.15s var(--spring-bounce), border-color 0.15s var(--cd-ease), transform 0.15s var(--spring-bounce);
 }
 .cp-check.on { background: var(--cd-accent); border-color: var(--cd-accent); }
 .cp-check:disabled { opacity: 0.5; }

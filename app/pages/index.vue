@@ -24,6 +24,11 @@ const { toast, loadXp, earn } = useXp()
 const { loadProfile } = useProfile()
 const { screen, selectedId, nav, transitionName } = useNavigation()
 const { isOpen: chatOpen } = useChat()
+
+// Live realtime sync — keeps the feed, contacts, XP, tasks/plans, and
+// connections fresh across devices/tabs/other users over one shared Directus
+// WebSocket. No-ops on the server and while logged out.
+useRealtimeSync()
 const { panelOpen: eventOpen } = useEventMode()
 const { theme } = useTheme()
 const { load: loadConnections } = useConnections()

@@ -302,7 +302,7 @@ function commit(id: string, bucketKey: string, x: number, y: number) {
 .sb-empty-sub { font-size: 1rem; font-weight: 700; color: var(--cd-green); }
 
 /* tile enter/leave */
-.sb-tile-leave-active { transition: all 0.25s ease; position: relative; }
+.sb-tile-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; position: relative; }
 .sb-tile-leave-to { opacity: 0; transform: translateX(40px) scale(0.9); }
 .sb-tile-move { transition: transform 0.25s ease; }
 </style>

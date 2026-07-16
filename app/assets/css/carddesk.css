@@ -212,7 +212,25 @@ html[data-theme="glass"][data-mode="dark"] .cd-bnav {
   border-top-color: rgba(255, 255, 255, 0.06);
 }
 
-/* ── Glass theme: spring easing variables ── */
+/* ── Motion tokens — one coherent easing/timing scale for the whole app, so
+ * every screen, list, sheet, and press shares the same feel. Defined at :root
+ * (not just the glass theme) so all themes inherit them. ──
+ *   --cd-ease      standard ease-out for most UI state changes
+ *   --cd-ease-ios  long, decisive glide for screen pushes + list moves
+ *   --spring       soft settle (kept name for existing refs)
+ *   --spring-bounce playful overshoot for rewards/pills
+ *   --cd-dur-*     the three canonical durations */
+:root {
+  --cd-ease: cubic-bezier(0.2, 0.9, 0.3, 1);
+  --cd-ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --cd-dur-fast: 0.15s;
+  --cd-dur: 0.22s;
+  --cd-dur-slow: 0.32s;
+}
+
+/* ── Glass theme: spring easing variables (kept in sync with :root) ── */
 html[data-theme="glass"] {
   --spring: cubic-bezier(0.16, 1, 0.3, 1);
   --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -357,7 +375,7 @@ html[data-theme="glass"] .t-border { border-color: var(--cd-bdr); }
   font-weight: 800;
   letter-spacing: 0.06em;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.15s var(--cd-ease), color 0.15s var(--cd-ease), border-color 0.15s var(--cd-ease), opacity 0.15s var(--cd-ease), transform 0.15s var(--cd-ease);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -526,7 +544,7 @@ select.cd-inp {
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.15s var(--cd-ease), color 0.15s var(--cd-ease), border-color 0.15s var(--cd-ease);
 }
 .cd-empty {
   text-align: center;
@@ -540,7 +558,7 @@ select.cd-inp {
   padding: 14px;
   margin-bottom: 10px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: transform 0.15s var(--cd-ease), background 0.15s var(--cd-ease), border-color 0.15s var(--cd-ease);
 }
 .cd-vc:hover {
   transform: scale(1.01);
@@ -619,7 +637,7 @@ select.cd-inp {
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.15s var(--cd-ease), color 0.15s var(--cd-ease), border-color 0.15s var(--cd-ease);
   border: 1px solid;
 }
 .cd-semp.tg {
@@ -740,7 +758,7 @@ select.cd-inp {
   background: var(--cd-bg2);
   color: var(--cd-text);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: border-color 0.15s var(--cd-ease), color 0.15s var(--cd-ease);
 }
 .cd-feed-action:hover {
   border-color: var(--cd-accent);
@@ -795,7 +813,7 @@ select.cd-inp {
   border: 1.5px solid var(--cd-bdr);
   background: var(--cd-bg2);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s var(--cd-ease), border-color 0.2s var(--cd-ease), transform 0.2s var(--cd-ease);
   text-align: center;
 }
 .cd-mcard.tg.sel,
@@ -895,6 +913,11 @@ select.cd-inp {
   margin-bottom: 10px;
   overflow: hidden;
 }
+/* Hibernating cards read dimmed — opacity on a class (not an inline style) so the
+   list enter/leave transforms can still animate the card. */
+.cd-cold-hib {
+  opacity: 0.6;
+}
 .cd-cc-top {
   padding: 10px 12px;
   display: flex;
@@ -957,7 +980,7 @@ select.cd-inp {
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.15s var(--cd-ease), color 0.15s var(--cd-ease), border-color 0.15s var(--cd-ease);
   border: 1px solid;
 }
 .cd-cwb.reach {
@@ -1141,7 +1164,7 @@ select.cd-inp {
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.15s var(--cd-ease), color 0.15s var(--cd-ease), border-color 0.15s var(--cd-ease);
 }
 .cd-pill.on {
   background: var(--cd-bg2);
@@ -1160,9 +1183,15 @@ select.cd-inp {
   gap: 10px;
   position: relative;
   overflow: hidden;
+  transition: transform var(--cd-dur-fast) var(--cd-ease), border-color var(--cd-dur-fast) var(--cd-ease),
+    background var(--cd-dur-fast) var(--cd-ease);
 }
 .cd-crd:hover {
-  border-color: var(--cd-bdr);
+  border-color: color-mix(in srgb, var(--cd-accent) 22%, var(--cd-bdr));
+}
+/* Tap feedback on the most-tapped element in the app — a light spring press. */
+.cd-crd:active {
+  transform: scale(0.985);
 }
 .cd-cbar {
   position: absolute;
@@ -1780,6 +1809,40 @@ html[data-theme="glass"] .cd-net-card {
 .cd-tl-resp.no {
   color: var(--cd-dim);
   border-color: var(--cd-bdr);
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+.cd-tl-resp.no:hover {
+  color: var(--cd-muted);
+  border-color: color-mix(in srgb, var(--cd-accent) 35%, transparent);
+  background: color-mix(in srgb, var(--cd-accent) 6%, transparent);
+}
+.cd-tl-resp.no:active {
+  transform: scale(0.96);
+}
+/* Undo pill tucked inside the "Responded" chip — small, forgiving target. */
+.cd-tl-undo {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 2px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--cd-dim);
+  background: color-mix(in srgb, var(--cd-text) 6%, transparent);
+  border: 1px solid var(--cd-bdr);
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+}
+.cd-tl-undo:hover {
+  color: var(--cd-text);
+  background: color-mix(in srgb, var(--cd-text) 12%, transparent);
+  border-color: color-mix(in srgb, var(--cd-text) 22%, transparent);
+}
+.cd-tl-undo:active {
+  transform: scale(0.94);
 }
 
 /* ── Scan zone ── */
@@ -1790,7 +1853,7 @@ html[data-theme="glass"] .cd-net-card {
   padding: 26px 20px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s var(--cd-ease), border-color 0.2s var(--cd-ease), transform 0.2s var(--cd-ease);
   margin-bottom: 4px;
 }
 .cd-scan-zone:hover {
@@ -1826,7 +1889,7 @@ html[data-theme="glass"] .cd-net-card {
 }
 .cd-expand-enter-active,
 .cd-expand-leave-active {
-  transition: all 0.2s ease;
+  transition: max-height 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
 }
 .cd-expand-enter-from,
 .cd-expand-leave-to {
@@ -1848,6 +1911,58 @@ html[data-theme="glass"] .cd-net-card {
 }
 .cd-fade-leave-to {
   opacity: 0;
+}
+
+/* Crossfade for tabbed panes that stay mounted (v-show) — the leaving pane
+ * goes absolute so the incoming one sets the height and nothing jumps.
+ * Used by the detail-screen coach tabs (Next / Plan / History). */
+.cd-coach-panes {
+  position: relative;
+}
+.cd-cfade-enter-active,
+.cd-cfade-leave-active {
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.cd-cfade-leave-active {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+.cd-cfade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.cd-cfade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+/* Card list (network deck, pipeline lanes) — items fade/slide in, drop out of
+ * flow on leave so survivors glide to their new slot when filtering/sorting.
+ * The list wrapper needs position:relative to contain absolute-leaving cards. */
+.cd-card-list {
+  position: relative;
+}
+.cd-card-enter-active {
+  transition: opacity 0.28s ease, transform 0.28s var(--cd-ease-ios);
+}
+.cd-card-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s var(--cd-ease-ios);
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+.cd-card-enter-from {
+  opacity: 0;
+  transform: translateY(10px) scale(0.985);
+}
+.cd-card-leave-to {
+  opacity: 0;
+  transform: scale(0.97);
+}
+.cd-card-move {
+  transition: transform 0.32s var(--cd-ease-ios);
 }
 
 /* Slide left — iOS push (navigating deeper / right tab).
@@ -1925,7 +2040,7 @@ html[data-theme="glass"] .cd-net-card {
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.2, 0.9, 0.3, 1);
+  transition: color 0.18s var(--cd-ease), background 0.18s var(--cd-ease), box-shadow 0.18s var(--cd-ease);
   white-space: nowrap;
 }
 .cd-tab:hover {
@@ -1977,7 +2092,7 @@ html[data-theme="glass"][data-mode="light"] .cd-tab.on {
   letter-spacing: 0.04em;
   line-height: 1;
   cursor: pointer;
-  transition: all 0.15s cubic-bezier(0.2, 0.9, 0.3, 1);
+  transition: background 0.15s var(--cd-ease), color 0.15s var(--cd-ease), border-color 0.15s var(--cd-ease), box-shadow 0.15s var(--cd-ease), opacity 0.15s var(--cd-ease), transform 0.15s var(--cd-ease);
   white-space: nowrap;
   user-select: none;
 }
@@ -2401,17 +2516,21 @@ html[data-theme="glass"] .ios-press:active {
 
 /* ── Respect reduced-motion: neutralise transforms/animations ── */
 @media (prefers-reduced-motion: reduce) {
-  html[data-theme="glass"] *,
-  html[data-theme="glass"] *::before,
-  html[data-theme="glass"] *::after {
+  /* Honor the OS setting in every theme, not just glass. */
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
   .cd-slide-left-enter-from,
   .cd-slide-left-leave-to,
   .cd-slide-right-enter-from,
-  .cd-slide-right-leave-to {
+  .cd-slide-right-leave-to,
+  .cd-cfade-enter-from,
+  .cd-cfade-leave-to {
     transform: none !important;
   }
 }

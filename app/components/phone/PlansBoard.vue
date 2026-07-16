@@ -254,6 +254,7 @@ watch(() => dirty.value, load)
         </div>
         <div class="pb-bar"><span class="pb-bar-fill" :style="{ width: planProgress(p).pct + '%' }"></span></div>
 
+        <TransitionGroup tag="div" class="cd-card-list" name="cd-card">
         <div v-for="t in sortedTasks(p)" :key="t.id" class="pb-task" :class="{ done: t.status === 'done' }">
           <button class="pb-check" :class="{ on: t.status === 'done' }" type="button" :disabled="busy[t.id]" @click="toggle(t)">
             <CdIcon v-if="t.status === 'done'" icon="lucide:check" :size="12" />
@@ -269,6 +270,7 @@ watch(() => dirty.value, load)
           </div>
           <button class="pb-ico" type="button" aria-label="Delete task" @click="removeTask(p, t)"><CdIcon icon="lucide:trash-2" :size="12" /></button>
         </div>
+        </TransitionGroup>
 
         <!-- Inline add task -->
         <div v-if="addingPlanId === p.id" class="pb-task-form">
@@ -367,7 +369,7 @@ watch(() => dirty.value, load)
 .pb-check {
   flex-shrink: 0; width: 20px; height: 20px; margin-top: 1px; border-radius: 6px; cursor: pointer;
   border: 1.5px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-bg);
-  display: flex; align-items: center; justify-content: center; transition: all 0.12s;
+  display: flex; align-items: center; justify-content: center; transition: background 0.15s var(--spring-bounce), border-color 0.15s var(--cd-ease), transform 0.15s var(--spring-bounce);
 }
 .pb-check.on { background: var(--cd-accent); border-color: var(--cd-accent); }
 .pb-check:disabled { opacity: 0.5; }

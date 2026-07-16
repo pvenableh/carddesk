@@ -109,6 +109,7 @@ onMounted(load)
       </div>
       <div v-else-if="!filtered.length" class="hs-dim">No matches for “{{ q }}”.</div>
 
+      <TransitionGroup tag="div" class="cd-card-list" name="cd-card">
       <div v-for="s in filtered" :key="s.id" class="cd-log-sec hs-card">
         <div class="hs-row">
           <button class="hs-main" type="button" @click="open(s)">
@@ -132,6 +133,7 @@ onMounted(load)
           </div>
         </div>
       </div>
+      </TransitionGroup>
     </div>
   </div>
 </template>
@@ -146,7 +148,8 @@ onMounted(load)
 
 .hs-card { margin-bottom: 8px; padding: 10px 12px; }
 .hs-row { display: flex; align-items: center; gap: 6px; }
-.hs-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; background: none; border: 0; cursor: pointer; padding: 0; color: var(--cd-text); font-family: inherit; text-align: left; }
+.hs-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; background: none; border: 0; cursor: pointer; padding: 0; color: var(--cd-text); font-family: inherit; text-align: left; transition: opacity 0.15s var(--cd-ease); }
+.hs-main:active { opacity: 0.6; }
 .hs-ico {
   flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
   color: var(--cd-accent); background: color-mix(in srgb, var(--cd-accent) 14%, transparent);
@@ -159,7 +162,9 @@ onMounted(load)
 .hs-type { font-size: 10.5px; color: var(--cd-muted); }
 .hs-date { font-size: 10.5px; color: var(--cd-dim); }
 .hs-chev { flex-shrink: 0; color: var(--cd-dim); }
-.hs-del { flex-shrink: 0; background: none; border: 0; color: var(--cd-dim); cursor: pointer; padding: 4px; }
+.hs-del { flex-shrink: 0; background: none; border: 0; color: var(--cd-dim); cursor: pointer; padding: 4px; transition: color 0.15s var(--cd-ease), transform 0.15s var(--cd-ease); }
+.hs-del:hover { color: #f87171; }
+.hs-del:active { transform: scale(0.88); }
 .hs-del:hover { color: #e5484d; }
 
 .hs-body { margin-top: 10px; border-top: 1px solid var(--cd-bdr); padding-top: 8px; display: flex; flex-direction: column; gap: 8px; }

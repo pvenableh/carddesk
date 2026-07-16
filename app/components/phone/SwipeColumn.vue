@@ -220,9 +220,9 @@ const hint = computed(() => {
               v-for="emoji in REACTIONS"
               :key="emoji"
               class="cd-react"
-              :class="{ on: it.myReactions.includes(emoji) }"
+              :class="{ on: it.myReactions.includes(emoji), reacted: !!it.reactions[emoji] }"
               @click="react(it.id, emoji)"
-            >{{ emoji }}<span v-if="it.reactions[emoji]" class="cd-react-n">{{ it.reactions[emoji] }}</span></button>
+            ><span class="cd-react-e">{{ emoji }}</span><span v-if="it.reactions[emoji]" class="cd-react-n">{{ it.reactions[emoji] }}</span></button>
           </div>
         </template>
 
@@ -313,8 +313,12 @@ const hint = computed(() => {
   padding: 4px 8px; border-radius: 9999px;
   background: color-mix(in srgb, var(--cd-bg) 55%, transparent);
   border: 1px solid var(--cd-bdr); cursor: pointer;
+  transition: background 0.18s var(--cd-ease), border-color 0.18s var(--cd-ease), transform 0.18s var(--spring-bounce);
 }
+.cd-react:active { transform: scale(0.9); }
 .cd-react.on { background: color-mix(in srgb, var(--cd-accent) 16%, transparent); border-color: var(--cd-accent); }
+.cd-react-e { filter: grayscale(1) opacity(0.45); transition: filter 0.18s var(--cd-ease); }
+.cd-react.reacted .cd-react-e { filter: none; }
 .cd-react-n { font-size: 10px; font-weight: 700; color: var(--cd-muted); }
 
 .cd-card-pillrow { display: flex; flex-wrap: wrap; gap: 5px; margin: 9px 0; flex: 1; align-content: center; }

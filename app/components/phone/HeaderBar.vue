@@ -289,10 +289,10 @@ function onClickOutside(e: MouseEvent) {
 
 /* ── Dropdown transition ── */
 .cd-dropdown-enter-active {
-  transition: all 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
+  transition: opacity 0.2s var(--cd-ease), transform 0.2s var(--cd-ease);
 }
 .cd-dropdown-leave-active {
-  transition: all 0.12s ease;
+  transition: opacity 0.12s ease, transform 0.12s ease;
 }
 .cd-dropdown-enter-from {
   opacity: 0;

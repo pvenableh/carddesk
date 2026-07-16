@@ -221,6 +221,7 @@ async function doQuickLog() {
         <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim); margin-bottom: 8px">
           <CdIcon emoji="🏢" icon="lucide:building-2" :size="12" /> Your Network by Industry
         </div>
+        <TransitionGroup tag="div" class="cd-card-list" name="cd-card">
         <div v-for="ind in industryStats.slice(0, 5)" :key="ind.name" style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px">
           <div style="flex: 1; min-width: 0">
             <div style="display: flex; justify-content: space-between; margin-bottom: 3px">
@@ -243,12 +244,14 @@ async function doQuickLog() {
             </span>
           </div>
         </div>
+        </TransitionGroup>
       </div>
 
       <div v-if="channelStats.length" class="cd-vc" style="border-color: rgba(255,224,51,0.15); margin-bottom: 11px">
         <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cd-dim); margin-bottom: 8px">
           <CdIcon emoji="📊" icon="lucide:bar-chart-3" :size="12" /> Best Channels to Connect
         </div>
+        <TransitionGroup tag="div" class="cd-card-list" name="cd-card">
         <div v-for="ch in channelStats" :key="ch.type" style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px">
           <span style="font-size: 12px; font-weight: 700; width: 70px; flex-shrink: 0">{{ ch.type }}</span>
           <div style="flex: 1; height: 4px; background: var(--cd-bdr); border-radius: 2px; overflow: hidden">
@@ -263,6 +266,7 @@ async function doQuickLog() {
             :style="ch.rate >= 30 ? 'background:color-mix(in srgb, var(--cd-accent) 10%, transparent);color:var(--cd-accent)' : ch.rate > 0 ? 'background:rgba(255,224,51,0.1);color:var(--cd-gold)' : 'background:rgba(62,79,104,0.2);color:var(--cd-dim)'"
           >{{ ch.rate }}%</span>
         </div>
+        </TransitionGroup>
         <div style="font-size: 10px; color: var(--cd-dim); margin-top: 4px; text-align: right">
           Overall response rate: <strong :style="responseRate >= 30 ? 'color:var(--cd-accent)' : 'color:var(--cd-gold)'">{{ responseRate }}%</strong>
         </div>
@@ -292,14 +296,16 @@ async function doQuickLog() {
         <div v-if="insightsLoading" style="text-align: center; padding: 10px 0">
           <div style="font-size: 12px; color: var(--cd-muted); animation: cd-pulse 1.5s ease-in-out infinite">Crunching your network data...</div>
         </div>
+        <TransitionGroup tag="div" class="cd-card-list" name="cd-card">
         <div
-          v-for="(s, i) in insights"
-          :key="i"
+          v-for="s in insights"
+          :key="s.title"
           style="background: var(--cd-bg2); border: 1px solid var(--cd-bdr); border-radius: 10px; padding: 9px 11px; margin-bottom: 6px"
         >
           <div style="font-size: 13px; font-weight: 700; margin-bottom: 2px">{{ s.icon }} {{ s.title }}</div>
           <div style="font-size: 11px; color: var(--cd-muted); line-height: 1.5">{{ s.body }}</div>
         </div>
+        </TransitionGroup>
       </div>
 
       <div class="cd-streak">

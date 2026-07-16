@@ -44,6 +44,7 @@ async function doWake(id: string) {
       </div>
       <template v-if="coldCs.length">
         <div class="cd-sec-lbl"><CdIcon emoji="❄️" icon="lucide:snowflake" :size="10" /> Cold</div>
+        <TransitionGroup tag="div" class="cd-card-list" name="cd-card">
         <div v-for="c in coldCs" :key="c.id" class="cd-cold-card">
           <div class="cd-cc-top" @click="toggleCold(c.id)">
             <div class="cd-cc-av"><CdIcon :emoji="cEmoji(c)" icon="lucide:user" :size="18" /></div>
@@ -65,10 +66,12 @@ async function doWake(id: string) {
             </div>
           </Transition>
         </div>
+        </TransitionGroup>
       </template>
       <template v-if="hibCs.length">
         <div class="cd-sec-lbl" style="margin-top: 16px"><CdIcon emoji="😴" icon="lucide:moon" :size="10" /> Hibernating</div>
-        <div v-for="c in hibCs" :key="c.id" class="cd-cold-card" style="opacity: 0.6">
+        <TransitionGroup tag="div" class="cd-card-list" name="cd-card">
+        <div v-for="c in hibCs" :key="c.id" class="cd-cold-card cd-cold-hib">
           <div class="cd-cc-top" @click="toggleCold(c.id + '_h')">
             <div class="cd-cc-av"><CdIcon :emoji="cEmoji(c)" icon="lucide:user" :size="18" /></div>
             <div style="flex: 1; min-width: 0">
@@ -86,6 +89,7 @@ async function doWake(id: string) {
             </div>
           </Transition>
         </div>
+        </TransitionGroup>
       </template>
     </div>
   </div>

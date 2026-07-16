@@ -7,7 +7,7 @@ import { cleanPhones } from '~/types/contact'
 import type { PipelineStage, OpportunityGoal } from '~/types/directus'
 import confettiLib from 'canvas-confetti'
 
-const { contacts, updateContact, uploadContactImage, removeContactImage, hibernate, logActivity, markResponded, updateActivity, deleteActivity, lastActivity, daysSince, followUpStatus, fetchContacts } = useContacts()
+const { contacts, updateContact, uploadContactImage, removeContactImage, hibernate, logActivity, markResponded, unmarkResponded, updateActivity, deleteActivity, lastActivity, daysSince, followUpStatus, fetchContacts } = useContacts()
 const { state: xp, earn, deduct, completeMission } = useXp()
 const { success, error: showError } = useToast()
 const { selectedId, editing, nav } = useNavigation()
@@ -332,6 +332,15 @@ async function doMarkResponded(actId: string) {
   earn(100, '🎉', 'They replied!', { hot_responses: (xp.value.hot_responses ?? 0) + 1 })
   fireConfetti()
   completeMission('response')
+}
+
+// Undo an accidental "mark as responded" — reverts the flag and backs out the
+// 100 XP (and the hot_responses tally) the mark awarded. Forgiving on purpose.
+async function doUnmarkResponded(actId: string) {
+  if (!selContact.value) return
+  const c = selContact.value as any
+  await unmarkResponded(c.id, actId)
+  deduct(100, '↩️', 'Marked as no reply.', { hot_responses: Math.max(0, (xp.value.hot_responses ?? 0) - 1) })
 }
 
 async function doHibernate(id: string) {
@@ -849,7 +858,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
               v-for="r in RATINGS"
               :key="r.key"
               type="button"
-              style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px 4px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: var(--cd-bg2); color: var(--cd-muted); font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.12s"
+              style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px 4px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: var(--cd-bg2); color: var(--cd-muted); font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background 0.12s var(--cd-ease), color 0.12s var(--cd-ease), border-color 0.12s var(--cd-ease), transform 0.12s var(--cd-ease)"
               :style="(selContact as any).rating === r.key ? 'background:' + r.color + '22;border-color:' + r.color + ';color:' + r.color : ''"
               @click="quickSetRating(r.key)"
             ><CdIcon :emoji="r.emoji" :icon="r.lucide" :size="13" /> {{ r.label }}</button>
@@ -898,7 +907,11 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             />
           </div>
 
+          <!-- Coach panes crossfade on tab switch; each stays mounted (v-show) so
+               the Plan/History tabs keep their loaded state. -->
+          <div class="cd-coach-panes">
           <!-- Next steps — a single AI-ideas callout (chat lives on the floating Ask Earnest button). -->
+          <Transition name="cd-cfade">
           <div v-show="coachTab === 'next'" class="cd-log-sec" style="margin-bottom: 16px">
             <button
               type="button"
@@ -932,11 +945,15 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
               {{ sugSaved ? 'Saved to history' : 'Save these to history' }}
             </button>
           </div>
+          </Transition>
 
           <!-- Plan (kept mounted so its loaded tasks persist across tab switches) -->
+          <Transition name="cd-cfade">
           <PhoneContactPlans v-show="coachTab === 'plan'" :contact-id="(selContact as any).id" @ask="askEarnest" @count="planCount = $event" />
+          </Transition>
 
           <!-- History -->
+          <Transition name="cd-cfade">
           <div v-show="coachTab === 'history'" class="cd-log-sec" style="margin-bottom: 16px">
             <div v-if="historyLoading" style="font-size: 12px; color: var(--cd-muted)">Loading…</div>
             <template v-else-if="aiHistory.length">
@@ -985,6 +1002,8 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
               <div style="font-weight: 700; color: var(--cd-text); font-size: 13px">No saved history yet</div>
               <div style="font-size: 12px; line-height: 1.45; max-width: 240px">Save Earnest's ideas from <strong>Next steps</strong> — or a chat — and they'll collect here.</div>
             </div>
+          </div>
+          </Transition>
           </div>
 
           <div class="cd-log-sec">
@@ -1080,7 +1099,15 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
                   :class="act.is_response ? 'yes' : 'no'"
                   @click="!act.is_response && doMarkResponded(act.id)"
                 >
-                  {{ act.is_response ? '✓ ' + (act.response_note || 'Responded') : '○ No reply — tap to mark' }}
+                  <template v-if="act.is_response">
+                    <span>✓ {{ act.response_note || 'Responded' }}</span>
+                    <button
+                      class="cd-tl-undo"
+                      title="Undo — mark as no reply"
+                      @click.stop="doUnmarkResponded(act.id)"
+                    ><CdIcon emoji="↩️" icon="lucide:undo-2" :size="10" /> Undo</button>
+                  </template>
+                  <template v-else>○ No reply — tap to mark</template>
                 </div>
               </template>
             </div>
@@ -1132,7 +1159,7 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
             <button
               v-for="s in PIPELINE_STAGES.filter((x) => x.group === 'forward')"
               :key="s.key"
-              style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-text); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; text-align: left"
+              style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 9999px; border: 1px solid var(--cd-bdr); background: var(--cd-bg); color: var(--cd-text); font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s var(--cd-ease), color 0.15s var(--cd-ease), border-color 0.15s var(--cd-ease), transform 0.15s var(--cd-ease); text-align: left"
               :style="selContact?.pipeline_stage === s.key ? 'border-color: var(--cd-accent); background: rgba(0,255,135,0.06)' : ''"
               @click="doMoveStage(s.key)"
             >
