@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { loadStripe, type StripeEmbeddedCheckout } from '@stripe/stripe-js'
 
-const { state, showBuyModal, purchasing, loadCredits, closeBuyModal, purchase } = useCredits()
+const { state, showBuyModal, pendingPackage, purchasing, loadCredits, closeBuyModal, purchase } = useCredits()
 const config = useRuntimeConfig()
 const analytics = useAnalytics()
 
@@ -11,8 +11,16 @@ let embedded: StripeEmbeddedCheckout | null = null
 
 // Reset (and tear down the Stripe iframe) whenever the modal closes.
 watch(showBuyModal, (open) => {
-  if (open) { if (!state.value.loaded) loadCredits() }
-  else resetCheckout()
+  if (open) {
+    if (!state.value.loaded) loadCredits()
+    // Opened for a specific pack (e.g. a package card on /billing) → jump
+    // straight into that pack's checkout instead of re-showing the picker.
+    const pre = pendingPackage.value
+    pendingPackage.value = null
+    if (pre) choose(pre)
+  } else {
+    resetCheckout()
+  }
 })
 
 function resetCheckout() {

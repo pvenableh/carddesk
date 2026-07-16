@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RATINGS, RATING_ORDER, getRating, getAct, cEmoji, industryTagStyle, industryColor, industryIcon } from '~/composables/useConstants'
+import { RATINGS, RATING_ORDER, getRating, getAct, industryTagStyle } from '~/composables/useConstants'
 import { PIPELINE_STAGES, GOAL_OPTIONS } from '~/composables/usePipeline'
 import ConnectionsView from './ConnectionsView.vue'
 
@@ -86,15 +86,6 @@ const viewMode = ref<'rating' | 'pipeline'>('rating')
 // Inline pin toggle — pins a contact to the top of the list without leaving it.
 async function togglePinned(c: any) {
   await togglePin(c.id)
-}
-
-// Avatar chrome keyed to the contact's industry: a colored border + soft ring
-// (box-shadow so it never shifts layout under overflow:hidden). Undefined when
-// no industry is set, so the avatar keeps its default neutral border.
-function avatarRing(c: any): Record<string, string> | undefined {
-  const col = industryColor(c?.industry)
-  if (!col) return undefined
-  return { borderColor: col, boxShadow: `0 0 0 1.5px color-mix(in srgb, ${col} 38%, transparent)` }
 }
 
 // First-run pipeline coachmark — auto-starts the first time the lanes are shown.
@@ -359,18 +350,14 @@ async function runExport() {
           <div v-if="selectMode" class="cd-selck" :class="{ on: selectedIds.has(c.id) }">
             <CdIcon v-if="selectedIds.has(c.id)" emoji="✓" icon="lucide:check" :size="13" />
           </div>
-          <div class="cd-cav" :style="avatarRing(c)" :title="(c as any).industry || undefined">
-            <img v-if="(c as any).imageUrl" :src="(c as any).imageUrl" alt="" />
-            <!-- No photo: fall back to the industry's glyph (tinted its color),
-                 or the neutral person icon when no industry is set. -->
-            <CdIcon
-              v-else-if="industryIcon((c as any).industry)"
-              :icon="industryIcon((c as any).industry)!"
-              :size="18"
-              :style="{ color: industryColor((c as any).industry) || undefined }"
-            />
-            <CdIcon v-else :emoji="cEmoji(c)" icon="lucide:user" :size="19" />
-          </div>
+          <!-- Shared avatar: perfect circle, industry glyph/ring, initials fallback. -->
+          <CdAvatar
+            :src="(c as any).imageUrl || null"
+            :name="c.name"
+            :industry="(c as any).industry"
+            :size="38"
+            ring
+          />
           <div style="flex: 1; min-width: 0">
             <div class="cd-cnm">{{ c.name }}</div>
             <div class="cd-csb">{{ [c.title, c.company].filter(Boolean).join(' · ') }}</div>

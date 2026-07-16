@@ -39,6 +39,11 @@ function goAccount() {
   router.push('/account')
 }
 
+function goBilling() {
+  closeDropdown()
+  router.push('/account?tab=billing')
+}
+
 async function handleLogout() {
   closeDropdown()
   await logout()
@@ -88,6 +93,10 @@ function onClickOutside(e: MouseEvent) {
           <button class="cd-dd-item" @click="goAccount">
             <span class="cd-dd-icon"><CdIcon emoji="👤" icon="lucide:user" /></span>
             Account
+          </button>
+          <button class="cd-dd-item" @click="goBilling">
+            <span class="cd-dd-icon"><CdIcon emoji="⚡" icon="lucide:zap" /></span>
+            Billing &amp; Credits
           </button>
           <button class="cd-dd-item" @click="closeDropdown(); openFeedback()">
             <span class="cd-dd-icon"><CdIcon emoji="💬" icon="lucide:message-square-plus" /></span>

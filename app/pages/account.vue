@@ -39,17 +39,23 @@ watch(profile, (p) => {
 
 const { contacts } = useContacts()
 
-// Credit purchase: confirm the Stripe checkout on the success redirect.
 const route = useRoute()
 const router = useRouter()
-const { confirmPurchase } = useCredits()
+// Credit balance for the profile-tab "Credits & Billing" entry card. The
+// Billing tab (PhoneBillingPanel) owns the purchase flow + post-checkout confirm.
+const { loadCredits, state: creditsState, isOrg: creditsIsOrg } = useCredits()
 const analytics = useAnalytics()
-const purchaseBanner = ref<string | null>(null)
 
-// ─── Profile / Business Card tabs ───
-// Profile and the shareable card live on one screen now, split into two tabs so
-// it's easy to move between "who I am" (account) and "what I hand out" (card).
-const tab = ref<'profile' | 'card'>(route.query.tab === 'card' ? 'card' : 'profile')
+// ─── Profile / Business Card / Billing tabs ───
+// One screen split into tabs: "who I am" (profile), "what I hand out" (card),
+// and "what I pay" (billing). The Stripe checkout returns to ?tab=billing.
+const tab = ref<'profile' | 'card' | 'billing'>(
+  route.query.tab === 'card'
+    ? 'card'
+    : route.query.tab === 'billing' || route.query.credits_purchased === 'true'
+      ? 'billing'
+      : 'profile',
+)
 
 // ─── Business card ───
 // The card is seeded server-side from the account profile, but is edited
@@ -306,19 +312,11 @@ function scoreLabel(score: number): string {
 
 onMounted(async () => {
   loadProfile()
+  if (!creditsState.value.loaded) loadCredits()
   try {
     const score = await $fetch<any>('/api/earnest-score')
     if (score) earnestScore.value = score
   } catch { /* score not available */ }
-
-  if (route.query.credits_purchased === 'true' && typeof route.query.session_id === 'string') {
-    const res = await confirmPurchase(route.query.session_id)
-    purchaseBanner.value = res?.credits
-      ? `🎉 ${res.credits} credits added — happy networking!`
-      : 'Purchase received — your credits will appear shortly.'
-    router.replace({ query: {} })
-    setTimeout(() => (purchaseBanner.value = null), 5000)
-  }
 })
 
 function doSaveProfile() {
@@ -370,15 +368,8 @@ async function suggestGoal() {
 
 <template>
   <div class="acct-page" :class="{ 'acct-page--savebar': tab === 'card' }">
-    <div class="acct-container">
+    <div class="acct-container" :class="{ 'acct-container--wide': tab !== 'card', 'acct-container--card': tab === 'card' }">
       <NuxtLink to="/" class="cd-back"><CdIcon emoji="‹" icon="lucide:chevron-left" :size="14" /> Back</NuxtLink>
-
-      <div
-        v-if="purchaseBanner"
-        style="margin-bottom: 14px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--cd-accent); background: color-mix(in srgb, var(--cd-accent) 12%, transparent); color: var(--cd-text); font-size: 13px; font-weight: 700; text-align: center"
-      >
-        {{ purchaseBanner }}
-      </div>
 
       <div class="acct-hero">
         <div class="acct-avatar">
@@ -397,12 +388,16 @@ async function suggestGoal() {
           :items="[
             { key: 'profile', label: 'Profile', emoji: '👤', icon: 'lucide:user' },
             { key: 'card', label: 'Business Card', emoji: '🪪', icon: 'lucide:contact' },
+            { key: 'billing', label: 'Billing', emoji: '⚡', icon: 'lucide:zap' },
           ]"
         />
       </div>
 
       <!-- ───────────── PROFILE TAB ───────────── -->
+      <!-- On desktop these account sections flow into two balanced columns so
+           the profile is a comfortable dashboard rather than a 400px straw. -->
       <template v-if="tab === 'profile'">
+        <div class="acct-profile-cols">
         <div class="acct-section">
           <div class="acct-section-title">Profile Photo</div>
           <div class="acct-photo-row">
@@ -423,8 +418,22 @@ async function suggestGoal() {
           </div>
         </div>
 
+        <!-- Billing & credits entry point → the Billing tab -->
         <div class="acct-section">
-          <PhoneUsageCard />
+          <div class="acct-section-title">Credits &amp; Billing</div>
+          <button type="button" class="acct-billing-link" @click="tab = 'billing'">
+            <div class="acct-billing-ic"><CdIcon emoji="⚡" icon="lucide:zap" :size="18" /></div>
+            <div class="acct-billing-copy">
+              <div class="acct-billing-top">
+                <span v-if="creditsIsOrg" class="acct-billing-bal">Team plan</span>
+                <span v-else class="acct-billing-bal">{{ (creditsState.credits ?? 0).toLocaleString() }} credits</span>
+                <span class="acct-billing-cta">Manage <CdIcon icon="lucide:chevron-right" :size="13" /></span>
+              </div>
+              <div class="acct-billing-sub">
+                {{ creditsIsOrg ? 'Billed through Earnest — view usage & plan' : 'Buy credits, view usage & purchase history' }}
+              </div>
+            </div>
+          </button>
         </div>
 
         <div class="acct-section">
@@ -535,10 +544,11 @@ async function suggestGoal() {
             Log Out
           </button>
         </div>
+        </div>
       </template>
 
       <!-- ───────────── BUSINESS CARD TAB ───────────── -->
-      <template v-else>
+      <template v-else-if="tab === 'card'">
         <div class="acct-section">
           <div class="acct-section-title">Your CardDesk Card</div>
           <div style="font-size: 12px; color: var(--cd-muted); margin-bottom: 14px; line-height: 1.5">
@@ -557,23 +567,30 @@ async function suggestGoal() {
             <button class="acct-sync-btn" @click="syncFromAccount">Sync to card</button>
           </div>
 
-          <!-- Live preview of the shareable card in the chosen design. Rendered
-               at a true device width and scaled to fit so it's a faithful
-               miniature rather than a squeezed narrow card. -->
-          <div
-            ref="previewWrapEl"
-            class="acct-card-preview"
-            :style="{ height: previewHeight ? previewHeight + 'px' : undefined }"
-          >
-            <div
-              ref="previewDeviceEl"
-              class="acct-card-preview-device"
-              :style="{ width: PREVIEW_DEVICE_W + 'px', transform: `scale(${previewScale})` }"
-            >
-              <CardView :card="previewCard" :interactive="false" />
+          <!-- Two-column on desktop: editable fields on the left, the live card
+               preview sticky on the right (it stays phone-width). On mobile the
+               preview sits on top, then the fields. -->
+          <div class="acct-card-cols">
+            <div class="acct-card-previewcol">
+              <!-- Live preview of the shareable card in the chosen design.
+                   Rendered at a true device width and scaled to fit so it's a
+                   faithful miniature rather than a squeezed narrow card. -->
+              <div
+                ref="previewWrapEl"
+                class="acct-card-preview"
+                :style="{ height: previewHeight ? previewHeight + 'px' : undefined }"
+              >
+                <div
+                  ref="previewDeviceEl"
+                  class="acct-card-preview-device"
+                  :style="{ width: PREVIEW_DEVICE_W + 'px', transform: `scale(${previewScale})` }"
+                >
+                  <CardView :card="previewCard" :interactive="false" />
+                </div>
+              </div>
             </div>
-          </div>
 
+            <div class="acct-card-fields">
           <!-- Design picker -->
           <div class="acct-section-title" style="margin-top: 4px">Design</div>
           <div class="acct-themes">
@@ -706,6 +723,8 @@ async function suggestGoal() {
             </div>
 
           </div>
+            </div><!-- /.acct-card-fields -->
+          </div><!-- /.acct-card-cols -->
         </div>
 
         <!-- Embed on your website -->
@@ -737,6 +756,13 @@ async function suggestGoal() {
           <button class="cd-abtn g acct-savebar-btn" :disabled="cardSaving" @click="saveCard">
             {{ cardSaving ? 'Saving…' : 'Save card' }}
           </button>
+        </div>
+      </template>
+
+      <!-- ───────────── BILLING TAB ───────────── -->
+      <template v-else>
+        <div class="acct-section">
+          <PhoneBillingPanel />
         </div>
       </template>
 
@@ -793,6 +819,50 @@ async function suggestGoal() {
 .acct-container {
   max-width: 400px;
   margin: 0 auto;
+}
+/* Desktop: let the account info breathe. The Profile & Billing tabs widen into
+   two-column dashboards; the Business Card tab widens too, but keeps the card
+   preview itself phone-width (it's meant to read as a real phone-sized card). */
+@media (min-width: 768px) {
+  .acct-container { max-width: 460px; }
+  .acct-container--wide { max-width: 720px; }
+  .acct-container--card { max-width: 520px; }
+}
+@media (min-width: 1024px) {
+  .acct-container--wide { max-width: 900px; }
+  .acct-container--card { max-width: 900px; }
+}
+/* Two-column masonry for the profile sections on wide screens. Each section
+   stays intact (never split across the column gap). */
+@media (min-width: 900px) {
+  .acct-container--wide .acct-profile-cols {
+    column-count: 2;
+    column-gap: 24px;
+  }
+  .acct-container--wide .acct-profile-cols .acct-section {
+    break-inside: avoid;
+  }
+}
+/* Business Card tab: editable fields on the left, the card preview sticky on
+   the right. Single column below 1024px (preview on top, then fields). */
+@media (min-width: 1024px) {
+  .acct-container--card .acct-card-cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 28px;
+    align-items: start;
+  }
+  .acct-container--card .acct-card-fields {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+  .acct-container--card .acct-card-previewcol {
+    grid-column: 2;
+    grid-row: 1;
+    position: sticky;
+    top: 16px;
+  }
 }
 .acct-back {
   display: inline-block;
@@ -1048,6 +1118,11 @@ async function suggestGoal() {
   overflow: hidden;
   border: 1px solid var(--cd-bdr);
   margin-bottom: 18px;
+  /* Keep the mockup phone-width and centred — it renders at a fixed device
+     width and scales to this wrapper, so capping the wrapper stops it blowing
+     up on wider screens. */
+  max-width: 400px;
+  margin-inline: auto;
   /* Let CardView paint its own themed backdrop edge-to-edge. */
 }
 /* Device wrapper: rendered at a fixed phone width, then uniformly scaled down
@@ -1254,5 +1329,64 @@ async function suggestGoal() {
   border-radius: 14px;
   padding: 12px 14px;
   margin: 14px 0 4px;
+}
+/* ── Credits & Billing entry point ── */
+.acct-billing-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--cd-bdr);
+  background: var(--cd-bg2);
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.acct-billing-link:hover {
+  border-color: var(--cd-accent);
+}
+.acct-billing-ic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--cd-accent) 14%, transparent);
+  color: var(--cd-accent);
+}
+.acct-billing-copy {
+  flex: 1;
+  min-width: 0;
+}
+.acct-billing-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.acct-billing-bal {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--cd-text);
+}
+.acct-billing-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cd-accent);
+  flex-shrink: 0;
+}
+.acct-billing-sub {
+  font-size: 11.5px;
+  color: var(--cd-muted);
+  margin-top: 2px;
 }
 </style>

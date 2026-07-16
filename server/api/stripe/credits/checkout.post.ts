@@ -60,7 +60,8 @@ export default defineEventHandler(async (event) => {
     mode: 'payment',
     // Embedded checkout: the payment form renders inside CardDesk (no redirect
     // to Stripe's hosted page). On completion Stripe returns to our own
-    // return_url, which /account confirms.
+    // return_url — the account Billing tab, which confirms the purchase and
+    // shows the updated balance + the new receipt in place.
     ui_mode: 'embedded',
     payment_method_types: ['card'],
     line_items: [
@@ -83,7 +84,7 @@ export default defineEventHandler(async (event) => {
       user_id: userId,
     },
     return_url:
-      body?.returnUrl || `${appUrl}/account?credits_purchased=true&session_id={CHECKOUT_SESSION_ID}`,
+      body?.returnUrl || `${appUrl}/account?tab=billing&credits_purchased=true&session_id={CHECKOUT_SESSION_ID}`,
   })
 
   return { sessionId: checkout.id, clientSecret: checkout.client_secret }

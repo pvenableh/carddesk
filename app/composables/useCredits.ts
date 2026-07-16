@@ -34,6 +34,10 @@ export interface CreditRewardToast {
 export function useCredits() {
   const state = useState<CreditsState>('cd_credits', () => ({ ...DEFAULT }))
   const showBuyModal = useState<boolean>('cd_buy_modal', () => false)
+  // When the modal is opened for a specific package (e.g. from a package card on
+  // the /billing page), the modal reads this and jumps straight into that pack's
+  // checkout instead of re-showing the picker. Cleared once consumed.
+  const pendingPackage = useState<string | null>('cd_buy_pending', () => null)
   const purchasing = useState<string | null>('cd_credits_purchasing', () => null)
   const rewardToast = useState<CreditRewardToast | null>('cd_credit_reward', () => null)
   const analytics = useAnalytics()
@@ -47,8 +51,11 @@ export function useCredits() {
     }
   }
 
-  function openBuyModal() { showBuyModal.value = true }
-  function closeBuyModal() { showBuyModal.value = false; purchasing.value = null }
+  function openBuyModal(packageId?: string) {
+    pendingPackage.value = packageId ?? null
+    showBuyModal.value = true
+  }
+  function closeBuyModal() { showBuyModal.value = false; purchasing.value = null; pendingPackage.value = null }
 
   /**
    * Start a credit purchase. Returns the Stripe Checkout client secret for the
@@ -147,7 +154,7 @@ export function useCredits() {
   )
 
   return {
-    state, showBuyModal, purchasing, rewardToast,
+    state, showBuyModal, pendingPackage, purchasing, rewardToast,
     loadCredits, openBuyModal, closeBuyModal, purchase, confirmPurchase, claimRewards,
     isOrg, lowBalance, gaugePct, gaugeLevel, gaugeColor,
   }

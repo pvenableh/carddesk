@@ -59,12 +59,12 @@ const { actions } = useQuickActions()
 }
 .cd-qar-tile {
   position: relative;
-  width: 100%;
+  width: 60px;
   height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 16px;
+  border-radius: var(--cd-avatar-radius, 50%);
   /* Per-tile color coding so the rail reads as distinct shortcuts rather than a
      row of identical grey tiles. Tint comes from --qa-tint (set per action). */
   background: color-mix(in srgb, var(--qa-tint, var(--cd-accent)) 11%, var(--cd-bg2));
