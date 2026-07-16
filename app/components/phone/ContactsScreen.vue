@@ -352,7 +352,6 @@ async function runExport() {
         class="cd-crd cd-net-card"
         :class="{ 'cd-row-sel': selectMode && selectedIds.has(c.id), 'is-open': peeked.has(c.id) }"
       >
-        <div class="cd-cbar" :class="c.rating || 'none'"></div>
         <div
           class="cd-net-head"
           @click="selectMode ? toggleSelect(c.id) : goDetail(c.id)"
