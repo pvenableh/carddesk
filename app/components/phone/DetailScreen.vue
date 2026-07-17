@@ -7,7 +7,7 @@ import { cleanPhones } from '~/types/contact'
 import type { PipelineStage, OpportunityGoal } from '~/types/directus'
 import confettiLib from 'canvas-confetti'
 
-const { contacts, updateContact, uploadContactImage, removeContactImage, hibernate, logActivity, markResponded, unmarkResponded, updateActivity, deleteActivity, lastActivity, daysSince, followUpStatus, fetchContacts } = useContacts()
+const { contacts, updateContact, togglePin, uploadContactImage, removeContactImage, hibernate, logActivity, markResponded, unmarkResponded, updateActivity, deleteActivity, lastActivity, daysSince, followUpStatus, fetchContacts } = useContacts()
 const { state: xp, earn, deduct, completeMission } = useXp()
 const { success, error: showError } = useToast()
 const { selectedId, editing, nav } = useNavigation()
@@ -346,6 +346,13 @@ async function doUnmarkResponded(actId: string) {
 async function doHibernate(id: string) {
   await hibernate(id)
   nav('contacts')
+}
+
+// Pin toggle — floats this contact to the top of My Network. Stays on the
+// detail page (unlike hibernate) so the pinned state just flips in place.
+async function doTogglePin() {
+  if (!selContact.value) return
+  await togglePin(selContact.value.id)
 }
 
 // Quick temperature set — inline on the detail page, no edit mode needed.
@@ -749,6 +756,19 @@ function sessionLines(s: any): Array<{ title: string; body: string }> {
                 <div class="cd-det-name-row">
                   <button type="button" class="cd-det-name" title="Edit contact" @click="startEdit">{{ selContact.name }}</button>
                   <button type="button" class="cd-det-name-pen" tabindex="-1" aria-hidden="true" @click="startEdit"><CdIcon icon="lucide:pencil" :size="13" /></button>
+                  <!-- Pin toggle mirrors the network-list card: red pushpin when
+                       pinned, floating this contact to the top of My Network. -->
+                  <button
+                    type="button"
+                    class="cd-pin-tog"
+                    :class="{ on: (selContact as any).pinned }"
+                    :aria-label="(selContact as any).pinned ? 'Unpin contact' : 'Pin contact to top'"
+                    :aria-pressed="(selContact as any).pinned || false"
+                    :title="(selContact as any).pinned ? 'Pinned — tap to unpin' : 'Pin to top'"
+                    @click="doTogglePin"
+                  >
+                    <CdIcon emoji="📌" icon="lucide:pin" mode="svg" :size="15" />
+                  </button>
                 </div>
                 <div style="font-size: 12px; color: var(--cd-muted)">
                   {{ [(selContact as any).title, (selContact as any).company].filter(Boolean).join(' · ') }}
