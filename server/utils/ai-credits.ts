@@ -397,6 +397,20 @@ export async function addCreditsToUser(userId: string, credits: number): Promise
   return after?.ai_credit_balance ?? account.ai_credit_balance + credits
 }
 
+/**
+ * Reverse a credit grant — the refund counterpart of addCreditsToUser.
+ * FLOORS AT ZERO: a user who already spent some of a refunded purchase drops to
+ * 0 rather than going negative (we don't claw back usage they already had).
+ * Returns the new balance.
+ */
+export async function removeCreditsFromUser(userId: string, credits: number): Promise<number> {
+  const account = await getOrCreateCreditAccount(userId)
+  const after = await adjustCreditAccount(account.id, (row) => ({
+    ai_credit_balance: Math.max(0, row.ai_credit_balance - credits),
+  }))
+  return after?.ai_credit_balance ?? Math.max(0, account.ai_credit_balance - credits)
+}
+
 // ─── Earn-as-you-go rewards ───────────────────────────────────────────────
 
 /**

@@ -21,7 +21,7 @@ export function useAuth() {
     } finally { loading.value = false }
   }
 
-  async function register(data: { email: string; password: string; first_name?: string; last_name?: string; industry?: string; title?: string; location?: string }) {
+  async function register(data: { email: string; password: string; first_name?: string; last_name?: string; industry?: string; title?: string; location?: string; terms_accepted_at?: string }) {
     loading.value = true; error.value = null
     try {
       await $fetch('/api/auth/register', { method: 'POST', body: data })

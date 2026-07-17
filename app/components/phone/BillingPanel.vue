@@ -30,7 +30,7 @@ interface Purchase {
   credits: number
   amount_cents: number
   currency: string
-  status: 'paid' | 'pending' | 'failed'
+  status: 'paid' | 'pending' | 'failed' | 'refunded'
 }
 const purchases = ref<Purchase[]>([])
 const purchasesLoading = ref(true)
@@ -56,6 +56,31 @@ function purchaseDate(iso: string) {
   return Number.isNaN(d.getTime())
     ? ''
     : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+// ── Refunds (standalone users only — org users are billed through Earnest) ──
+// Refunds the Stripe charge and reverses the purchase's credits (floored at 0).
+const refundTarget = ref<Purchase | null>(null)
+const refundLoading = ref(false)
+const refundError = ref<string | null>(null)
+
+async function confirmRefund() {
+  const p = refundTarget.value
+  if (!p || refundLoading.value) return
+  refundLoading.value = true
+  refundError.value = null
+  try {
+    await $fetch('/api/stripe/credits/refund', {
+      method: 'POST',
+      body: { purchaseId: p.id },
+    })
+    refundTarget.value = null
+    await Promise.all([loadPurchases(), loadCredits()])
+  } catch (err: any) {
+    refundError.value = err?.data?.message || err?.message || 'Could not issue the refund.'
+  } finally {
+    refundLoading.value = false
+  }
 }
 
 // ── Post-checkout confirmation (Stripe returns to /account?tab=billing) ──
@@ -173,9 +198,39 @@ function buy(packageId?: string) {
                 <div class="bl-receipt-price">{{ priceLabel(p.amount_cents) }}</div>
                 <div class="bl-receipt-status" :class="'is-' + p.status">{{ p.status }}</div>
               </div>
+              <button
+                v-if="p.status === 'paid'"
+                type="button"
+                class="bl-receipt-refund"
+                :disabled="refundLoading"
+                @click="refundTarget = p"
+              >
+                Refund
+              </button>
             </li>
           </ul>
         </section>
+      </div>
+    </div>
+
+    <!-- Refund confirmation -->
+    <div v-if="refundTarget" class="bl-refund-scrim" @click.self="refundTarget = null">
+      <div class="bl-refund-modal" role="dialog" aria-modal="true" aria-label="Confirm refund">
+        <div class="bl-refund-title">Refund this purchase?</div>
+        <p class="bl-refund-body">
+          We’ll refund <strong>{{ priceLabel(refundTarget.amount_cents) }}</strong> to your original payment method and
+          remove <strong>{{ fmt(refundTarget.credits) }} credits</strong> from your balance. If you’ve already spent some,
+          your balance drops to zero rather than going negative. This can’t be undone.
+        </p>
+        <p v-if="refundError" class="bl-refund-error">{{ refundError }}</p>
+        <div class="bl-refund-actions">
+          <button type="button" class="bl-refund-cancel" :disabled="refundLoading" @click="refundTarget = null">
+            Cancel
+          </button>
+          <button type="button" class="bl-refund-confirm" :disabled="refundLoading" @click="confirmRefund">
+            {{ refundLoading ? 'Refunding…' : `Refund ${priceLabel(refundTarget.amount_cents)}` }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -405,4 +460,86 @@ function buy(packageId?: string) {
 .bl-receipt-status.is-paid { color: var(--cd-green, #16c784); }
 .bl-receipt-status.is-pending { color: #f59e0b; }
 .bl-receipt-status.is-failed { color: #f87171; }
+.bl-receipt-status.is-refunded { color: var(--cd-dim); }
+
+/* ── Refund action + confirmation ── */
+.bl-receipt-refund {
+  margin-left: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--cd-bdr);
+  background: transparent;
+  color: var(--cd-dim);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.bl-receipt-refund:hover:not(:disabled) {
+  color: #f87171;
+  border-color: #f87171;
+}
+.bl-receipt-refund:disabled { opacity: 0.5; cursor: default; }
+
+.bl-refund-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+}
+.bl-refund-modal {
+  width: 100%;
+  max-width: 340px;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--cd-bg2);
+  border: 1px solid var(--cd-bdr);
+}
+.bl-refund-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--cd-text);
+  margin-bottom: 8px;
+}
+.bl-refund-body {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--cd-muted);
+  margin-bottom: 12px;
+}
+.bl-refund-error {
+  font-size: 12px;
+  color: #f87171;
+  margin-bottom: 10px;
+}
+.bl-refund-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.bl-refund-cancel,
+.bl-refund-confirm {
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--cd-bdr);
+}
+.bl-refund-cancel {
+  background: transparent;
+  color: var(--cd-muted);
+}
+.bl-refund-confirm {
+  background: #f87171;
+  border-color: #f87171;
+  color: #fff;
+}
+.bl-refund-cancel:disabled,
+.bl-refund-confirm:disabled { opacity: 0.6; cursor: default; }
 </style>
