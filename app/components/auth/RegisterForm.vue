@@ -28,6 +28,11 @@ const schema = toTypedSchema(
       location: z.string().optional(),
       password: z.string().min(8, 'Password must be at least 8 characters'),
       confirmPassword: z.string().min(1, 'Please confirm your password'),
+      // Explicit, recorded consent — mirrors Earnest's signup (which stamps
+      // terms_accepted_at). CardDesk and Earnest share the same policies.
+      accept_terms: z.boolean().refine((v) => v === true, {
+        message: 'Please accept the Terms of Service and Privacy Policy',
+      }),
     })
     .refine((d) => d.password === d.confirmPassword, {
       path: ['confirmPassword'],
@@ -39,7 +44,7 @@ const { handleSubmit, errors, defineField } = useForm({
   validationSchema: schema,
   // Start fields as '' (not undefined) so zod's .min() messages show instead of
   // the generic "Required".
-  initialValues: { first_name: '', last_name: '', title: '', email: '', industry: '', location: '', password: '', confirmPassword: '' },
+  initialValues: { first_name: '', last_name: '', title: '', email: '', industry: '', location: '', password: '', confirmPassword: '', accept_terms: false },
 })
 const [firstName, firstNameAttrs] = defineField('first_name')
 const [lastName, lastNameAttrs] = defineField('last_name')
@@ -49,6 +54,7 @@ const [industry, industryAttrs] = defineField('industry')
 const [location, locationAttrs] = defineField('location')
 const [password, passwordAttrs] = defineField('password')
 const [confirmPassword, confirmAttrs] = defineField('confirmPassword')
+const [acceptTerms, acceptTermsAttrs] = defineField('accept_terms')
 
 const onSubmit = handleSubmit(async (values) => {
   try {
@@ -60,6 +66,8 @@ const onSubmit = handleSubmit(async (values) => {
       title: values.title || undefined,
       industry: values.industry,
       location: values.location || undefined,
+      // Recorded at the moment of consent (the box is required to submit).
+      terms_accepted_at: new Date().toISOString(),
     })
   } catch {
     // server-side error is surfaced via useAuth's `error`
@@ -130,6 +138,26 @@ const onSubmit = handleSubmit(async (values) => {
         <input v-model="confirmPassword" v-bind="confirmAttrs" type="password" class="auth-input" placeholder="••••••••" />
         <span v-if="errors.confirmPassword" class="auth-field-error">{{ errors.confirmPassword }}</span>
       </div>
+      <!-- Consent. Same policies as Earnest (one canonical copy on the
+           marketing site) — CardDesk is an Earnest companion app. -->
+      <div class="auth-consent">
+        <label class="auth-consent-row">
+          <input
+            v-model="acceptTerms"
+            v-bind="acceptTermsAttrs"
+            type="checkbox"
+            class="auth-consent-box"
+          />
+          <span class="auth-consent-text">
+            I agree to the
+            <a href="https://earnest.guru/terms-of-service" target="_blank" rel="noopener">Terms of Service</a>
+            and
+            <a href="https://earnest.guru/privacy-policy" target="_blank" rel="noopener">Privacy Policy</a>.
+          </span>
+        </label>
+        <span v-if="errors.accept_terms" class="auth-field-error">{{ errors.accept_terms }}</span>
+      </div>
+
       <button type="submit" :disabled="loading" class="auth-btn">
         {{ loading ? 'Creating account...' : 'Create Account →' }}
       </button>
@@ -149,5 +177,35 @@ const onSubmit = handleSubmit(async (values) => {
   font-size: 12px;
   font-weight: 600;
   color: #ff6b35;
+}
+
+/* ── Terms/Privacy consent ── */
+.auth-consent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  cursor: pointer;
+}
+.auth-consent-box {
+  margin-top: 2px;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  accent-color: var(--cd-accent);
+  cursor: pointer;
+}
+.auth-consent-text {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--cd-muted, #9aa3ad);
+}
+.auth-consent-text a {
+  color: var(--cd-text, #fff);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.auth-consent-text a:hover {
+  color: var(--cd-accent);
 }
 </style>
