@@ -29,14 +29,30 @@ export default defineNuxtPlugin(() => {
   const original = globalThis.$fetch
   if (!original || (original as any).__creditGuard) return
 
-  // Capture the state ref during plugin setup (valid Nuxt context).
+  // Capture the state refs during plugin setup (valid Nuxt context).
   const showBuyModal = useState<boolean>('cd_buy_modal', () => false)
+  const credits = useState<{ source?: 'user' | 'org' | null }>('cd_credits')
+  const { info } = useToast()
 
   const wrapped = ((request: any, options?: any) =>
     original(request, options).catch((err: any) => {
       const status = err?.status ?? err?.statusCode ?? err?.response?.status
       if (status === 402 && isOwnApiRequest(request)) {
-        showBuyModal.value = true
+        const msg = err?.data?.message ?? err?.response?._data?.message
+        // Earnest-org users are billed through Earnest — never show them the
+        // CardDesk Stripe purchase modal. Point them to Earnest instead. Key off
+        // the loaded billing source, with the 402 copy ("team's … tokens") as a
+        // fallback for the rare case credits haven't loaded yet.
+        const isOrg = credits.value?.source === 'org' || /team.+token/i.test(String(msg ?? ''))
+        if (isOrg) {
+          info(
+            typeof msg === 'string' && msg
+              ? msg
+              : 'Your team’s Earnest AI tokens are used up. Add more in Earnest to keep using AI features.',
+          )
+        } else {
+          showBuyModal.value = true
+        }
       }
       throw err
     })) as typeof globalThis.$fetch

@@ -1,5 +1,5 @@
 import type { H3Event } from 'h3'
-import { readMe, readItem, readItems, createItem, updateItem, updateItems } from '@directus/sdk'
+import { readMe, readUser, readItem, readItems, createItem, updateItem, updateItems } from '@directus/sdk'
 import { getDirectus, getUserDirectus } from './directus'
 import { getValidToken } from './auth'
 import { CLAUDE_MODELS } from './ai-models'
@@ -92,9 +92,47 @@ export interface ChargeUsage {
 
 // ─── Billing context ──────────────────────────────────────────────────────
 
+// Billing fields we read per org to decide which one to bill against.
+interface OrgBillingFields {
+  id: string | number
+  ai_token_balance?: number | null
+  ai_token_limit_monthly?: number | null
+  ai_tokens_used_this_period?: number | null
+}
+
+/** Whether an org has no AI headroom left (mirrors getOrgBilling's `depleted`). */
+function orgIsDepleted(o: OrgBillingFields): boolean {
+  const balance = o.ai_token_balance ?? null
+  const limit = o.ai_token_limit_monthly ?? null
+  const used = o.ai_tokens_used_this_period ?? 0
+  const unlimited = balance == null && limit == null
+  if (unlimited) return false
+  return (balance != null && balance <= 0) || (limit != null && used >= limit)
+}
+
 /**
- * Resolve the signed-in user's id and primary Earnest org (if any). Memoized
- * on the H3 event so repeated calls within one request don't re-hit /users/me.
+ * Choose which org to bill a multi-org user against. Prefers the first org with
+ * AI headroom over a blind `organizations[0]` — a user who belongs to one funded
+ * org and one depleted org should be billed against the funded one, regardless of
+ * junction order. Falls back to the first org (so a genuine "all depleted" state
+ * still surfaces a 402) and to null when they have no orgs.
+ */
+function pickBillingOrg(orgs: OrgBillingFields[]): string | null {
+  if (!orgs.length) return null
+  const chosen = orgs.find((o) => !orgIsDepleted(o)) ?? orgs[0]
+  return chosen?.id != null ? String(chosen.id) : null
+}
+
+/**
+ * Resolve the signed-in user's id and the Earnest org to bill against (if any).
+ * Memoized on the H3 event so repeated calls within one request don't re-resolve.
+ *
+ * The `organizations` M2M is read with the ADMIN token, not the caller's: the
+ * CardDesk user policy returns that relation blank on a user-token `readMe`
+ * (the same gap `fetchUserProfile` documents and works around in profile.ts), so
+ * trusting the user token would misclassify Earnest members as standalone users
+ * and bill them against an empty credit account. We take only the id from the
+ * user token (always readable) and read the orgs with the admin token.
  */
 export async function resolveBillingContext(
   event: H3Event,
@@ -103,19 +141,42 @@ export async function resolveBillingContext(
   if (ctx.cdBilling) return ctx.cdBilling
 
   const token = await getValidToken(event)
-  const userDx = getUserDirectus(token)
-  const me = (await userDx.request(
-    readMe({ fields: ['id', { organizations: [{ organizations_id: ['id'] }] }] as any }),
-  )) as any
+  const me = (await getUserDirectus(token).request(readMe({ fields: ['id'] as any }))) as any
   const userId = me?.id
   if (!userId) throw createError({ statusCode: 401, message: 'Not authenticated' })
 
   let orgId: string | null = null
-  if (Array.isArray(me.organizations) && me.organizations.length) {
-    const first = me.organizations[0]
-    const raw = first?.organizations_id?.id ?? first?.organizations_id ?? null
-    orgId = raw != null ? String(raw) : null
+  try {
+    const full = (await getDirectus().request(
+      readUser(userId, {
+        fields: [
+          {
+            organizations: [
+              {
+                organizations_id: [
+                  'id',
+                  'ai_token_balance',
+                  'ai_token_limit_monthly',
+                  'ai_tokens_used_this_period',
+                ],
+              },
+            ],
+          },
+        ] as unknown as string[],
+      }),
+    )) as any
+    const orgs: OrgBillingFields[] = Array.isArray(full?.organizations)
+      ? full.organizations
+          .map((o: any) => o?.organizations_id)
+          .filter((o: any) => o && o.id != null)
+      : []
+    orgId = pickBillingOrg(orgs)
+  } catch (err: any) {
+    // A transient org-read failure drops the user to the standalone-credit path
+    // (which still enforces credits) rather than erroring the whole request.
+    console.error('[ai-credits] org resolution read failed:', err?.message ?? err)
   }
+
   const result = { userId, orgId }
   ctx.cdBilling = result
   return result
