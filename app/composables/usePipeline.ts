@@ -50,6 +50,35 @@ export function usePipeline() {
   const analytics = useAnalytics()
 
   /**
+   * Persist a stage change. When the card is linked to an Earnest lead the LEAD
+   * owns the stage, so we write THROUGH the lead-stage endpoint (which maps +
+   * guards downgrades and mirrors the result back onto the card). Standalone or
+   * non-Earnest cards — and any failure/stale link — fall back to a plain
+   * pipeline_stage PATCH so a move is never blocked.
+   */
+  async function persistStage(contact: CdContact, stage: PipelineStage, meta: Partial<CdContact>) {
+    if (contact.earnest_lead_id) {
+      try {
+        const res = await $fetch<{ linked: boolean; cardStage?: PipelineStage }>(
+          `/api/contacts/${contact.id}/lead-stage`,
+          { method: 'POST', body: { stage } },
+        )
+        if (res?.linked) {
+          const reflected = (res.cardStage ?? stage) as PipelineStage
+          contacts.value = contacts.value.map((c) =>
+            c.id === contact.id ? { ...c, pipeline_stage: reflected } : c,
+          )
+          if (Object.keys(meta).length) await updateContact(contact.id, meta as any)
+          return
+        }
+      } catch {
+        // fall through to a local write
+      }
+    }
+    await updateContact(contact.id, { pipeline_stage: stage, ...meta } as any)
+  }
+
+  /**
    * Move a contact along the forward path (new/warming/opportunity) or off-ramp it (lost).
    * Graduating to client/partner goes through `graduate()` instead.
    */
@@ -62,14 +91,16 @@ export function usePipeline() {
     if (!contact) return
 
     const oldStage = contact.pipeline_stage
-    const payload: Partial<CdContact> = { pipeline_stage: stage }
-    if (metadata?.estimated_value !== undefined) payload.estimated_value = metadata.estimated_value
-    if (metadata?.lost_reason) payload.lost_reason = metadata.lost_reason
-    if (metadata?.opportunity_goal) payload.opportunity_goal = metadata.opportunity_goal
+    // Card-local fields that never live on the lead — persisted regardless of
+    // whether the stage itself is owned by a linked Earnest lead.
     // Note: the goal tag is an independent, optional marker — it persists across
     // stage moves (set/cleared only via the goal chip), so it's never wiped here.
+    const meta: Partial<CdContact> = {}
+    if (metadata?.estimated_value !== undefined) meta.estimated_value = metadata.estimated_value
+    if (metadata?.lost_reason) meta.lost_reason = metadata.lost_reason
+    if (metadata?.opportunity_goal) meta.opportunity_goal = metadata.opportunity_goal
 
-    await updateContact(contactId, payload as any)
+    await persistStage(contact, stage, meta)
 
     const stageLabel = PIPELINE_STAGES.find((s) => s.key === stage)?.label ?? stage
     const fromLabel = oldStage ? (PIPELINE_STAGES.find((s) => s.key === oldStage)?.label ?? oldStage) : 'none'
@@ -134,6 +165,14 @@ export function usePipeline() {
 
     await updateContact(contactId, payload as any)
 
+    // Keep the linked Earnest lead in step: client → won (partner has no lead
+    // equivalent, so the endpoint no-ops on the lead). Non-fatal.
+    if (contact.earnest_lead_id) {
+      try {
+        await $fetch(`/api/contacts/${contactId}/lead-stage`, { method: 'POST', body: { stage: goal } })
+      } catch { /* lead sync is best-effort */ }
+    }
+
     const label = goal === 'client' ? 'Converted to Client' : 'Became a Partner'
     await logActivity({
       contact: contactId,
@@ -161,6 +200,13 @@ export function usePipeline() {
       is_partner: false,
       partner_at: null,
     } as any)
+
+    // Walk the linked lead back too (won → qualified, guarded). Non-fatal.
+    if (contact.earnest_lead_id) {
+      try {
+        await $fetch(`/api/contacts/${contactId}/lead-stage`, { method: 'POST', body: { stage: 'opportunity' } })
+      } catch { /* lead sync is best-effort */ }
+    }
     const extras = wasClient ? { total_clients: Math.max(0, (xp.value.total_clients ?? 1) - 1) } : {}
     deduct(PIPELINE_XP[wasClient ? 'client' : 'partner'] ?? 200, '↩️', 'Back to an active contact', extras)
   }

@@ -101,8 +101,9 @@ export default defineEventHandler(async (event) => {
     try {
       const lead: any = await admin.request(
         createItem('leads', {
-          name: `${cd.first_name || cd.name || 'Contact'} ${cd.last_name || ''}`.trim() + ' (Card Desk)',
+          name: `${cd.first_name || cd.name || 'Contact'} ${cd.last_name || ''}`.trim(),
           stage: (cd.rating && STAGE_FROM_RATING[cd.rating]) || 'new',
+          source: 'carddesk',
           related_contact: contactId,
           assigned_to: userId,
           organization: orgId,

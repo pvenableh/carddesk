@@ -1,8 +1,9 @@
 import { readItems } from "@directus/sdk";
-import { getUserDirectus } from "../../utils/directus";
+import { getDirectus, getUserDirectus } from "../../utils/directus";
 import { getValidToken } from "../../utils/auth";
 import { assetUrl } from "../../utils/cards";
 import { SOCIAL_KEYS } from "~/types/socials";
+import { leadStageToCard } from "~/types/pipeline-map";
 
 export default defineEventHandler(async (event) => {
   const token = await getValidToken(event);
@@ -70,6 +71,39 @@ export default defineEventHandler(async (event) => {
         limit: 200,
       }),
     )) as any[];
+
+    // Reflect the canonical Earnest lead stage onto linked cards (the lead owns
+    // the stage once promoted). Best-effort with the admin token — the CardDesk
+    // user policy can't read `leads`; if it fails we fall back to the card's
+    // stored pipeline_stage so the list still renders.
+    const leadIds = [
+      ...new Set(rows.filter((c) => c.earnest_lead_id).map((c) => String(c.earnest_lead_id))),
+    ];
+    if (leadIds.length) {
+      try {
+        const leads = (await getDirectus().request(
+          readItems("leads", {
+            fields: ["id", "stage"],
+            filter: { id: { _in: leadIds } },
+            limit: leadIds.length,
+          }),
+        )) as any[];
+        const stageById = new Map(leads.map((l) => [String(l.id), l.stage]));
+        for (const c of rows) {
+          if (!c.earnest_lead_id) continue;
+          const leadStage = stageById.get(String(c.earnest_lead_id));
+          const reflected = leadStageToCard(leadStage);
+          if (reflected) {
+            c.pipeline_stage = reflected;
+            c.lead_stage = leadStage;
+            c.linked = true;
+          }
+        }
+      } catch (e: any) {
+        console.error("[GET /api/contacts] lead-stage reflection skipped:", e?.message ?? e);
+      }
+    }
+
     // Resolve the contact photo file id → absolute asset URL for the client.
     return rows.map((c) => ({ ...c, imageUrl: assetUrl(c.image) }));
   } catch (err: any) {
