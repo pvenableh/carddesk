@@ -174,11 +174,19 @@ export default defineNuxtConfig({
     googlePlacesApiKey: process.env.GOOGLE_PLACES_API_KEY || '',
     // nuxt-auth-utils session cookie. Without an explicit maxAge the sealed
     // session is a browser-session cookie — dropped when the browser/PWA fully
-    // closes, which read as a surprise logout. Pin it to ~7 days to match
-    // Directus's refresh-token window; an expired refresh is handled gracefully
-    // in server/utils/auth.ts (re-login only on an explicit token rejection).
+    // closes, which read as a surprise logout.
+    //
+    // maxAge is the ABSOLUTE window. h3 anchors expiry to the session's
+    // createdAt and never moves it on update, so on its own this is a fixed
+    // window from login (force-logout N days after login regardless of use).
+    // server/utils/auth.ts → getValidToken resets createdAt (throttled to
+    // once/day) on authenticated requests, making this a *sliding* 30-day
+    // window: an actively-used app effectively never logs you out; ~30 days of
+    // real inactivity ends it. (Directus's refresh-token TTL is the other cap —
+    // an expired refresh is handled gracefully: re-login only on explicit
+    // token rejection.)
     session: {
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 60 * 60 * 24 * 30,
       cookie: { sameSite: 'lax' },
     },
     public: {

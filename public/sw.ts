@@ -31,8 +31,17 @@ declare const self: ServiceWorkerGlobalScope & {
 precacheAndRoute(self.__WB_MANIFEST || [])
 
 // 2) Runtime caching — replicates the previous generateSW rules.
+//
+// AUTH/SESSION MUST NEVER BE CACHED. `/api/_auth/session` (nuxt-auth-utils) and
+// `/api/auth/*` decide whether the user is logged in — they're just server-side
+// cookie work, with no offline value. Caching them meant that on a PWA resume
+// over a slow radio (NetworkFirst falls back to cache after 3s) the app could
+// read a STALE or pre-login EMPTY session and bounce the user to /login. That
+// was the "logged out too quickly on iPhone" bug. Skip them so the session read
+// always hits the network; only other GET /api/* data is cached for offline.
+const AUTH_ROUTE = /^\/api\/(_auth|auth)\b/
 registerRoute(
-  ({ url }) => url.pathname.startsWith('/api/'),
+  ({ url }) => url.pathname.startsWith('/api/') && !AUTH_ROUTE.test(url.pathname),
   new NetworkFirst({
     cacheName: 'cd-api',
     networkTimeoutSeconds: 3,

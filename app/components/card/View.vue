@@ -14,7 +14,7 @@
  * every viewer (it does NOT inherit the viewer's app theme/palette) and works
  * full-screen on `/c/:id` or shrunk into the account live-preview unchanged.
  */
-import { buildVCard, useShare } from '~/composables/useShare'
+import { useShare } from '~/composables/useShare'
 import { SOCIALS, socialUrl } from '~/types/socials'
 import { normalizeCardTheme } from '~/composables/useCardThemes'
 
@@ -112,6 +112,15 @@ async function saveContact() {
   await shareContact(props.card)
 }
 
+// ── AirDrop this card — same .vcf, but framed as the "push it to the phone next
+// to me" action. navigator.share opens the iOS share sheet where AirDrop lives;
+// on desktop/Android without file-share it falls back to a .vcf download. ──
+async function airdropCard() {
+  if (!props.interactive) return
+  const res = await shareContact(props.card)
+  if (res === 'downloaded') success('Card saved — AirDrop needs an iPhone or Mac nearby')
+}
+
 // ── Share this card link ──
 async function shareCard() {
   if (!props.interactive) return
@@ -121,20 +130,25 @@ async function shareCard() {
   if (res === 'copied') success('Card link copied!')
 }
 
-// ── QR — encodes the vCard itself so a camera scan offers "Add Contact" with no
-// extra hop. Opens a full-screen overlay (the "show my phone" view). Generated
-// lazily the first time it's opened. ──
+// ── QR — encodes the card URL (/c/:id), NOT the raw vCard. The iOS Camera app
+// only auto-detects URL QR codes; a raw BEGIN:VCARD payload is silently ignored
+// (no "Add Contact" prompt). Scanning the URL opens this card page, where the
+// visitor taps "Save contact". Opens a full-screen overlay ("show my phone");
+// generated lazily the first time it's opened. ──
 const qrOpen = ref(false)
 const qr = ref('')
+function qrValue() {
+  return props.shareUrl || (import.meta.client ? window.location.href : '')
+}
 async function openQr() {
   qrOpen.value = true
   if (qr.value || !import.meta.client) return
   const QR = await import('qrcode')
-  qr.value = await QR.toDataURL(buildVCard(props.card), { margin: 1, width: 420, color: { dark: '#0a0a0a', light: '#ffffff' } })
+  qr.value = await QR.toDataURL(qrValue(), { margin: 1, width: 420, color: { dark: '#0a0a0a', light: '#ffffff' } })
 }
-// Drop the cached QR when card data changes (live preview edits).
+// Drop the cached QR if the share URL changes (e.g. preview theme switch).
 watch(
-  () => buildVCard(props.card),
+  () => props.shareUrl,
   () => {
     qr.value = ''
   },
@@ -333,7 +347,8 @@ onBeforeUnmount(() => {
               <div v-else class="cv-qr-load"><CdIcon emoji="⏳" icon="lucide:loader-circle" :size="30" /></div>
             </div>
             <div class="cv-qrov-actions">
-              <button class="cv-qrov-act primary" type="button" @click="saveContact"><CdIcon icon="lucide:user-plus" :size="16" /> Save contact</button>
+              <button class="cv-qrov-act primary wide" type="button" @click="airdropCard"><CdIcon icon="lucide:share-2" :size="16" /> AirDrop my card</button>
+              <button class="cv-qrov-act" type="button" @click="saveContact"><CdIcon icon="lucide:user-plus" :size="16" /> Save contact</button>
               <button class="cv-qrov-act" type="button" @click="shareCard"><CdIcon icon="lucide:link" :size="16" /> Copy link</button>
             </div>
           </div>
@@ -884,10 +899,13 @@ onBeforeUnmount(() => {
 }
 .cv-qrov-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 22px;
   width: min(80vw, 300px);
 }
+/* Full-width row — the AirDrop action sits on its own line above the pair. */
+.cv-qrov-act.wide { flex-basis: 100%; }
 .cv-qrov-act {
   flex: 1;
   display: inline-flex;

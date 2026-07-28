@@ -71,6 +71,30 @@ async function refreshTokens(refreshToken: string) {
 }
 
 /**
+ * Sliding-session renewal. h3 anchors the sealed cookie's expiry to the
+ * session's `createdAt` and never moves it on `setUserSession` updates, so the
+ * `maxAge` in nuxt.config would otherwise be a FIXED window from login — a
+ * logged-in user gets force-expired N days after login no matter how actively
+ * they use the app. We reset `createdAt` on the in-context session (throttled to
+ * at most once per day) so any authenticated request slides the window forward.
+ *
+ * `getUserSession()` above populates `event.context.sessions[SESSION_NAME]`;
+ * mutating its `createdAt` here means the next `setUserSession` re-seals the
+ * cookie with `expires = now + maxAge`. Returns true if it moved the anchor, so
+ * the caller re-seals even when no token refresh happens.
+ */
+const SESSION_NAME = 'nuxt-session' // must match nuxt.config.ts → session (nuxt-auth-utils default)
+const SLIDE_THROTTLE_MS = 24 * 60 * 60 * 1000 // slide at most once/day — one re-seal/day, not per request
+
+function slideSessionAnchor(event: H3Event): boolean {
+  const raw = (event.context as any).sessions?.[SESSION_NAME]
+  if (!raw?.createdAt) return false
+  if (Date.now() - raw.createdAt < SLIDE_THROTTLE_MS) return false
+  raw.createdAt = Date.now()
+  return true
+}
+
+/**
  * Gets a valid Directus access token from the session, auto-refreshing if expired or expiring soon.
  * Returns the token and throws a 401 error if not authenticated or refresh fails.
  */
@@ -83,8 +107,15 @@ export async function getValidToken(event: H3Event): Promise<string> {
   const expiresAt = session.user.expires_at ?? 0
   const needsRefresh = expiresAt - now < 60_000 // refresh if <60s left
 
-  if (!needsRefresh || !session.user.refresh_token)
+  // Slide the absolute session window forward on activity (throttled).
+  const slid = slideSessionAnchor(event)
+
+  if (!needsRefresh || !session.user.refresh_token) {
+    // No token refresh needed; re-seal only if we actually moved the anchor, so
+    // the fresh createdAt (→ later cookie expiry) is written back to the client.
+    if (slid) await setUserSession(event, {})
     return session.user.access_token
+  }
 
   const refreshToken = session.user.refresh_token
   try {

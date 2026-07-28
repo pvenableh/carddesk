@@ -2,7 +2,7 @@
 import { SOCIALS, socialUrl } from '~/types/socials'
 
 const { open, tab, hide } = useShareSheet()
-const { shareUrl } = useShare()
+const { shareUrl, shareContact } = useShare()
 const { success } = useToast()
 
 interface MyCard { id: string; url: string; name: string; title: string | null; company: string | null; [key: string]: any }
@@ -56,6 +56,14 @@ async function shareMyCard() {
   const res = await shareUrl({ url: card.value.url, title: `${card.value.name} · CardDesk`, text: 'Here’s my CardDesk card' })
   if (res === 'copied') success('Card link copied!')
 }
+// Send the card as a .vcf through the share sheet — on iPhone the share sheet
+// includes AirDrop, so this is the "hold my phone up and AirDrop my contact"
+// path. Falls back to a .vcf download on platforms without file sharing.
+async function airdropMyCard() {
+  if (!card.value) return
+  const res = await shareContact(card.value as any)
+  if (res === 'downloaded') success('Contact card downloaded!')
+}
 async function shareInvite() {
   if (!invite.value) return
   const res = await shareUrl({ url: invite.value.url, title: 'Join me on CardDesk', text: 'Connect with me on CardDesk 🎴' })
@@ -108,7 +116,8 @@ const inviteSms = computed(() => 'sms:?&body=' + encodeURIComponent(inviteMsg.va
               <a v-for="s in cardSocials" :key="s.key" :href="socialUrl(s.key, (card as any)[s.key])" target="_blank" rel="noopener" :aria-label="s.label"><Icon :name="s.icon" :size="20" /></a>
             </div>
           </div>
-          <a v-if="card" class="cd-abtn g" style="margin-bottom: 8px; text-decoration: none" :href="card.url" target="_blank" rel="noopener"><CdIcon emoji="👁" icon="lucide:external-link" :size="14" /> View my card</a>
+          <button class="cd-abtn g" style="margin-bottom: 8px" @click="airdropMyCard"><CdIcon emoji="📇" icon="lucide:share-2" :size="14" /> AirDrop my card</button>
+          <a v-if="card" class="cd-abtn" style="background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr); margin-bottom: 8px; text-decoration: none" :href="card.url" target="_blank" rel="noopener"><CdIcon emoji="👁" icon="lucide:external-link" :size="14" /> View my card</a>
           <button class="cd-abtn" style="background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr); margin-bottom: 8px" @click="shareMyCard"><CdIcon emoji="📤" icon="lucide:share" :size="14" /> Share my card</button>
           <button class="cd-abtn" style="background: transparent; color: var(--cd-muted); border-color: var(--cd-bdr)" @click="editCard"><CdIcon emoji="✏️" icon="lucide:pencil" :size="13" /> Edit my card</button>
         </template>
