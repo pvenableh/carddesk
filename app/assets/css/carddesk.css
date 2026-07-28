@@ -2415,6 +2415,35 @@ html[data-theme="glass"][data-cd-glass="full"][data-mode="dark"] .cd-root {
     var(--cd-bg);
 }
 
+/* Paint the same aurora on the ROOT element as well. The root's background is
+ * propagated to the viewport canvas, so it always covers the entire screen —
+ * including the home-indicator safe-area strip below the bottom nav — from the
+ * first paint. Without this, .cd-root (height: 100dvh) can momentarily fall
+ * short of the physical bottom in an installed iOS PWA until a reflow (e.g.
+ * opening/closing the Ask-Earnest sheet) corrects the dynamic viewport, leaving
+ * a flat black bar under the nav until then. The gradients are anchored to the
+ * canvas, so they line up with .cd-root's copy painted on top. */
+html[data-theme="glass"][data-cd-glass="full"][data-mode="light"] {
+  background:
+    radial-gradient(125% 80% at 0% 0%,
+      hsl(var(--cd-tint-1-h, 220) var(--cd-tint-1-s, 60%) 90% / 0.55) 0%, transparent 55%),
+    radial-gradient(120% 85% at 100% 0%,
+      hsl(var(--cd-tint-3-h, 300) var(--cd-tint-3-s, 60%) 90% / 0.45) 0%, transparent 52%),
+    radial-gradient(150% 100% at 50% 100%,
+      hsl(var(--cd-tint-4-h, 160) var(--cd-tint-4-s, 55%) 92% / 0.5) 0%, transparent 60%),
+    var(--cd-bg);
+}
+html[data-theme="glass"][data-cd-glass="full"][data-mode="dark"] {
+  background:
+    radial-gradient(125% 80% at 0% 0%,
+      hsl(var(--cd-tint-1-h, 220) var(--cd-tint-1-s, 60%) 32% / 0.4) 0%, transparent 55%),
+    radial-gradient(120% 85% at 100% 0%,
+      hsl(var(--cd-tint-3-h, 300) var(--cd-tint-3-s, 60%) 34% / 0.32) 0%, transparent 52%),
+    radial-gradient(150% 100% at 50% 100%,
+      hsl(var(--cd-tint-4-h, 160) var(--cd-tint-4-s, 55%) 32% / 0.34) 0%, transparent 60%),
+    var(--cd-bg);
+}
+
 /* ── Translucent liquid-glass card surfaces (full mode) ──
  * Overrides the earlier "flatten to --cd-bg2" + light-elevation rules by
  * specificity (3 attrs + class vs 1-2 attrs + class). */
