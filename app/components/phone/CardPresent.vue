@@ -70,6 +70,10 @@ watch(open, (v) => {
   min-height: 100%;
   display: flex;
   flex-direction: column;
+  /* Grow the card's cover banner by the top safe-area (plus a little) so it
+     clears the notch and pushes the photo/logo down, out from under the fixed
+     close button. Read by CardView's .cv-cover. */
+  --cv-cover-safe: calc(env(safe-area-inset-top, 0px) + 12px);
 }
 .mycard-scroll :deep(.cv) {
   flex: 1;

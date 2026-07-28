@@ -469,7 +469,10 @@ onBeforeUnmount(() => {
   position: relative;
   z-index: 0;
   width: 100%;
-  height: clamp(168px, 36vw, 260px);
+  /* --cv-cover-safe lets a full-screen host (e.g. the "My card" overlay) grow
+     the cover by the top safe-area inset so the banner clears the notch and the
+     card content drops below it. Defaults to 0 — public/embed pages unaffected. */
+  height: calc(clamp(168px, 36vw, 260px) + var(--cv-cover-safe, 0px));
   overflow: hidden;
   flex-shrink: 0;
   will-change: transform;

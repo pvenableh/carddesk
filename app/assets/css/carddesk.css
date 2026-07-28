@@ -208,6 +208,14 @@ html[data-theme="glass"][data-mode="light"] .cd-scan-captured {
 html[data-theme="glass"] .cd-bnav {
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
+  /* Installed-PWA fix: the icons/labels sit in the top of the bar and the
+     home-indicator safe-area padding below them was filled by the near-opaque
+     plinth — a flat dark band ("black space below the icons"). Fade the bar's
+     paint out over just that bottom strip so the app's ambient gradient shows
+     through there, matching the frosted header. No effect when the inset is 0
+     (desktop / non-notched), so nothing changes off-device. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - env(safe-area-inset-bottom, 0px)), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - env(safe-area-inset-bottom, 0px)), transparent 100%);
 }
 html[data-theme="glass"][data-mode="light"] .cd-bnav {
   background: rgba(255, 255, 255, 0.72);
