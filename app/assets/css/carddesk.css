@@ -208,21 +208,19 @@ html[data-theme="glass"][data-mode="light"] .cd-scan-captured {
 html[data-theme="glass"] .cd-bnav {
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
-  /* Installed-PWA fix: the icons/labels sit in the top of the bar and the
-     home-indicator safe-area padding below them was filled by the near-opaque
-     plinth — a flat dark band ("black space below the icons"). Fade the bar's
-     paint out over just that bottom strip so the app's ambient gradient shows
-     through there, matching the frosted header. No effect when the inset is 0
-     (desktop / non-notched), so nothing changes off-device. */
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - env(safe-area-inset-bottom, 0px)), transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 calc(100% - env(safe-area-inset-bottom, 0px)), transparent 100%);
 }
 html[data-theme="glass"][data-mode="light"] .cd-bnav {
   background: rgba(255, 255, 255, 0.72);
   border-top-color: rgba(0, 0, 0, 0.04);
 }
+/* Lower the dark plinth opacity so the app's ambient gradient reads through the
+   whole frosted bar (incl. the home-indicator safe-area strip) instead of the
+   bar looking like a flat black block over the dimmer bottom aurora. The header
+   sits over the bright top aurora so it reads gradient-y even at high opacity;
+   the nav sits over dimmer bottom aurora and needs to be more translucent to
+   match. Blur keeps the labels legible. */
 html[data-theme="glass"][data-mode="dark"] .cd-bnav {
-  background: rgba(30, 30, 30, 0.72);
+  background: rgba(30, 30, 30, 0.5);
   border-top-color: rgba(255, 255, 255, 0.06);
 }
 
@@ -2306,15 +2304,19 @@ html[data-theme="glass"][data-cd-tint="on"][data-mode="light"] .cd-bnav {
 }
 
 html[data-theme="glass"][data-cd-tint="on"][data-mode="dark"] .cd-bnav {
+  /* Plinth lowered from 0.92 → 0.5 so the ambient bottom aurora reads through
+     the frosted bar (incl. the home-indicator strip) rather than the bar
+     looking like a flat black block. Tint stops bumped a touch so the bar keeps
+     its palette wash at the lower opacity. */
   background:
     linear-gradient(
       135deg,
-      hsl(var(--cd-tint-1-h, 220) var(--cd-tint-1-s, 50%) var(--cd-tint-1-l, 55%) / 0.34) 0%,
-      hsl(var(--cd-tint-2-h, 200) var(--cd-tint-2-s, 50%) var(--cd-tint-2-l, 55%) / 0.28) 35%,
-      hsl(var(--cd-tint-3-h, 320) var(--cd-tint-3-s, 50%) var(--cd-tint-3-l, 55%) / 0.30) 65%,
-      hsl(var(--cd-tint-4-h, 145) var(--cd-tint-4-s, 50%) var(--cd-tint-4-l, 55%) / 0.34) 100%
+      hsl(var(--cd-tint-1-h, 220) var(--cd-tint-1-s, 50%) var(--cd-tint-1-l, 55%) / 0.42) 0%,
+      hsl(var(--cd-tint-2-h, 200) var(--cd-tint-2-s, 50%) var(--cd-tint-2-l, 55%) / 0.34) 35%,
+      hsl(var(--cd-tint-3-h, 320) var(--cd-tint-3-s, 50%) var(--cd-tint-3-l, 55%) / 0.36) 65%,
+      hsl(var(--cd-tint-4-h, 145) var(--cd-tint-4-s, 50%) var(--cd-tint-4-l, 55%) / 0.42) 100%
     ),
-    rgba(28, 30, 32, 0.92);
+    rgba(28, 30, 32, 0.5);
 }
 
 /* Status bar — softer alphas so the logo + time stay readable over the
