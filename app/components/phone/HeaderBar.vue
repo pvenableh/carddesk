@@ -57,6 +57,11 @@ onUnmounted(() => {
   document.removeEventListener('click', onClickOutside)
 })
 
+// The bell lives next to the credit gauge: both are "state of your account
+// right now" rather than navigation.
+const { unread: unreadNotifications, show: openNotifications, load: loadNotifications } = useNotifications()
+onMounted(() => loadNotifications())
+
 function onClickOutside(e: MouseEvent) {
   if (dropdownRef.value && !dropdownRef.value.contains(e.target as Node)) {
     closeDropdown()
@@ -85,6 +90,17 @@ function onClickOutside(e: MouseEvent) {
     </div>
     <button class="cd-sbar-logo" type="button" aria-label="Home" @click="goHome"><span class="cd-sbar-logo-brand">CARD</span><span class="cd-sbar-logo-accent">DESK</span></button>
     <div class="cd-sbar-right">
+      <CdTooltip :label="unreadNotifications ? `${unreadNotifications} unread` : 'Notifications'" placement="bottom-end">
+        <button
+          class="cd-sbar-btn cd-sbar-bell"
+          type="button"
+          :aria-label="unreadNotifications ? `Notifications, ${unreadNotifications} unread` : 'Notifications'"
+          @click="openNotifications()"
+        >
+          <CdIcon :icon="unreadNotifications ? 'lucide:bell-ring' : 'lucide:bell'" :size="17" />
+          <span v-if="unreadNotifications" class="cd-sbar-bell-count">{{ unreadNotifications > 9 ? '9+' : unreadNotifications }}</span>
+        </button>
+      </CdTooltip>
       <PhoneCreditGauge />
     <div ref="dropdownRef" class="cd-avatar-wrap">
       <button class="cd-avatar" @click="toggleDropdown">{{ initials }}</button>
@@ -123,6 +139,24 @@ function onClickOutside(e: MouseEvent) {
 </template>
 
 <style scoped>
+.cd-sbar-bell { position: relative; }
+.cd-sbar-bell-count {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--cd-accent);
+  color: #04120a;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 15px;
+  text-align: center;
+  /* Cut the pip out of the button edge so it reads as attached, not floating. */
+  box-shadow: 0 0 0 2px var(--cd-bg);
+}
 .cd-sbar {
   padding: calc(env(safe-area-inset-top, 8px) + 6px) 20px 6px;
   display: flex;

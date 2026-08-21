@@ -323,6 +323,9 @@ self.addEventListener('push', (event) => {
     work.push(
       typeof payload.badgeCount === 'number' ? setBadge(payload.badgeCount) : bumpBadge(1),
     )
+    // An open window should show the new row in the bell without waiting for a
+    // reload — the inbox is the durable record, this is just the nudge to refetch.
+    work.push(notifyClients({ type: 'cd-notification' }))
   }
 
   event.waitUntil(Promise.all(work))

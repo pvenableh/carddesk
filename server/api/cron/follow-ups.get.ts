@@ -82,7 +82,7 @@ export default defineEventHandler(async (event) => {
     sends.push(cdPushToUser(userId, {
       title: count === 1 ? 'Hot contact needs a follow-up' : `${count} hot contacts need follow-ups`,
       body: `${first}${tail} — last touch over 10 days ago.`,
-      url: '/?filter=overdue',
+      url: '/?s=contacts',
       tag: 'cd-follow-ups',
       data: { kind: 'follow_ups', count },
     }).then((r) => { delivered += r.sent }))

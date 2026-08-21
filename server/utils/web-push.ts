@@ -6,7 +6,7 @@
 // callers (cron-triggered) don't need a user session in scope.
 
 import webpush from 'web-push'
-import { createDirectus, deleteItem, readItems, rest, staticToken, updateItem } from '@directus/sdk'
+import { createDirectus, createItem, deleteItem, readItems, rest, staticToken, updateItem } from '@directus/sdk'
 
 let configured = false
 
@@ -136,6 +136,34 @@ async function deliver(subs: CdPushSub[], payload: CdPushPayload): Promise<CdPus
 }
 
 /**
+ * Write the notification to the inbox and return its id.
+ *
+ * The row is the durable thing here; the push is only delivery. A nudge that
+ * arrives while the phone is face-down used to be gone the moment it was
+ * dismissed — now the app can still show it, count it, and clear it when read.
+ *
+ * Never throws: failing to record must not stop a send.
+ */
+async function recordNotification(recipientId: string, payload: CdPushPayload): Promise<string | null> {
+  try {
+    const created = await adminDirectus().request(
+      createItem('cd_notifications' as any, {
+        user: recipientId,
+        kind: payload.data?.kind || payload.type || null,
+        title: payload.title,
+        body: payload.body || null,
+        url: payload.url || '/',
+        data: payload.data || null,
+      } as any),
+    )
+    return (created as any)?.id ?? null
+  } catch (err) {
+    console.error('[cd web-push] could not record notification', err)
+    return null
+  }
+}
+
+/**
  * Send a CardDesk push to every CardDesk subscription belonging to a
  * recipient. Filters by `origin LIKE '%carddesk%'` so an Earnest-only
  * subscription doesn't get this notification.
@@ -147,11 +175,20 @@ async function deliver(subs: CdPushSub[], payload: CdPushPayload): Promise<CdPus
 export async function cdPushToUser(
   recipientId: string,
   payload: CdPushPayload,
-  opts?: { excludeUserAgentSubstring?: string | null },
+  opts?: { excludeUserAgentSubstring?: string | null; persist?: boolean },
 ): Promise<CdPushResult> {
   const empty: CdPushResult = { sent: 0, failed: 0, pruned: 0 }
-  if (!ensureConfigured()) return empty
   if (!recipientId) return empty
+
+  // Record FIRST, and regardless of whether anything can be delivered: a user
+  // with no subscription (or push switched off entirely) should still find the
+  // nudge waiting in the app. Delivery is the optional half, not this.
+  const notificationId = opts?.persist === false ? null : await recordNotification(recipientId, payload)
+  const outgoing: CdPushPayload = notificationId
+    ? { ...payload, data: { ...(payload.data || {}), notificationId } }
+    : payload
+
+  if (!ensureConfigured()) return empty
 
   const subs = await loadSubs({
     _and: [{ user: { _eq: recipientId } }, { origin: { _contains: 'carddesk' } }],
@@ -160,7 +197,7 @@ export async function cdPushToUser(
 
   const exclude = opts?.excludeUserAgentSubstring || ''
   const targets = exclude ? subs.filter((s) => !s.user_agent || !s.user_agent.includes(exclude)) : subs
-  return deliver(targets, payload)
+  return deliver(targets, outgoing)
 }
 
 /**

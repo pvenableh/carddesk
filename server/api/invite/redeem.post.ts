@@ -3,6 +3,7 @@ import { getDirectus } from '../../utils/directus'
 import { getCurrentUserId } from '../../utils/auth'
 import { emitFeedEvent } from '../../utils/feed'
 import { awardServerXp } from '../../utils/xp'
+import { cdPushToUser } from '../../utils/web-push'
 
 /**
  * Redeem an invite code (called after the invitee signs up / logs in). Creates
@@ -130,6 +131,27 @@ export default defineEventHandler(async (event) => {
   // The inviter is typically offline when their link converts — credit them
   // server-side and bump their accepted-invite counter (drives the Recruiter badge).
   await awardServerXp(inviter, 75, { invites_accepted: 1 })
+
+  // Someone taking you up on an invite is the single best moment to be told
+  // about — it's a live connection you could follow up on today. Fire-and-forget
+  // and awaited: the row lands in their inbox whether or not push is on.
+  try {
+    const joiner = (await admin.request(
+      readUsers({ filter: { id: { _eq: me } } as any, fields: ['first_name', 'last_name'], limit: 1 }),
+    ))?.[0] as { first_name?: string; last_name?: string } | undefined
+    const joinerName = [joiner?.first_name, joiner?.last_name].filter(Boolean).join(' ').trim()
+    await cdPushToUser(inviter, {
+      title: joinerName ? `${joinerName} joined CardDesk` : 'Your invite was accepted',
+      body: joinerName
+        ? `${joinerName} accepted your invite — you're connected. Say hello while it's warm.`
+        : "Someone accepted your invite — you're connected now.",
+      url: '/?s=feed',
+      tag: 'cd-invite-accepted',
+      data: { kind: 'invite_accepted' },
+    })
+  } catch (err) {
+    console.error('[invite/redeem] inviter notification failed:', err)
+  }
 
   return {
     connected: true,

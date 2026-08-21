@@ -65,7 +65,7 @@ export default defineEventHandler(async (event) => {
     sends.push(cdPushToUser(row.user_created, {
       title: `Your ${streak}-day streak ends tonight`,
       body: 'Log a quick activity to keep it alive — even a 💬 ping counts.',
-      url: '/?focus=streak',
+      url: '/',
       tag: 'cd-streak',
       data: { kind: 'streak', streak },
     }).then((r) => { delivered += r.sent }))

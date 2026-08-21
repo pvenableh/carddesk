@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
     {
       title: 'Card scanned on another device',
       body: `${name}${tail} is now in your CardDesk.`,
-      url: body.contact_id ? `/?contact=${body.contact_id}` : '/',
+      url: body.contact_id ? `/?s=detail&c=${body.contact_id}` : '/?s=contacts',
       tag: 'cd-scan',
       data: { kind: 'scan', contact_id: body.contact_id || null },
     },

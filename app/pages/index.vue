@@ -234,6 +234,9 @@ onMounted(async () => {
     <!-- XP Toast -->
     <PhoneXpToast :toast="toast" />
 
+    <!-- Notification inbox — opened from the header bell -->
+    <PhoneNotificationsSheet />
+
     <!-- Global share sheet (My Card / Invite) -->
     <PhoneShareSheet />
 
