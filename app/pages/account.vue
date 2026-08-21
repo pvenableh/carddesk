@@ -199,6 +199,11 @@ const cardDirty = computed(() => {
   return false
 })
 
+// Never yank a background reload out from under half-edited card copy. A silent
+// update waits until this is clean; tapping Refresh on the toast still updates
+// immediately, because that is the user's own call to make.
+useAppUpdate().registerUpdateBlocker(() => cardDirty.value)
+
 const cardSaving = ref(false)
 async function saveCard() {
   cardSaving.value = true
@@ -521,6 +526,9 @@ async function suggestGoal() {
             </button>
           </div>
         </div>
+
+        <!-- Notifications + app version (per-device push, build id, update) -->
+        <CdNotificationSettings />
 
         <!-- Help & Feedback -->
         <div class="acct-section">

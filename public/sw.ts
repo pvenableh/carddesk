@@ -9,6 +9,12 @@
 //   2. Runtime caching (API/fonts/images — moved here from nuxt.config.ts
 //      when we switched off `generateSW`).
 //   3. Web Push handlers — show notification + open/focus on click.
+//   4. Version plumbing — the worker is the one part of CardDesk that runs
+//      when no page does, so it doubles as an update channel: it purges the
+//      previous build's runtime caches on activate, and re-checks /api/version
+//      whenever it wakes for a push, telling any open client that it is stale.
+//   5. The home-screen app-icon badge, which can only be set from here (a push
+//      usually lands with no page open).
 //
 // Push payload contract (set by CardDesk's send-side helpers):
 //   { title, body?, url?, tag?, icon?, badge?, data? }
@@ -17,7 +23,7 @@
 // installed to Home Screen. The SW still installs in a Safari tab but
 // pushManager.subscribe will reject — see app/composables/usePushSubscription.
 
-import { precacheAndRoute } from 'workbox-precaching'
+import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching'
 import { registerRoute } from 'workbox-routing'
 import { NetworkFirst, CacheFirst } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
@@ -28,6 +34,12 @@ declare const self: ServiceWorkerGlobalScope & {
 }
 
 // 1) Precache
+//
+// cleanupOutdatedCaches() must be registered BEFORE precacheAndRoute so the
+// activate handler it installs runs first: it deletes precaches written by
+// earlier Workbox revisions, which is what stops an old build's app shell from
+// shadowing a fresh deploy on a device that has been installed for months.
+cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST || [])
 
 // 2) Runtime caching — replicates the previous generateSW rules.
@@ -125,14 +137,152 @@ self.addEventListener('fetch', (event: FetchEvent) => {
 // {type:'SKIP_WAITING'} to this worker. clients.claim() still runs on activate
 // so the very first SW controls the page immediately (offline works without a
 // manual reload).
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting()
-})
+const RUNTIME_CACHES = ['cd-api', 'cd-images']
+
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim())
+  event.waitUntil(
+    (async () => {
+      // A new build's API shapes and image URLs may not match what the previous
+      // build cached. NetworkFirst would happily serve those old bodies for an
+      // hour on a slow radio, which reads to the user as "the update didn't
+      // land". Drop them; fonts and the badge counter survive (immutable /
+      // deliberately persistent).
+      await purgeRuntimeCaches()
+      await self.clients.claim()
+      // clients.claim() fires `controllerchange` in every controlled page, which
+      // app/plugins/app-update.client.ts turns into a reload. This message is
+      // for anything that wasn't controlled yet.
+      await notifyClients({ type: 'cd-sw-activated' })
+    })(),
+  )
 })
 
-// 4) Push handlers
+self.addEventListener('message', (event) => {
+  const msg = event.data
+  if (!msg || typeof msg !== 'object') return
+  if (msg.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+    return
+  }
+  // The page is authoritative about the badge whenever a page is open.
+  if (msg.type === 'badge') {
+    event.waitUntil(setBadge(msg.count))
+    return
+  }
+  if (msg.type === 'CHECK_VERSION') {
+    event.waitUntil(broadcastVersion())
+  }
+})
+
+// 4) Version plumbing.
+
+/** Post a message to every open CardDesk window, controlled or not. */
+async function notifyClients(msg: Record<string, unknown>): Promise<void> {
+  try {
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    for (const client of clients) client.postMessage(msg)
+  } catch (err) {
+    console.warn('[sw] client notify failed', err)
+  }
+}
+
+/**
+ * Ask the server which build is live and tell the pages about it. The page
+ * compares that id against its own and decides what to do (see
+ * app/plugins/app-update.client.ts) — the worker deliberately doesn't decide,
+ * because it has no idea what the user is in the middle of.
+ *
+ * This is what makes an INSTALLED app self-heal: the worker wakes for a push
+ * even when the app has been closed for a week, so the staleness is discovered
+ * before the user ever opens it.
+ */
+async function broadcastVersion(): Promise<void> {
+  try {
+    const res = await fetch('/api/version', {
+      cache: 'no-store',
+      headers: { 'cache-control': 'no-cache' },
+      credentials: 'omit',
+    })
+    if (!res.ok) return
+    const data = await res.json()
+    if (data && data.buildId) await notifyClients({ type: 'cd-version', buildId: data.buildId })
+  } catch {
+    // Offline, or the push arrived faster than the network — the page's own
+    // poll will catch it.
+  }
+}
+
+// 5) App-icon badge.
+
+/* ── App-icon badge ──────────────────────────────────────────────────────────
+ * The badge on the installed icon (home screen / macOS dock) has to be set from
+ * HERE: a push usually arrives with no page open, so page-side code can only
+ * ever correct a badge, never raise one.
+ *
+ * The count is persisted in Cache Storage (one synthetic Response holding a
+ * number) because the worker is killed between pushes and nothing else survives.
+ * The page wins whenever it is open — useAppBadge posts the real count over
+ * postMessage, which overwrites whatever we counted here.
+ */
+const BADGE_CACHE = 'cd-badge'
+const BADGE_KEY = '/__badge'
+
+async function readBadge(): Promise<number> {
+  try {
+    const cache = await caches.open(BADGE_CACHE)
+    const res = await cache.match(BADGE_KEY)
+    if (!res) return 0
+    const n = Number(await res.text())
+    return Number.isFinite(n) && n > 0 ? n : 0
+  } catch {
+    return 0
+  }
+}
+
+async function writeBadge(n: number): Promise<void> {
+  try {
+    const cache = await caches.open(BADGE_CACHE)
+    await cache.put(BADGE_KEY, new Response(String(n)))
+  } catch {
+    /* storage refused — the badge below is still applied for this session */
+  }
+}
+
+/** Push the number at the OS. No-op where the Badging API isn't supported. */
+function applyBadge(n: number): void {
+  const nav = self.navigator as Navigator & {
+    setAppBadge?: (n?: number) => Promise<void>
+    clearAppBadge?: () => Promise<void>
+  }
+  if (!nav || typeof nav.setAppBadge !== 'function') return
+  if (n > 0) nav.setAppBadge(n).catch(() => {})
+  else nav.clearAppBadge?.().catch(() => {})
+}
+
+/** Absolute set (the server told us the count, or the page synced it). */
+async function setBadge(n: unknown): Promise<void> {
+  const v = Math.max(0, Math.floor(Number(n) || 0))
+  await writeBadge(v)
+  applyBadge(v)
+}
+
+/** Relative bump, for pushes that carry no count of their own. */
+async function bumpBadge(delta: number): Promise<void> {
+  const v = Math.max(0, (await readBadge()) + delta)
+  await writeBadge(v)
+  applyBadge(v)
+}
+
+// 6) Push handlers
+//
+// Payload contract:
+//   { title, body?, url?, tag?, icon?, badge?, badgeCount?, silent?, type?, data? }
+//
+// `type: 'app-update'` is the deploy ping (server/api/push/broadcast.post.ts):
+// it carries no user-facing news, it exists purely to wake this worker so it can
+// purge stale caches and tell any open window that a new build is live. With
+// `silent: true` it shows no notification at all — see the note below on why
+// that is safe here and would not be for a routine notification.
 self.addEventListener('push', (event) => {
   let payload: any = {}
   try {
@@ -141,24 +291,52 @@ self.addEventListener('push', (event) => {
     payload = { title: 'CardDesk', body: event.data ? event.data.text() : '' }
   }
 
-  const title: string = payload.title || 'CardDesk'
-  const body: string = payload.body || ''
-  const url: string = payload.url || '/'
-  const tag: string = payload.tag || 'carddesk-notification'
-  const icon: string = payload.icon || '/icons/icon-192.png'
-  const badge: string = payload.badge || '/icons/icon-192.png'
+  const isUpdatePing = payload.type === 'app-update'
+  // Every push is a free chance to notice we're behind — the worker is awake and
+  // online, which is exactly the moment a week-old install can self-heal.
+  const work: Promise<unknown>[] = [broadcastVersion()]
 
-  event.waitUntil(
-    self.registration.showNotification(title, {
-      body,
-      tag,
-      icon,
-      badge,
-      data: { url, ...(payload.data || {}) },
-      renotify: false,
-    } as NotificationOptions),
-  )
+  if (isUpdatePing) {
+    // Drop the previous build's runtime caches now, so the next launch reads
+    // fresh even if the user never opens the app while it is still online.
+    work.push(purgeRuntimeCaches())
+  }
+
+  // A push that shows no notification burns the browser's "silent push" budget;
+  // spend it only on the update ping, which is rare (one per deploy) and has
+  // nothing to say. Everything else always shows something, because
+  // userVisibleOnly:true is the promise we made when subscribing.
+  if (!(isUpdatePing && payload.silent !== false)) {
+    const title: string = payload.title || 'CardDesk'
+    work.push(
+      self.registration.showNotification(title, {
+        body: payload.body || '',
+        tag: payload.tag || 'carddesk-notification',
+        icon: payload.icon || '/icons/icon-192.png',
+        badge: payload.badge || '/icons/icon-192.png',
+        data: { url: payload.url || '/', ...(payload.data || {}) },
+        renotify: false,
+      } as NotificationOptions),
+    )
+    // The server's count wins when it sends one; otherwise this push is worth
+    // exactly one badge.
+    work.push(
+      typeof payload.badgeCount === 'number' ? setBadge(payload.badgeCount) : bumpBadge(1),
+    )
+  }
+
+  event.waitUntil(Promise.all(work))
 })
+
+/** Shared by activate and the update ping — see the activate handler's note. */
+async function purgeRuntimeCaches(): Promise<void> {
+  try {
+    const keys = await caches.keys()
+    await Promise.all(keys.filter((k) => RUNTIME_CACHES.includes(k)).map((k) => caches.delete(k)))
+  } catch (err) {
+    console.warn('[sw] runtime cache purge failed', err)
+  }
+}
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
@@ -166,6 +344,9 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     (async () => {
+      // Opening the app is reading it — clear the icon badge, and let the page
+      // re-sync the true count on load (useAppBadge).
+      await setBadge(0)
       const allClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
       for (const client of allClients) {
         try {

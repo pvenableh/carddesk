@@ -25,8 +25,11 @@ export default defineEventHandler(async (event) => {
   const hdrs = getRequestHeaders(event)
   const currentUA = hdrs['user-agent'] || ''
 
-  // Fire-and-forget — don't block the scan UX on push delivery.
-  void cdPushToUser(
+  // Awaited: this runs on a serverless function that is frozen the moment we
+  // respond, so "fire and forget" would mean "sometimes forget". The send is a
+  // few hundred ms against push services and the scan UI doesn't wait on the
+  // response anyway.
+  const result = await cdPushToUser(
     userId,
     {
       title: 'Card scanned on another device',
@@ -38,5 +41,5 @@ export default defineEventHandler(async (event) => {
     { excludeUserAgentSubstring: currentUA },
   )
 
-  return { ok: true }
+  return { ok: true, sent: result.sent }
 })

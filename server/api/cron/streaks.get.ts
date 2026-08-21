@@ -9,30 +9,15 @@
 // We don't push closer to midnight because lock-screen pings at 11:45 PM
 // are user-hostile.
 
-import { timingSafeEqual } from 'node:crypto'
 import { createDirectus, readItems, rest, staticToken } from '@directus/sdk'
 import { cdPushToUser } from '../../utils/web-push'
+import { requireCronAuth } from '../../utils/cron-auth'
 
 interface XpRow {
   id: string
   user_created: string | null
   streak: number | null
   last_activity_date: string | null
-}
-
-function requireCronAuth(event: any) {
-  const config = useRuntimeConfig()
-  const expected = (config as any).cronSecret
-  if (!expected) {
-    throw createError({ statusCode: 503, message: 'CRON_SECRET not configured' })
-  }
-  const hdrs = getRequestHeaders(event)
-  const provided = (hdrs.authorization || '').replace(/^Bearer\s+/i, '')
-  const a = Buffer.from(provided)
-  const b = Buffer.from(expected)
-  if (a.length !== b.length || !timingSafeEqual(a, b)) {
-    throw createError({ statusCode: 401, message: 'Unauthorized' })
-  }
 }
 
 export default defineEventHandler(async (event) => {
@@ -65,7 +50,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, message: 'Could not load XP state' })
   }
 
+  // Awaited, not fire-and-forget — see the note in cron/follow-ups.get.ts.
   let pushed = 0
+  let delivered = 0
+  const sends: Promise<unknown>[] = []
   for (const row of rows) {
     if (!row.user_created) continue
     const streak = Number(row.streak || 0)
@@ -74,15 +62,16 @@ export default defineEventHandler(async (event) => {
     // skip them. The query filter pre-filters but the row may have been
     // bumped between read + push.
     if (row.last_activity_date === today) continue
-    void cdPushToUser(row.user_created, {
+    sends.push(cdPushToUser(row.user_created, {
       title: `Your ${streak}-day streak ends tonight`,
       body: 'Log a quick activity to keep it alive — even a 💬 ping counts.',
       url: '/?focus=streak',
       tag: 'cd-streak',
       data: { kind: 'streak', streak },
-    })
+    }).then((r) => { delivered += r.sent }))
     pushed++
   }
+  await Promise.allSettled(sends)
 
-  return { ok: true, candidates: rows.length, users_pushed: pushed }
+  return { ok: true, candidates: rows.length, users_pushed: pushed, devices_pushed: delivered }
 })

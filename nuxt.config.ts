@@ -1,8 +1,50 @@
+import { execSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+
+/**
+ * Git-traceable release stamp, resolved at BUILD time and baked into the client.
+ *
+ * This is the human-readable half of the version system: it tells you WHICH
+ * commit a given client is running (surfaced in the account footer and logged to
+ * the console on boot). It is deliberately NOT the update oracle — Nuxt's own
+ * `app.buildId` is, because it is a fresh random hash on every build, so even a
+ * rebuild of the same commit invalidates open clients. See
+ * app/plugins/app-update.client.ts.
+ */
+function releaseStamp() {
+  const sha =
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    process.env.NUXT_PUBLIC_RELEASE_SHA ||
+    (() => {
+      try {
+        return execSync('git rev-parse HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+      } catch {
+        return ''
+      }
+    })()
+  return {
+    sha,
+    short: sha ? sha.slice(0, 7) : '',
+    ref: process.env.VERCEL_GIT_COMMIT_REF || '',
+    builtAt: new Date().toISOString(),
+  }
+}
 
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   future: { compatibilityVersion: 4 },
+
+  experimental: {
+    // A lazy route chunk that 404s means this client is running against a build
+    // that no longer exists on the CDN — the app is already broken, so there is
+    // nothing to ask about. Reload straight onto the current build.
+    emitRouteChunkError: 'automatic-immediate',
+    // How often an open client re-checks Nuxt's build manifest (checked around
+    // route changes). The default is an hour; an installed PWA stays open for
+    // days, so check far more eagerly. One of five signals — see
+    // app/plugins/app-update.client.ts.
+    checkOutdatedBuildInterval: 1000 * 60 * 5,
+  },
   app: {
     pageTransition: { name: 'page', mode: 'out-in' },
     head: {
@@ -145,6 +187,13 @@ export default defineNuxtConfig({
   // sends no X-Frame-Options by default, but set frame-ancestors explicitly so
   // framing is allowed-by-intent (and survives any future global CSP).
   routeRules: {
+    // The four "am I current?" oracles. If an edge or a browser cache holds any
+    // of these, a client can never learn that it is stale — which is exactly the
+    // failure mode this whole system exists to prevent.
+    '/_nuxt/builds/latest.json': { headers: { 'cache-control': 'no-cache, no-store, max-age=0, must-revalidate' } },
+    '/api/version': { headers: { 'cache-control': 'no-cache, no-store, max-age=0, must-revalidate' } },
+    '/sw.js': { headers: { 'cache-control': 'no-cache, no-store, max-age=0, must-revalidate' } },
+    '/manifest.webmanifest': { headers: { 'cache-control': 'no-cache, no-store, max-age=0, must-revalidate' } },
     '/embed/**': { headers: { 'Content-Security-Policy': 'frame-ancestors *' } },
     '/embed.js': { headers: { 'Content-Security-Policy': 'frame-ancestors *', 'Cache-Control': 'public, max-age=3600' } },
   },
@@ -205,6 +254,9 @@ export default defineNuxtConfig({
       // key is configured and it hasn't been explicitly turned off — the simple
       // "don't want to pay" switch (unset the key, or set LOCATION_SUGGEST=false).
       locationSuggest: !!process.env.GOOGLE_PLACES_API_KEY && process.env.LOCATION_SUGGEST !== 'false',
+      // Git-traceable release stamp (see releaseStamp() above). Cosmetic +
+      // diagnostic; app.buildId drives the actual update handshake.
+      release: releaseStamp(),
     },
   },
   typescript: { strict: true },

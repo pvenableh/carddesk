@@ -9,9 +9,9 @@
 // Limited to rating='hot' AND hibernated=false, then grouped by user.
 // One push per user summarizing the count + the most-overdue name.
 
-import { timingSafeEqual } from 'node:crypto'
 import { createDirectus, readItems, rest, staticToken } from '@directus/sdk'
 import { cdPushToUser } from '../../utils/web-push'
+import { requireCronAuth } from '../../utils/cron-auth'
 
 interface CdContactRow {
   id: string
@@ -20,21 +20,6 @@ interface CdContactRow {
   rating: string | null
   hibernated: boolean | null
   activities: Array<{ id: string; type: string; date: string; is_response: boolean | null }> | null
-}
-
-function requireCronAuth(event: any) {
-  const config = useRuntimeConfig()
-  const expected = (config as any).cronSecret
-  if (!expected) {
-    throw createError({ statusCode: 503, message: 'CRON_SECRET not configured' })
-  }
-  const hdrs = getRequestHeaders(event)
-  const provided = (hdrs.authorization || '').replace(/^Bearer\s+/i, '')
-  const a = Buffer.from(provided)
-  const b = Buffer.from(expected)
-  if (a.length !== b.length || !timingSafeEqual(a, b)) {
-    throw createError({ statusCode: 401, message: 'Unauthorized' })
-  }
 }
 
 export default defineEventHandler(async (event) => {
@@ -85,20 +70,25 @@ export default defineEventHandler(async (event) => {
     overdueByUser.set(row.user_created, bucket)
   }
 
+  // Awaited, not fire-and-forget: the Vercel function is frozen the instant we
+  // return, so an un-awaited send is a send that may never leave the box.
   let pushed = 0
+  let delivered = 0
+  const sends: Promise<unknown>[] = []
   for (const [userId, list] of overdueByUser) {
     const count = list.length
     const first = list[0]!.name
     const tail = count > 1 ? ` and ${count - 1} more` : ''
-    void cdPushToUser(userId, {
+    sends.push(cdPushToUser(userId, {
       title: count === 1 ? 'Hot contact needs a follow-up' : `${count} hot contacts need follow-ups`,
       body: `${first}${tail} — last touch over 10 days ago.`,
       url: '/?filter=overdue',
       tag: 'cd-follow-ups',
       data: { kind: 'follow_ups', count },
-    })
+    }).then((r) => { delivered += r.sent }))
     pushed++
   }
+  await Promise.allSettled(sends)
 
-  return { ok: true, scanned: rows.length, users_pushed: pushed }
+  return { ok: true, scanned: rows.length, users_pushed: pushed, devices_pushed: delivered }
 })

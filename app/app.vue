@@ -12,6 +12,10 @@ const { loadCredits, claimRewards } = useCredits()
 const { init: initTheme } = useTheme()
 const { init: initPalette } = useCdPalette()
 
+// The OS app-icon badge. The service worker raises it when a push lands with no
+// page open; this clears it whenever the app is actually in front of someone.
+useAppBadge()
+
 onMounted(() => {
   initTheme()
   initPalette()

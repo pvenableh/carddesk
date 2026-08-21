@@ -1,32 +1,46 @@
 <script setup lang="ts">
-// "A new version is ready" prompt. Bound to the PWA module's reactive
-// $pwa.needRefresh, which flips true when a newer service worker is waiting
-// (discovered on navigation or via periodicSyncForUpdates — see nuxt.config).
-// Tapping Refresh calls updateServiceWorker(): it posts SKIP_WAITING to the
-// waiting SW (public/sw.ts), which activates and triggers a page reload onto
-// the new build. A reload preserves cookies + localStorage, so the user's
-// session is not disturbed.
-const { $pwa } = useNuxtApp()
+// "A new version is ready" prompt — the visible half of the update flow.
+//
+// Detection is app/plugins/app-update.client.ts (six signals: Nuxt's build
+// manifest, the x-app-build response header, a /api/version poll, the waiting
+// service worker, worker messages after a push, and the cross-tab bus). This
+// component only renders the decision and hands the tap to useAppUpdate().
+//
+// A client that is HIDDEN never gets here — it reloads itself silently. So this
+// only ever appears to someone actively looking at the app, and tapping Refresh
+// takes every other open tab and window along with it.
+//
+// Dismissal is in-memory on purpose: backgrounding the app applies the update
+// anyway, so there is nothing worth persisting — and no way for this to nag
+// across sessions.
+const { show, applying, dismissed, applyUpdate, current, latestBuild } = useAppUpdate()
 
 function refresh() {
-  $pwa?.updateServiceWorker?.(true)
+  // Explicit user intent — this ignores update blockers by design.
+  void applyUpdate()
 }
-function dismiss() {
-  // Hide for now; it'll re-prompt on the next periodic check or navigation.
-  $pwa?.cancelPrompt?.()
-}
+
+// Only useful when someone is debugging a deploy; harmless otherwise.
+const debugLine = computed(() =>
+  current.value.short ? `${current.value.short} → ${latestBuild.value.slice(0, 7) || 'latest'}` : '',
+)
 </script>
 
 <template>
   <Transition name="cd-toast">
-    <div v-if="$pwa?.needRefresh" class="cd-update-toast" role="status" aria-live="polite">
+    <div v-if="show" class="cd-update-toast" role="status" aria-live="polite">
       <span class="cd-update-ico"><CdIcon emoji="✨" icon="lucide:sparkles" :size="18" /></span>
       <div class="cd-update-body">
         <div class="cd-update-title">Update available</div>
-        <div class="cd-update-sub">A newer version of CardDesk is ready.</div>
+        <div class="cd-update-sub">
+          A newer version of CardDesk is ready.
+          <span v-if="debugLine" class="cd-update-build">{{ debugLine }}</span>
+        </div>
       </div>
-      <button type="button" class="cd-update-btn" @click="refresh">Refresh</button>
-      <button type="button" class="cd-update-x" aria-label="Dismiss" @click="dismiss">
+      <button type="button" class="cd-update-btn" :disabled="applying" @click="refresh">
+        {{ applying ? 'Updating…' : 'Refresh' }}
+      </button>
+      <button type="button" class="cd-update-x" aria-label="Dismiss" @click="dismissed = true">
         <CdIcon emoji="✕" icon="lucide:x" :size="15" />
       </button>
     </div>
@@ -86,6 +100,14 @@ html[data-theme="glass"][data-mode="dark"] .cd-update-toast {
   line-height: 1.05;
 }
 .cd-update-sub { font-size: 11px; color: var(--cd-muted); font-weight: 600; }
+.cd-update-build {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--cd-dim);
+  letter-spacing: 0.02em;
+}
 .cd-update-btn {
   flex-shrink: 0;
   cursor: pointer;
@@ -98,6 +120,7 @@ html[data-theme="glass"][data-mode="dark"] .cd-update-toast {
   color: #fff;
   background: var(--cd-accent, #0a8cf5);
 }
+.cd-update-btn:disabled { opacity: 0.65; cursor: default; }
 .cd-update-x {
   flex-shrink: 0;
   cursor: pointer;
