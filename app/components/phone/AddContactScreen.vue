@@ -278,6 +278,44 @@ function keepQrAsWebsite() {
   qrMiss.value = null
 }
 
+// ── Capture mode ──
+// Two different things arrive at this screen: a piece of card stock (photograph
+// it, let the AI read it, 5 credits) and a code on someone's phone (scan it
+// live, exact, free). They want different cameras and different copy, so the
+// user picks rather than us guessing from a photo after the fact.
+type CaptureMode = 'card' | 'code'
+const captureMode = ref<CaptureMode>('card')
+const scannerOpen = ref(false)
+
+function openScanner() {
+  clearQrState()
+  scannerOpen.value = true
+}
+
+/**
+ * A code read live. The user explicitly asked for a code here, so a link is
+ * followed straight away rather than offered — there's no photo behind it to
+ * fall back to, and the miss panel covers it if the link leads nowhere.
+ */
+function onCodeScanned(payload: string) {
+  scannerOpen.value = false
+  const card = selfContainedCard(payload)
+  if (card) { takeLocalCard(card); return }
+  if (linkTarget(payload)) {
+    qrLink.value = payload
+    useScannedCode(payload)
+    return
+  }
+  qrMiss.value = { reason: 'not-a-card', message: '', payload, url: null, siteName: null }
+}
+
+/** The scanner couldn't run (or the user would rather shoot a still). Photos
+ *  decode codes too — `captureFront` looks for one before spending the scan. */
+function scannerFallbackToPhoto() {
+  scannerOpen.value = false
+  doScanFront()
+}
+
 async function doScanFront() {
   try {
     clearQrState()
@@ -447,6 +485,12 @@ async function doSaveContact() {
 
 <template>
   <div class="cd-screen on">
+    <PhoneQrScanner
+      :open="scannerOpen"
+      @found="onCodeScanned"
+      @close="scannerOpen = false"
+      @fallback="scannerFallbackToPhoto"
+    />
     <div class="cd-shdr">
       <!-- While an event is live, a back affordance returns to the Event Mode
            panel (the capture hub) so scanning loops smoothly back to the count. -->
@@ -495,32 +539,83 @@ async function doSaveContact() {
           <button v-if="qrMissCopy.retry" class="cd-abtn g" style="font-size: 13px; padding: 10px" :disabled="resolvingLink" @click="retryQrLink">
             <CdIcon emoji="🔄" icon="lucide:rotate-ccw" :size="14" /> Try again
           </button>
-          <button class="cd-abtn b" style="font-size: 13px; padding: 10px" @click="ignoreQrLink">
-            Scan the card →
+          <!-- With a photo already taken, this just steps back to it; scanning a
+               code from the idle screen has nothing behind it, so it offers the
+               photo path instead of dead-ending. -->
+          <button
+            class="cd-abtn b"
+            style="font-size: 13px; padding: 10px"
+            @click="scanStep === 'captured-front' ? ignoreQrLink() : scannerFallbackToPhoto()"
+          >
+            {{ scanStep === 'captured-front' ? 'Scan the card →' : 'Photograph the card' }}
           </button>
         </div>
       </div>
 
-      <!-- Scan Zone: Idle state -->
-      <div v-else-if="scanStep === 'idle' && !scanning" class="cd-scan-zone" @click="doScanFront">
-        <div style="font-size: 44px; margin-bottom: 8px"><CdIcon emoji="📷" icon="lucide:camera" :size="44" /></div>
-        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: var(--cd-accent); margin-bottom: 2px">
-          Scan Business Card
+      <!-- Scan Zone: idle. The mode switch comes first because the two inputs
+           are genuinely different jobs — a printed card is photographed and read
+           by AI, a code is scanned live and costs nothing. -->
+      <template v-else-if="scanStep === 'idle' && !scanning">
+        <div class="cd-mode" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            class="cd-mode-btn"
+            :class="{ on: captureMode === 'card' }"
+            :aria-selected="captureMode === 'card'"
+            @click="captureMode = 'card'"
+          >
+            <CdIcon emoji="💳" icon="lucide:credit-card" :size="14" /> Business card
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="cd-mode-btn"
+            :class="{ on: captureMode === 'code' }"
+            :aria-selected="captureMode === 'code'"
+            @click="captureMode = 'code'"
+          >
+            <CdIcon emoji="🔗" icon="lucide:qr-code" :size="14" /> QR code
+          </button>
         </div>
-        <div style="font-size: 11px; font-weight: 700; color: var(--cd-accent); margin-bottom: 4px">
-          <CdIcon icon="lucide:hand-pointer" :size="11" /> Tap to Scan Business Card
+
+        <div v-if="captureMode === 'card'" class="cd-scan-zone" @click="doScanFront">
+          <div style="font-size: 44px; margin-bottom: 8px"><CdIcon emoji="📷" icon="lucide:camera" :size="44" /></div>
+          <div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: var(--cd-accent); margin-bottom: 2px">
+            Scan Business Card
+          </div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--cd-accent); margin-bottom: 4px">
+            <CdIcon icon="lucide:hand-pointer" :size="11" /> Tap to Scan Business Card
+          </div>
+          <!-- Both hint lines are sized to stay on ONE line down to a 320px
+               viewport (~252px of inner width at 11px). Lengthening either one
+               past ~240px wraps them on a phone. -->
+          <div style="font-size: 11px; color: var(--cd-dim)">
+            Earnest AI reads both sides of the card
+          </div>
+          <div style="font-size: 11px; color: var(--cd-dim); margin-top: 2px">
+            A QR on the card gets read too — either side
+          </div>
+          <span class="cd-xpb" style="margin-top: 9px; display: inline-block">+50 XP</span>
         </div>
-        <!-- Both hint lines are sized to stay on ONE line down to a 320px
-             viewport (~252px of inner width at 11px). Lengthening either one
-             past ~240px wraps them on a phone. -->
-        <div style="font-size: 11px; color: var(--cd-dim)">
-          Earnest AI reads both sides of the card
+
+        <div v-else class="cd-scan-zone" @click="openScanner">
+          <div style="font-size: 44px; margin-bottom: 8px"><CdIcon emoji="🔗" icon="lucide:qr-code" :size="44" /></div>
+          <div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: var(--cd-accent); margin-bottom: 2px">
+            Scan A QR Code
+          </div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--cd-accent); margin-bottom: 4px">
+            <CdIcon icon="lucide:hand-pointer" :size="11" /> Tap to open the scanner
+          </div>
+          <div style="font-size: 11px; color: var(--cd-dim)">
+            Point at their code — no photo to take
+          </div>
+          <div style="font-size: 11px; color: var(--cd-dim); margin-top: 2px">
+            Their digital card, or the code on a printed one
+          </div>
+          <span class="cd-xpb" style="margin-top: 9px; display: inline-block">+50 XP</span>
         </div>
-        <div style="font-size: 11px; color: var(--cd-dim); margin-top: 2px">
-          Or scan their QR code — from any app
-        </div>
-        <span class="cd-xpb" style="margin-top: 9px; display: inline-block">+50 XP</span>
-      </div>
+      </template>
 
       <!-- Scan Zone: front captured — with the card's QR offered alongside the
            photos rather than instead of them. A code printed on a business card
@@ -821,6 +916,40 @@ async function doSaveContact() {
 /* The scanned URL, shown so the user can see where the code actually points
    before we open it — a QR is unreadable by eye, so this is the only chance
    they get to notice it's not the card they expected. */
+.cd-mode {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  margin-bottom: 10px;
+  border: 1px solid var(--cd-bdr);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.cd-mode-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 8px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--cd-dim);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.cd-mode-btn.on {
+  background: rgba(0, 255, 135, 0.1);
+  color: var(--cd-accent);
+  box-shadow: inset 0 0 0 1px rgba(0, 255, 135, 0.28);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cd-mode-btn { transition: none; }
+}
 .cd-qr-offer {
   display: flex;
   align-items: center;

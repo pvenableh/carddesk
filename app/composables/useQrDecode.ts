@@ -51,10 +51,20 @@ export function useQrDecode() {
     })
   }
 
-  function toImageData(img: HTMLImageElement, maxEdge: number): ImageData | null {
-    const scale = Math.min(1, maxEdge / Math.max(img.width, img.height))
-    const w = Math.max(1, Math.round(img.width * scale))
-    const h = Math.max(1, Math.round(img.height * scale))
+  /** Natural pixel size of whatever we're decoding — an <img> reports it as
+   *  width/height, a live <video> as videoWidth/videoHeight. */
+  function sourceSize(src: HTMLImageElement | HTMLVideoElement): { w: number; h: number } {
+    return src instanceof HTMLVideoElement
+      ? { w: src.videoWidth, h: src.videoHeight }
+      : { w: src.width, h: src.height }
+  }
+
+  function toImageData(img: HTMLImageElement | HTMLVideoElement, maxEdge: number): ImageData | null {
+    const { w: sw, h: sh } = sourceSize(img)
+    if (!sw || !sh) return null
+    const scale = Math.min(1, maxEdge / Math.max(sw, sh))
+    const w = Math.max(1, Math.round(sw * scale))
+    const h = Math.max(1, Math.round(sh * scale))
     const canvas = document.createElement('canvas')
     canvas.width = w
     canvas.height = h
@@ -66,6 +76,40 @@ export function useQrDecode() {
     } catch {
       return null // tainted canvas — can't happen for a local File, but be safe
     }
+  }
+
+  /**
+   * Decode a single frame off a live camera feed. Kept deliberately cheap — it
+   * runs several times a second while the scanner is open, so it tries one
+   * modest resolution rather than the escalating passes a one-shot photo gets.
+   * Returns null constantly and by design: most frames have no code in them.
+   */
+  async function decodeFrame(video: HTMLVideoElement): Promise<string | null> {
+    if (!import.meta.client || video.readyState < 2) return null
+
+    const detector = await getDetector()
+    if (detector) {
+      try {
+        const codes = await detector.detect(video)
+        const hit = codes?.find((c: any) => c.rawValue)?.rawValue
+        if (hit) return String(hit)
+        return null
+      } catch {
+        // Fall through to jsQR — some builds throw on certain frame sizes.
+      }
+    }
+
+    let jsQR: typeof import('jsqr').default
+    try {
+      jsQR = (await import('jsqr')).default
+    } catch {
+      return null
+    }
+    const data = toImageData(video, 1000)
+    if (!data) return null
+    // 'dontInvert' only: a live feed gives us many chances at the code, and the
+    // both-ways pass costs roughly double per frame.
+    return jsQR(data.data, data.width, data.height, { inversionAttempts: 'dontInvert' })?.data ?? null
   }
 
   /**
@@ -112,5 +156,5 @@ export function useQrDecode() {
     return null
   }
 
-  return { decodeImage }
+  return { decodeImage, decodeFrame }
 }
