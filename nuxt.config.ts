@@ -172,6 +172,29 @@ export default defineNuxtConfig({
     },
     injectManifest: {
       globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
+      // Put the .html back on extensionless precache entries.
+      //
+      // vite-pwa strips it because Nitro's node server resolves /offline to
+      // offline.html. Vercel does not: it serves static files literally, so the
+      // precache list shipped two URLs (/offline, /embed-test) that 404 in
+      // production. Workbox precaching is all-or-nothing — one failed request
+      // rejects the install event — so the service worker NEVER ACTIVATED on
+      // production. No push subscription, no offline cache, and
+      // `serviceWorker.ready` hanging forever, which is the "Service worker
+      // isn't ready" people were hitting on iPhone.
+      //
+      // Written as a transform rather than dropping the two files, so the next
+      // .html added to public/ can't silently break the worker the same way.
+      manifestTransforms: [
+        (entries: { url: string }[]) => ({
+          manifest: entries.map((entry) =>
+            /\.[a-z0-9]+$/i.test(entry.url) || entry.url.endsWith('/')
+              ? entry
+              : { ...entry, url: `${entry.url}.html` },
+          ),
+          warnings: [],
+        }),
+      ],
     },
     devOptions: { enabled: true, type: 'module' },
     client: {
