@@ -78,25 +78,56 @@ function detectSupport(): PushSupport {
     ? (navigator as any).standalone === true
     : window.matchMedia?.('(display-mode: standalone)').matches === true
 
-  const canSubscribe = !isIOS || (isStandalone && !iosThirdParty)
+  // Note this is NOT gated on `iosThirdParty`. The UA tells us push is very
+  // unlikely there, not that it's impossible — if such a browser ever does
+  // produce an active worker, the toggle should work rather than be argued out
+  // of existence. The settings panel blocks on the evidence (no active worker),
+  // not on the user agent alone.
+  const canSubscribe = !isIOS || isStandalone
   return { serviceWorker: swSupport, pushManager: pushSupport, notification: notifSupport, canSubscribe, iosThirdParty, browser }
 }
 
+const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T | null> =>
+  Promise.race([p, new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))])
+
 /**
- * `navigator.serviceWorker.ready` never rejects — on iOS it can simply hang
- * when activation stalls, which used to leave the toggle spinning with nothing
- * to show for it. Racing a timeout turns that into a visible error.
+ * Is there an ACTIVE service worker right now? A read-only probe: it never
+ * registers anything, so it's safe to run on mount just to report the truth.
  */
-async function getReadyRegistration(timeoutMs = 8000): Promise<ServiceWorkerRegistration | null> {
-  if (typeof window === 'undefined') return null
-  if (!('serviceWorker' in navigator)) return null
+async function probeRegistration(timeoutMs = 4000): Promise<ServiceWorkerRegistration | null> {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null
   try {
-    return await Promise.race([
-      navigator.serviceWorker.ready,
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
-    ])
+    const reg = await withTimeout(navigator.serviceWorker.getRegistration(), timeoutMs)
+    return reg?.active ? reg : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Get a registration we can subscribe against.
+ *
+ * Deliberately NOT `await navigator.serviceWorker.ready` first. That promise
+ * never rejects — where a worker can't activate it simply hangs, so waiting on
+ * it as step one turns "this browser can't" into an eight-second stall. Ask for
+ * the registration that already exists, make one if it doesn't, and only wait
+ * for activation once there's something to wait for. (Same order WeddingConnect
+ * uses, which is the implementation known to work on an installed iPhone app.)
+ */
+async function acquireRegistration(timeoutMs = 8000): Promise<ServiceWorkerRegistration | null> {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null
+  try {
+    const existing = await withTimeout(navigator.serviceWorker.getRegistration(), timeoutMs)
+    // @vite-pwa registers this for us; the fallback covers a first visit that
+    // raced us, or a registration that was dropped.
+    const reg = existing ?? (await withTimeout(navigator.serviceWorker.register('/sw.js'), timeoutMs))
+    if (!reg) return null
+    if (reg.active) return reg
+    await withTimeout(navigator.serviceWorker.ready, timeoutMs)
+    const settled = await withTimeout(navigator.serviceWorker.getRegistration(), 2000)
+    return settled?.active ? settled : null
   } catch (err) {
-    console.error('[cd push] SW ready failed:', err)
+    console.error('[cd push] could not acquire a service worker registration:', err)
     return null
   }
 }
@@ -146,10 +177,12 @@ export function usePushSubscription() {
     standalone.value =
       typeof window !== 'undefined' &&
       Boolean(window.matchMedia?.('(display-mode: standalone)').matches || (navigator as any).standalone === true)
-    if (!support.value.canSubscribe) return
-    const reg = await getReadyRegistration()
+    // Probe regardless of canSubscribe: "is there an active worker?" is exactly
+    // what tells a Chrome-on-iPhone dead end apart from a Safari tab that just
+    // needs installing, and both need to be reported.
+    const reg = await probeRegistration()
     swReady.value = Boolean(reg)
-    if (!reg) return
+    if (!support.value.canSubscribe || !reg) return
     try {
       subscription.value = await reg.pushManager.getSubscription()
     } catch (err) {
@@ -177,7 +210,7 @@ export function usePushSubscription() {
 
     loading.value = true
     try {
-      const reg = await getReadyRegistration()
+      const reg = await acquireRegistration()
       if (!reg)
         throw new Error(
           support.value.iosThirdParty
@@ -219,7 +252,7 @@ export function usePushSubscription() {
     error.value = null
     loading.value = true
     try {
-      const sub = subscription.value || (await (await getReadyRegistration())?.pushManager.getSubscription())
+      const sub = subscription.value || (await (await probeRegistration())?.pushManager.getSubscription())
       if (!sub) return true
       const endpoint = sub.endpoint
       try {

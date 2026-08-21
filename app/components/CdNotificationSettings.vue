@@ -25,9 +25,15 @@ const isIos = computed(() => {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document)
 })
 
-/** Chrome/Edge/Firefox on iPhone can never do this — no amount of installing
- *  helps, because the service worker itself never activates. */
-const needsSafari = computed(() => support.value.iosThirdParty)
+/**
+ * Chrome/Edge/Firefox on iPhone, AND no active service worker to show for it.
+ *
+ * Gated on the evidence rather than the user agent alone: if one of those
+ * browsers ever does run a worker, the toggle should work instead of being
+ * refused on principle. Until then this is the honest read — the worker never
+ * activates there, so push cannot be enabled no matter what the UI offers.
+ */
+const needsSafari = computed(() => support.value.iosThirdParty && swReady.value === false)
 
 /** iOS only allows web push from a Home-Screen install (16.4+), never a tab. */
 const needsHomeScreen = computed(() => isIos.value && !needsSafari.value && !support.value.canSubscribe)
