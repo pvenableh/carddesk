@@ -13,6 +13,7 @@ import PhoneFeedScreen from '~/components/phone/FeedScreen.vue'
 import PhoneChatScreen from '~/components/phone/ChatScreen.vue'
 import PhoneHistoryScreen from '~/components/phone/HistoryScreen.vue'
 import PhoneBlockJamScreen from '~/components/phone/BlockJamScreen.vue'
+import { firstUrl } from '~/types/card-link'
 
 // No auth middleware here: logged-out visitors get the marketing landing at the
 // bare domain instead of a redirect to /login. The app shell only renders when a
@@ -93,7 +94,7 @@ const alertCs = computed(() =>
 )
 
 const { pending: pendingScans, hydrate: hydratePendingScans } = usePendingScans()
-const { info: infoToast } = useToast()
+const { info: infoToast, error: errorToast } = useToast()
 
 // PWA home-screen shortcut ("Show my card") + deep link land on /?card=present.
 // Pop the present takeover straight away, then strip the query so refreshes/back
@@ -102,6 +103,7 @@ const route = useRoute()
 const router = useRouter()
 const { show: openPresent } = usePresentCard()
 const { parseText: parseSharedVcard } = useVCardImport()
+const { resolve: resolveCardLink } = useCardLink()
 const { set: setPendingImport } = usePendingImport()
 
 // A card shared into CardDesk via the Web Share Target lands as a payload the
@@ -116,7 +118,20 @@ async function ingestSharedCard() {
     const text = await res.text()
     await cache.delete('/__shared_vcard')
     const cards = parseSharedVcard(text)
-    if (cards.length) { setPendingImport(cards); nav('import') }
+    if (cards.length) { setPendingImport(cards); nav('import'); return }
+    // No vCard in the payload — but sharing a *link* to someone's digital card
+    // is just as common (that's what the share sheet offers from a card page an
+    // OS camera opened). Chase it down instead of silently doing nothing.
+    const link = firstUrl(text)
+    if (!link) return
+    infoToast('Reading that card link…')
+    try {
+      const resolved = await resolveCardLink(link)
+      setPendingImport(resolved.contacts)
+      nav('import')
+    } catch (err: any) {
+      errorToast(err?.message || "We couldn't read that card link.")
+    }
   } catch (err) {
     console.error('[share-target] ingest failed', err)
   }

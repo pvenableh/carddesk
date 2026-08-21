@@ -293,13 +293,16 @@ async function doDelete(ev: any) {
           <CdIcon icon="lucide:arrow-right" :size="18" />
         </button>
 
-        <!-- Import shared cards: the inbound path for AirDrop'd / sent .vcf cards.
-             A peer to scanning — also auto-tagged to this event. -->
+        <!-- Import a shared card: the inbound path for cards people AirDrop /
+             send / hand over as a QR. A peer to scanning — also auto-tagged to
+             this event. Wording matches the scan screen's row on purpose; the
+             file-format detail (.vcf) lives on the Import screen, where you
+             actually pick files. -->
         <button class="em-import glass-thin" @click="goImport">
           <span class="em-import-ico"><CdIcon icon="lucide:contact" :size="20" /></span>
           <span class="em-import-copy">
-            <span class="em-import-title">Import shared cards</span>
-            <span class="em-import-sub">Someone AirDrop or send you a .vcf? Pull them in.</span>
+            <span class="em-import-title">Import a card someone sent you</span>
+            <span class="em-import-sub">AirDrop, message, or QR — pull them in.</span>
           </span>
           <CdIcon icon="lucide:arrow-right" :size="16" />
         </button>
@@ -465,19 +468,21 @@ async function doDelete(ev: any) {
 
 /* import-shared-cards row — secondary intake alongside the scan CTA */
 .em-import {
-  width: 100%; display: flex; align-items: center; gap: 12px;
+  width: 100%; display: flex; align-items: center; gap: 10px;
   border-radius: 16px; padding: 13px 14px; margin-bottom: 12px; cursor: pointer;
   color: var(--cd-text); text-align: left; transition: transform 0.12s ease, border-color 0.15s;
 }
 .em-import:active { transform: scale(0.99); }
 .em-import-ico {
-  width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px;
+  width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px;
   display: flex; align-items: center; justify-content: center; color: var(--cd-accent);
   background: color-mix(in srgb, var(--cd-accent) 14%, transparent);
   border: 1px solid color-mix(in srgb, var(--cd-accent) 28%, transparent);
 }
-.em-import-copy { flex: 1; display: flex; flex-direction: column; }
-.em-import-title { font-weight: 800; font-size: 0.98rem; }
+.em-import-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+/* Sized so the label — the same one the scan screen uses — stays on one line in
+   this row's narrower copy column (the icon block and arrow eat ~120px of it). */
+.em-import-title { font-weight: 800; font-size: 0.9rem; }
 .em-import-sub { font-size: 0.75rem; color: var(--cd-muted); }
 
 /* share-back row (My card / Invite) — secondary to the scan CTA */

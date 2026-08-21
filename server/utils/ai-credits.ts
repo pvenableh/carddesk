@@ -47,6 +47,11 @@ export const CREDIT_COSTS = {
   // Turn an Earnest chat reply into a structured "plan of attack" (tasks with
   // dates). One short tool-use call with a tight output — flat 1 credit.
   'ai-extract-plan': 1,
+  // Read a stranger's digital-card *page* (scanned QR / shared link) when it
+  // hands out no vCard — a short text-only extraction, so flat 1 credit. Only
+  // charged on the AI fallback: a page that exposes a real .vcf, or a CardDesk
+  // card, resolves for free.
+  'resolve-card-link': 1,
 } as const
 
 export type AiEndpoint = keyof typeof CREDIT_COSTS

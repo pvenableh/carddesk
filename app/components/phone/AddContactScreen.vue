@@ -7,6 +7,7 @@ import confettiLib from 'canvas-confetti'
 const { contacts, createContact, logActivity } = useContacts()
 const { state: xp, earn, completeMission } = useXp()
 const { scanning, scanStep, error: scanError, captureFront, captureBackAndScan, scanFrontOnly, processImages, reset: resetScan } = useCardScan()
+const { resolve: resolveCardLink, isSelfContained, resolving: resolvingLink } = useCardLink()
 const { pending: pendingScans, remove: removePendingScan } = usePendingScans()
 const { nav, goDetail } = useNavigation()
 const { error: showError } = useToast()
@@ -47,7 +48,12 @@ function fireConfetti() {
   confettiLib({ particleCount: 60, spread: 70, origin: { y: 0.6 }, colors: ['#00ff87', '#ffd700', '#ff6b35', '#4da6ff', '#b87dff'] })
 }
 
-function applyResult(result: any) {
+/**
+ * Fill the form from a captured card. `source` only changes the celebration
+ * copy — a code and a photo are both "a card you scanned" as far as XP, the
+ * scan mission, and contact provenance are concerned.
+ */
+function applyResult(result: any, source: 'photo' | 'code' = 'photo') {
   addForm.value = {
     firstName: result.first_name ?? '',
     lastName: result.last_name ?? '',
@@ -55,7 +61,8 @@ function applyResult(result: any) {
     company: result.company ?? '',
     email: result.email ?? '',
     phone: result.phone ?? '',
-    phones: [],
+    // A vCard from a QR can carry several numbers; the AI photo scan never does.
+    phones: Array.isArray(result.phones) ? result.phones : [],
     website: result.website ?? '',
     industry: result.industry ?? '',
     metAt: addForm.value.metAt,
@@ -69,15 +76,51 @@ function applyResult(result: any) {
   wasScanned.value = true
   // Reveal the socials section if the scan pulled any handles, so they're not hidden.
   if (SOCIAL_KEYS.some((k) => addForm.value[k])) showSocials.value = true
-  earn(50, '📷', 'Card scanned!', { total_scans: (xp.value.total_scans ?? 0) + 1 })
+  earn(
+    50,
+    source === 'code' ? '🔗' : '📷',
+    source === 'code' ? 'Card code read!' : 'Card scanned!',
+    { total_scans: (xp.value.total_scans ?? 0) + 1 },
+  )
   completeMission('scan')
   useFeed().emit('card_scanned', { company: result.company || null })
   fireConfetti()
 }
 
+// A QR code found in the captured photo that's just a link. We ask before
+// following it: a code printed on a paper business card is as likely to be the
+// company website as it is to be the person's card, and only the user knows
+// which they were pointing the camera at.
+const qrLink = ref<string | null>(null)
+
+/** Resolve a scanned code into the form (free for codes that carry the whole
+ *  card; a hosted card link may cost a credit — see resolve-card-link). */
+async function useScannedCode(payload: string) {
+  try {
+    const { contacts } = await resolveCardLink(payload)
+    qrLink.value = null
+    applyResult(contacts[0], 'code')
+    resetScan()
+  } catch (err: any) {
+    console.error('[scan] code', err)
+    showError(err?.message || "We couldn't read that code.")
+  }
+}
+
+/** Ignore the code and OCR the photo we already took instead. */
+function ignoreQrLink() {
+  qrLink.value = null
+}
+
 async function doScanFront() {
   try {
-    await captureFront()
+    const qr = await captureFront()
+    // A code carrying the whole card (vCard / MECARD / tel:) is unambiguous and
+    // costs nothing — take it. Anything else is offered, not assumed.
+    if (qr) {
+      if (isSelfContained(qr)) await useScannedCode(qr)
+      else qrLink.value = qr
+    }
   } catch (err: any) {
     // 'Cancelled' = user backed out of the camera/picker; stay silent.
     // Anything else (photo failed to decode, etc.) used to fail silently and
@@ -239,8 +282,40 @@ async function doSaveContact() {
       <div class="cd-stitle">Add Contact</div>
     </div>
     <div class="cd-scrl cd-pad">
+      <!-- Scan Zone: reading a code we found (or chasing where it points) -->
+      <div v-if="resolvingLink || scanStep === 'reading-code'" class="cd-scan-zone" style="pointer-events: none">
+        <div class="cd-spin" style="font-size: 44px; line-height: 1"><CdIcon emoji="🔍" icon="lucide:loader-circle" :size="44" /></div>
+        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: var(--cd-accent); margin-bottom: 4px">
+          {{ resolvingLink ? 'Reading their card…' : 'Checking for a code…' }}
+        </div>
+        <div style="font-size: 11px; color: var(--cd-dim)">
+          {{ resolvingLink ? 'Following the code to their contact details' : 'QR codes carry the details exactly' }}
+        </div>
+      </div>
+
+      <!-- Scan Zone: found a QR that points somewhere. Their digital card, or
+           just the company website printed on the back? Only the user knows. -->
+      <div v-else-if="qrLink" class="cd-scan-captured">
+        <div style="font-size: 36px; margin-bottom: 6px"><CdIcon emoji="🔗" icon="lucide:qr-code" :size="36" /></div>
+        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; color: var(--cd-accent); margin-bottom: 4px">
+          QR Code Found
+        </div>
+        <div class="cd-qr-link" :title="qrLink">{{ qrLink }}</div>
+        <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">
+          Open their digital card, or read the printed card instead?
+        </div>
+        <div style="display: flex; gap: 8px">
+          <button class="cd-abtn g" style="font-size: 13px; padding: 10px" @click="useScannedCode(qrLink)">
+            <CdIcon emoji="🔗" icon="lucide:link" :size="14" /> Use the code
+          </button>
+          <button class="cd-abtn b" style="font-size: 13px; padding: 10px" @click="ignoreQrLink">
+            Scan the card →
+          </button>
+        </div>
+      </div>
+
       <!-- Scan Zone: Idle state -->
-      <div v-if="scanStep === 'idle' && !scanning" class="cd-scan-zone" @click="doScanFront">
+      <div v-else-if="scanStep === 'idle' && !scanning" class="cd-scan-zone" @click="doScanFront">
         <div style="font-size: 44px; margin-bottom: 8px"><CdIcon emoji="📷" icon="lucide:camera" :size="44" /></div>
         <div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: var(--cd-accent); margin-bottom: 2px">
           Scan Business Card
@@ -248,8 +323,14 @@ async function doSaveContact() {
         <div style="font-size: 11px; font-weight: 700; color: var(--cd-accent); margin-bottom: 4px">
           <CdIcon icon="lucide:hand-pointer" :size="11" /> Tap to Scan Business Card
         </div>
+        <!-- Both hint lines are sized to stay on ONE line down to a 320px
+             viewport (~252px of inner width at 11px). Lengthening either one
+             past ~240px wraps them on a phone. -->
         <div style="font-size: 11px; color: var(--cd-dim)">
-          Earnest AI reads both sides — name, email, phone, company
+          Earnest AI reads both sides of the card
+        </div>
+        <div style="font-size: 11px; color: var(--cd-dim); margin-top: 2px">
+          Or scan their QR code — from any app
         </div>
         <span class="cd-xpb" style="margin-top: 9px; display: inline-block">+50 XP</span>
       </div>
@@ -308,8 +389,8 @@ async function doSaveContact() {
         @click="nav('import')"
       >
         <CdIcon icon="lucide:contact" :size="15" />
-        <span>Import a shared card <span class="cd-add-import-ext">.vcf · AirDrop</span></span>
-        <CdIcon icon="lucide:arrow-right" :size="13" />
+        <span>Import a card someone sent you</span>
+        <CdIcon icon="lucide:arrow-right" :size="15" />
       </button>
 
       <!-- Event Mode context: show the active auto-tag, or offer to turn it on.
@@ -521,18 +602,32 @@ async function doSaveContact() {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.4; transform: scale(0.75); }
 }
-/* ── Import-a-shared-card link (peer to the scan zone) ── */
+/* The scanned URL, shown so the user can see where the code actually points
+   before we open it — a QR is unreadable by eye, so this is the only chance
+   they get to notice it's not the card they expected. */
+.cd-qr-link {
+  max-width: 100%; margin: 0 auto 8px; padding: 5px 9px; border-radius: 8px;
+  background: var(--cd-bg2); border: 1px solid var(--cd-bdr);
+  font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--cd-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  direction: ltr;
+}
+
+/* ── Import-a-shared-card link (peer to the scan zone) ──
+   Full-bleed like the scan zone and the Event Mode row it sits between, but the
+   content is a centred group — icon, label, arrow, all one gap apart and both
+   icons the same size. Letting the label grow (flex:1) pinned the arrow to the
+   far edge, which read as a stretched bar the moment the column got wide. */
 .cd-add-import {
-  display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 8px;
-  padding: 11px 13px; border-radius: 12px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; margin-top: 8px;
+  padding: 12px 14px; border-radius: 12px; cursor: pointer;
   background: color-mix(in srgb, var(--cd-accent) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--cd-accent) 26%, transparent);
   color: var(--cd-text); font-family: inherit; font-size: 13px; font-weight: 700;
   transition: border-color 0.15s, background 0.15s;
 }
 .cd-add-import :deep(svg) { color: var(--cd-accent); flex-shrink: 0; }
-.cd-add-import > span { flex: 1; text-align: left; }
-.cd-add-import-ext { color: var(--cd-dim); font-weight: 600; font-size: 11px; }
 .cd-add-import:hover { border-color: color-mix(in srgb, var(--cd-accent) 45%, transparent); }
 
 .cd-add-share { display: flex; gap: 8px; margin-top: 8px; }

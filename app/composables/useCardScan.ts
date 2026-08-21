@@ -5,15 +5,21 @@ export interface ScannedCard {
   address: string | null; industry: string | null
 }
 
-export type ScanStep = 'idle' | 'captured-front' | 'processing'
+export type ScanStep = 'idle' | 'reading-code' | 'captured-front' | 'processing'
 
 export function useCardScan() {
   const analytics = useAnalytics()
+  const { decodeImage } = useQrDecode()
   const scanning = ref(false)
   const scanStep = ref<ScanStep>('idle')
   const error = ref<string | null>(null)
   const result = ref<ScannedCard | null>(null)
   const frontImage = ref<{ data: string; mediaType: string } | null>(null)
+  /** Raw payload of a QR code found in the captured photo, if any. The scan
+   *  screen decides what to do with it — a code usually beats OCR (it's exact,
+   *  and free), but a QR printed on a business card can just be a link to the
+   *  company site, so a link is offered rather than taken automatically. */
+  const qrPayload = ref<string | null>(null)
 
   async function fileToBase64(file: File): Promise<{ data: string; mediaType: string }> {
     return new Promise((resolve, reject) => {
@@ -50,44 +56,25 @@ export function useCardScan() {
     })
   }
 
-  function captureImage(): Promise<File> {
-    return new Promise((resolve, reject) => {
-      const input = document.createElement('input')
-      input.type = 'file'; input.accept = 'image/*'; input.capture = 'environment'
-      let settled = false
-      input.onchange = () => {
-        settled = true
-        const file = input.files?.[0]
-        // No file means the user backed out of the picker — treat as a cancel,
-        // not an error, so we don't flash a scary toast.
-        if (!file) { reject(new Error('Cancelled')); return }
-        resolve(file)
-      }
-      input.oncancel = () => { settled = true; reject(new Error('Cancelled')) }
-      // Safari/iOS don't reliably fire `oncancel`. When the window regains focus
-      // without a change event, the user dismissed the camera/picker — resolve as
-      // a cancel after a short grace period so the promise never dangles.
-      const onFocus = () => {
-        setTimeout(() => {
-          window.removeEventListener('focus', onFocus)
-          if (!settled) reject(new Error('Cancelled'))
-        }, 800)
-      }
-      window.addEventListener('focus', onFocus)
-      input.click()
-    })
-  }
-
-  async function captureFront(): Promise<void> {
+  async function captureFront(): Promise<string | null> {
     error.value = null
-    const file = await captureImage()
+    qrPayload.value = null
+    const file = await capturePhoto()
+    // Look for a QR before anything else: someone showing you their digital
+    // card on a phone screen has no printed text to OCR, and a code carries
+    // exact details instead of Claude's best reading of them.
+    scanStep.value = 'reading-code'
+    qrPayload.value = await decodeImage(file).catch(() => null)
+    // Keep the photo either way — if the user would rather scan the card than
+    // follow its QR, we already have the image and don't re-open the camera.
     frontImage.value = await fileToBase64(file)
     scanStep.value = 'captured-front'
+    return qrPayload.value
   }
 
   async function captureBackAndScan(): Promise<ScannedCard> {
     error.value = null
-    const file = await captureImage()
+    const file = await capturePhoto()
     const backImage = await fileToBase64(file)
     return await processImages([frontImage.value!, backImage])
   }
@@ -139,16 +126,19 @@ export function useCardScan() {
   // Legacy: single image scan (used by quick scan)
   async function openCamera(): Promise<ScannedCard> {
     error.value = null; result.value = null
-    const file = await captureImage()
+    const file = await capturePhoto()
     const imageData = await fileToBase64(file)
     return await processImages([imageData])
   }
 
   return {
-    scanning, scanStep, error, result, frontImage,
+    scanning, scanStep, error, result, frontImage, qrPayload,
     captureFront, captureBackAndScan, scanFrontOnly, openCamera,
     // Exposed so the scan screen can replay stashed offline captures.
     processImages,
-    reset: () => { result.value = null; error.value = null; scanStep.value = 'idle'; frontImage.value = null },
+    reset: () => {
+      result.value = null; error.value = null; scanStep.value = 'idle'
+      frontImage.value = null; qrPayload.value = null
+    },
   }
 }

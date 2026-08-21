@@ -30,6 +30,7 @@
     "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "jsqr": "^1.4.0",
     "lucide-vue-next": "^0.486.0",
     "nuxt": "^4.2.1",
     "nuxt-auth-utils": "^0.5.25",

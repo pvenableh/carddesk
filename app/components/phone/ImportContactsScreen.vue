@@ -14,6 +14,7 @@ import { SOCIAL_KEYS } from '~/types/socials'
 import confettiLib from 'canvas-confetti'
 
 const { pickFiles } = useVCardImport()
+const { resolve: resolveCardLink, resolving: resolvingLink } = useCardLink()
 const { supported: canPickPhone, pick: pickPhoneContacts } = useContactPicker()
 const { take: takePendingImport, cards: pendingImportCards } = usePendingImport()
 const { contacts, createContact } = useContacts()
@@ -102,6 +103,31 @@ async function pickFromPhone() {
     showError("Couldn't open your contacts — try the file option instead.")
   } finally {
     reading.value = false
+  }
+}
+
+// ── Card links ──
+// The other half of the inbound story: people who aren't on CardDesk hand out a
+// QR that points at their card on some other service (HiHello, Popl, Blinq, a
+// LinkedIn profile). The phone's own camera opens that link; pasting it here
+// lets the server chase it down to a real contact — see useCardLink.
+const linkInput = ref('')
+const showLinkInput = ref(false)
+
+async function addFromLink() {
+  const value = linkInput.value.trim()
+  if (!value || resolvingLink.value) return
+  try {
+    const { contacts: found } = await resolveCardLink(value)
+    if (!addParsed(found)) {
+      showError('That card is already in this list.')
+      return
+    }
+    linkInput.value = ''
+    showLinkInput.value = false
+  } catch (err: any) {
+    console.error('[import] link', err)
+    showError(err?.message || "We couldn't read that card link.")
   }
 }
 
@@ -302,6 +328,37 @@ function finish() {
           </span>
         </div>
 
+        <!-- Paste a card link — for the QR you scanned with the phone's own
+             camera, which drops you on their card page instead of a file. -->
+        <div class="imp-link glass-surface">
+          <div class="imp-link-lbl"><CdIcon icon="lucide:link" :size="12" /> Or paste a card link</div>
+          <p class="imp-link-sub">
+            Scanned someone's QR with your camera and landed on their digital card?
+            Paste that link and we'll pull their details out of it.
+          </p>
+          <div class="imp-link-row">
+            <input
+              v-model="linkInput"
+              class="imp-link-inp"
+              type="url"
+              inputmode="url"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
+              placeholder="https://…"
+              @keyup.enter="addFromLink"
+            >
+            <button
+              type="button"
+              class="cd-abtn g imp-link-btn"
+              :disabled="!linkInput.trim() || resolvingLink"
+              @click="addFromLink"
+            >
+              {{ resolvingLink ? 'Reading…' : 'Add' }}
+            </button>
+          </div>
+        </div>
+
         <div v-if="eventMode.active.value" class="imp-evt-note">
           <CdIcon icon="lucide:radio" :size="12" />
           Imported cards get tagged to <span>{{ eventMode.name.value }}</span>
@@ -396,6 +453,31 @@ function finish() {
           <button type="button" class="imp-addmore" :disabled="reading" @click="choose">
             <CdIcon icon="lucide:plus" :size="14" /> {{ reading ? '…' : 'Add files' }}
           </button>
+          <button type="button" class="imp-addmore" :disabled="resolvingLink" @click="showLinkInput = !showLinkInput">
+            <CdIcon icon="lucide:link" :size="14" /> {{ resolvingLink ? '…' : 'Add link' }}
+          </button>
+        </div>
+
+        <div v-if="showLinkInput" class="imp-link-row imp-link-row-solo">
+          <input
+            v-model="linkInput"
+            class="imp-link-inp"
+            type="url"
+            inputmode="url"
+            autocapitalize="off"
+            autocorrect="off"
+            spellcheck="false"
+            placeholder="https://… their card link"
+            @keyup.enter="addFromLink"
+          >
+          <button
+            type="button"
+            class="cd-abtn g imp-link-btn"
+            :disabled="!linkInput.trim() || resolvingLink"
+            @click="addFromLink"
+          >
+            {{ resolvingLink ? 'Reading…' : 'Add' }}
+          </button>
         </div>
       </template>
     </div>
@@ -465,6 +547,26 @@ function finish() {
 .imp-hero-sec .imp-hero-btn :deep(svg) { color: var(--cd-accent); }
 
 /* guidance block */
+/* ── Paste-a-card-link intake ── */
+.imp-link { margin-top: 12px; padding: 13px 14px; border-radius: 14px; }
+.imp-link-lbl {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 5px;
+  font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--cd-dim);
+}
+.imp-link-lbl :deep(svg) { color: var(--cd-accent); }
+.imp-link-sub { margin: 0 0 10px; font-size: 12px; line-height: 1.45; color: var(--cd-muted); }
+.imp-link-row { display: flex; gap: 8px; align-items: stretch; }
+.imp-link-row-solo { margin-top: 8px; }
+.imp-link-inp {
+  flex: 1; min-width: 0; padding: 9px 12px; border-radius: 12px;
+  background: var(--cd-bg2); border: 1px solid var(--cd-bdr); outline: none;
+  color: var(--cd-text); font-family: inherit; font-size: 14px;
+}
+.imp-link-inp::placeholder { color: var(--cd-dim); }
+.imp-link-inp:focus { border-color: color-mix(in srgb, var(--cd-accent) 45%, transparent); }
+.imp-link-btn { width: auto; flex-shrink: 0; padding: 9px 16px; font-size: 13px; }
+.imp-link-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .imp-guide { margin-top: 20px; }
 .imp-guide-lbl {
   display: flex; align-items: center; gap: 6px; margin: 0 4px 8px;
