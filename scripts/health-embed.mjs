@@ -42,7 +42,13 @@ try {
   const res = await get(`${BASE}/embed.js`)
   res.status === 200 ? ok('embed.js → 200') : bad(`embed.js → ${res.status}`)
   const ct = res.headers.get('content-type') || ''
-  /javascript|ecmascript/i.test(ct) ? ok(`embed.js content-type (${ct.split(';')[0]})`) : bad(`embed.js content-type "${ct}"`)
+  // `const isJs = …` rather than starting the line with the regex literal: with
+  // no semicolons, a leading `/` continues the previous line as a division, so
+  // this read as `… || '' / javascript|…/i.test(ct)` — which references `ct`
+  // inside its own initializer and threw "Cannot access 'ct' before
+  // initialization" every run. The check never once tested a content type.
+  const isJs = /javascript|ecmascript/i.test(ct)
+  isJs ? ok(`embed.js content-type (${ct.split(';')[0]})`) : bad(`embed.js content-type "${ct}"`)
   framable(res) ? ok('embed.js framable') : bad('embed.js blocks framing (X-Frame-Options / restrictive CSP)')
 } catch (e) {
   bad(`embed.js unreachable: ${e.message}`)
