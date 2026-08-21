@@ -27,25 +27,59 @@ export interface PushSupport {
   pushManager: boolean
   notification: boolean
   canSubscribe: boolean
+  /** A third-party browser on iOS (Chrome, Edge, Firefox, an in-app webview).
+   *  Push is impossible there — see detectSupport. */
+  iosThirdParty: boolean
+  /** Short label for the diagnostics line: 'safari-ios', 'chrome-ios', … */
+  browser: string
 }
 
+/** Chrome, Edge, Firefox, Opera and every in-app webview on iOS. */
+const IOS_THIRD_PARTY_UA = /CriOS|FxiOS|EdgiOS|OPiOS|YaBrowser|DuckDuckGo|FBAN|FBAV|Instagram|Line\/|Twitter/i
+
 function detectSupport(): PushSupport {
-  if (typeof window === 'undefined') {
-    return { serviceWorker: false, pushManager: false, notification: false, canSubscribe: false }
+  const none = {
+    serviceWorker: false, pushManager: false, notification: false,
+    canSubscribe: false, iosThirdParty: false, browser: 'server',
   }
+  if (typeof window === 'undefined') return none
+
+  const ua = navigator.userAgent
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document)
+  /**
+   * Every browser on iOS is WebKit, but only Safari (and a web app added to the
+   * Home Screen FROM Safari) gets working service workers. In Chrome/Edge/
+   * Firefox on iPhone `navigator.serviceWorker` and `PushManager` both exist and
+   * both are useless: registration never activates, so `.ready` hangs forever
+   * and the only symptom is a timeout. Detect it by UA — there's nothing to
+   * feature-detect, which is the whole problem.
+   */
+  const iosThirdParty = isIOS && IOS_THIRD_PARTY_UA.test(ua)
+  const browser = isIOS
+    ? (/CriOS/i.test(ua) ? 'chrome-ios'
+      : /EdgiOS/i.test(ua) ? 'edge-ios'
+      : /FxiOS/i.test(ua) ? 'firefox-ios'
+      : iosThirdParty ? 'webview-ios'
+      : 'safari-ios')
+    : 'other'
+
   const swSupport = 'serviceWorker' in navigator
   const pushSupport = 'PushManager' in window
   const notifSupport = 'Notification' in window
   if (!swSupport || !pushSupport || !notifSupport) {
-    return { serviceWorker: swSupport, pushManager: pushSupport, notification: notifSupport, canSubscribe: false }
+    return { serviceWorker: swSupport, pushManager: pushSupport, notification: notifSupport, canSubscribe: false, iosThirdParty, browser }
   }
-  const isStandalone =
-    window.matchMedia?.('(display-mode: standalone)').matches ||
-    (navigator as any).standalone === true
-  const ua = navigator.userAgent
-  const isIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document)
-  const canSubscribe = !isIOS || isStandalone
-  return { serviceWorker: swSupport, pushManager: pushSupport, notification: notifSupport, canSubscribe }
+
+  // On iOS, `navigator.standalone` is Safari's own flag and the only one that
+  // means what we need. A Home Screen shortcut made from Chrome can still match
+  // `display-mode: standalone` while being a browser tab in a costume — which is
+  // exactly how someone ends up staring at a service-worker timeout.
+  const isStandalone = isIOS
+    ? (navigator as any).standalone === true
+    : window.matchMedia?.('(display-mode: standalone)').matches === true
+
+  const canSubscribe = !isIOS || (isStandalone && !iosThirdParty)
+  return { serviceWorker: swSupport, pushManager: pushSupport, notification: notifSupport, canSubscribe, iosThirdParty, browser }
 }
 
 /**
@@ -144,7 +178,12 @@ export function usePushSubscription() {
     loading.value = true
     try {
       const reg = await getReadyRegistration()
-      if (!reg) throw new Error("Service worker isn't ready — reopen CardDesk and try again")
+      if (!reg)
+        throw new Error(
+          support.value.iosThirdParty
+            ? "This browser can't run notifications on iPhone — open CardDesk in Safari and add it to your Home Screen."
+            : "Service worker isn't ready — reopen CardDesk and try again",
+        )
 
       const { key } = await $fetch<{ key: string }>('/api/push/vapid-public-key')
       if (!key) throw new Error('VAPID key not configured')

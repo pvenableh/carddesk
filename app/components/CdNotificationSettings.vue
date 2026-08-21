@@ -25,8 +25,12 @@ const isIos = computed(() => {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document)
 })
 
+/** Chrome/Edge/Firefox on iPhone can never do this — no amount of installing
+ *  helps, because the service worker itself never activates. */
+const needsSafari = computed(() => support.value.iosThirdParty)
+
 /** iOS only allows web push from a Home-Screen install (16.4+), never a tab. */
-const needsHomeScreen = computed(() => isIos.value && !support.value.canSubscribe)
+const needsHomeScreen = computed(() => isIos.value && !needsSafari.value && !support.value.canSubscribe)
 
 /**
  * What a phone can't tell you on its own. Push failures on iOS are all
@@ -38,12 +42,14 @@ const diagnostics = computed(() => {
     `permission: ${permission.value}`,
     `installed: ${standalone.value ? 'yes' : 'no'}`,
     `worker: ${swReady.value === null ? 'checking' : swReady.value ? 'ready' : 'not ready'}`,
+    support.value.browser,
   ]
   return parts.join(' · ')
 })
 
 const statusLabel = computed(() => {
   if (isSubscribed.value) return 'On for this device'
+  if (needsSafari.value) return 'Not possible in this browser'
   if (permission.value === 'denied') return 'Blocked in browser settings'
   if (needsHomeScreen.value) return 'Add to Home Screen first'
   if (!support.value.pushManager) return 'Not supported on this browser'
@@ -106,7 +112,7 @@ onMounted(() => refreshState())
           <div class="cd-ns-status">{{ statusLabel }}</div>
         </div>
         <button
-          v-if="support.pushManager && permission !== 'denied' && !needsHomeScreen"
+          v-if="support.pushManager && permission !== 'denied' && !needsHomeScreen && !needsSafari"
           type="button"
           class="cd-ns-btn"
           :class="{ 'cd-ns-btn--off': isSubscribed }"
@@ -122,7 +128,16 @@ onMounted(() => refreshState())
         Each device you use CardDesk on turns these on separately.
       </p>
 
-      <p v-if="needsHomeScreen" class="cd-ns-note">
+      <!-- The dead end worth naming: every iPhone browser is WebKit, but only
+           Safari's service workers actually run, so Chrome can't get here no
+           matter how it was added to the Home Screen. -->
+      <p v-if="needsSafari" class="cd-ns-note">
+        iPhone only allows notifications from a Home Screen app added with <strong>Safari</strong>.
+        Chrome, Edge and Firefox on iPhone can't run the background worker push needs — even from a
+        Home Screen shortcut. Open CardDesk in Safari, tap Share → Add to Home Screen, and turn
+        notifications on from there.
+      </p>
+      <p v-else-if="needsHomeScreen" class="cd-ns-note">
         iPhone only allows notifications once CardDesk is on your Home Screen. Tap Share → Add to
         Home Screen, open it from there, then come back.
       </p>
