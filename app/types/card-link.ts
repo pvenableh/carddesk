@@ -23,6 +23,27 @@ export type CardPayloadKind =
   /** Something we can't turn into a person. */
   | 'unknown'
 
+/**
+ * Why a scanned code / shared link didn't become a contact. The scan screen
+ * turns these into different feedback: a QR that points at a company website
+ * is a perfectly good QR pointing at the wrong thing (offer to keep the URL and
+ * read the printed card instead), while a dead link is just broken. Neither is
+ * a scan worth celebrating, so neither earns XP or confetti.
+ */
+export type CardLinkFailReason =
+  /** The code carried neither contact details nor a link (a wifi/menu QR). */
+  | 'not-a-card'
+  /** A link, but nothing answered: dead host, blocked, timed out, 404. */
+  | 'unreachable'
+  /** The page loaded fine — it's a website, not anyone's digital card. */
+  | 'website'
+  /** Card-shaped page, but no contact details we could pull off it. */
+  | 'no-details'
+  /** A CardDesk card link whose card has since been deleted. */
+  | 'missing-card'
+  /** Client-side only: reading the link needs a connection we don't have. */
+  | 'offline'
+
 export interface ClassifiedPayload {
   kind: CardPayloadKind
   /** Contacts we could extract offline (vcard / mecard / contact-uri). */

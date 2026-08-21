@@ -19,7 +19,7 @@ const { supported: canPickPhone, pick: pickPhoneContacts } = useContactPicker()
 const { take: takePendingImport, cards: pendingImportCards } = usePendingImport()
 const { contacts, createContact } = useContacts()
 const { nav } = useNavigation()
-const { error: showError } = useToast()
+const { error: showError, info: showInfo } = useToast()
 const { state: xp, earn } = useXp()
 const { show: openShareSheet } = useShareSheet()
 const eventMode = useEventMode()
@@ -127,7 +127,10 @@ async function addFromLink() {
     showLinkInput.value = false
   } catch (err: any) {
     console.error('[import] link', err)
-    showError(err?.message || "We couldn't read that card link.")
+    // "That's a website, not a card" is information, not a failure to fix —
+    // the link stays in the box so it can be corrected or dropped.
+    const soft = err?.reason === 'website' || err?.reason === 'not-a-card'
+    ;(soft ? showInfo : showError)(err?.message || "We couldn't read that card link.")
   }
 }
 

@@ -58,6 +58,29 @@ export function metaHints(html: string): string {
   return out.join('\n')
 }
 
+/**
+ * A short human label for a page we couldn't get a card out of — `og:site_name`
+ * first (it's the brand, not the tagline), then the `<title>` up to its first
+ * separator, then the bare hostname. Used only for feedback copy ("Looks like
+ * Acme's website, not a digital card"), so it stays short and never throws.
+ */
+export function pageLabel(html: string, url: string): string | null {
+  const og = html.match(/<meta[^>]+(?:property|name)=["']og:site_name["'][^>]*>/i)?.[0]
+  const ogValue = og?.match(/content=["']([^"']*)["']/i)?.[1]
+  const rawTitle = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]
+  // Page titles are usually "Thing | Brand" — take the first segment that isn't
+  // boilerplate, so "Home | Bright Dental" labels the practice, not the page.
+  const segments = rawTitle
+    ? htmlToText(rawTitle).split(/\s*[|\u2013\u2014\u00b7\u2022]\s*|\s+-\s+/).map((t) => t.trim()).filter(Boolean)
+    : []
+  const generic = /^(home|homepage|welcome|index|about( us)?|contact( us)?)$/i
+  const title = segments.find((t) => !generic.test(t)) || segments[0] || ''
+  const host = (() => { try { return new URL(url).hostname.replace(/^www\./, '') } catch { return '' } })()
+  const label = (htmlToText(ogValue || '') || title || host).trim()
+  if (!label) return null
+  return label.length > 60 ? `${label.slice(0, 57).trimEnd()}\u2026` : label
+}
+
 /** Find links on the page that look like a downloadable contact card. */
 export function vcfCandidates(html: string, base: string): string[] {
   const out: string[] = []

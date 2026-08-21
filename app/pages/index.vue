@@ -130,7 +130,11 @@ async function ingestSharedCard() {
       setPendingImport(resolved.contacts)
       nav('import')
     } catch (err: any) {
-      errorToast(err?.message || "We couldn't read that card link.")
+      // A link that turned out to be a website (or a wifi QR) isn't an error on
+      // the user's part — say what it was, in the calmer tone.
+      const soft = err?.reason === 'website' || err?.reason === 'not-a-card'
+      const say = soft ? infoToast : errorToast
+      say(err?.message || "We couldn't read that card link.")
     }
   } catch (err) {
     console.error('[share-target] ingest failed', err)

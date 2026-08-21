@@ -15,11 +15,15 @@ export function useCardScan() {
   const error = ref<string | null>(null)
   const result = ref<ScannedCard | null>(null)
   const frontImage = ref<{ data: string; mediaType: string } | null>(null)
+  const backImage = ref<{ data: string; mediaType: string } | null>(null)
   /** Raw payload of a QR code found in the captured photo, if any. The scan
    *  screen decides what to do with it — a code usually beats OCR (it's exact,
    *  and free), but a QR printed on a business card can just be a link to the
    *  company site, so a link is offered rather than taken automatically. */
   const qrPayload = ref<string | null>(null)
+  /** Same, for the back of the card — plenty of cards print the QR there, and
+   *  a code we never look for is a code we never offer. */
+  const backQrPayload = ref<string | null>(null)
 
   async function fileToBase64(file: File): Promise<{ data: string; mediaType: string }> {
     return new Promise((resolve, reject) => {
@@ -72,11 +76,26 @@ export function useCardScan() {
     return qrPayload.value
   }
 
-  async function captureBackAndScan(): Promise<ScannedCard> {
+  /**
+   * Capture the back of the card and read any QR on it, returning the payload.
+   * The scan itself is a separate step (`scanBothSides`) so the screen can act
+   * on a code first — a back-printed QR that carries the whole card is exact
+   * and free, and spending the scan on it anyway would be a waste.
+   */
+  async function captureBack(): Promise<string | null> {
     error.value = null
+    backQrPayload.value = null
     const file = await capturePhoto()
-    const backImage = await fileToBase64(file)
-    return await processImages([frontImage.value!, backImage])
+    scanStep.value = 'reading-code'
+    backQrPayload.value = await decodeImage(file).catch(() => null)
+    backImage.value = await fileToBase64(file)
+    scanStep.value = 'captured-front'
+    return backQrPayload.value
+  }
+
+  /** Scan both captured sides together. */
+  async function scanBothSides(): Promise<ScannedCard> {
+    return await processImages([frontImage.value!, backImage.value!])
   }
 
   async function scanFrontOnly(): Promise<ScannedCard> {
@@ -120,6 +139,7 @@ export function useCardScan() {
       scanning.value = false
       scanStep.value = 'idle'
       frontImage.value = null
+      backImage.value = null
     }
   }
 
@@ -132,13 +152,14 @@ export function useCardScan() {
   }
 
   return {
-    scanning, scanStep, error, result, frontImage, qrPayload,
-    captureFront, captureBackAndScan, scanFrontOnly, openCamera,
+    scanning, scanStep, error, result, frontImage, qrPayload, backQrPayload,
+    captureFront, captureBack, scanBothSides, scanFrontOnly, openCamera,
     // Exposed so the scan screen can replay stashed offline captures.
     processImages,
     reset: () => {
       result.value = null; error.value = null; scanStep.value = 'idle'
-      frontImage.value = null; qrPayload.value = null
+      frontImage.value = null; backImage.value = null
+      qrPayload.value = null; backQrPayload.value = null
     },
   }
 }

@@ -24,8 +24,8 @@ import { safeFetch } from '../utils/safe-fetch'
 import { enforceCredits, chargeCredits } from '../utils/ai-credits'
 import { CLAUDE_MODELS } from '../utils/ai-models'
 import { logAnthropicError } from '../utils/ai-errors'
-import { cardDeskCardId, htmlToText, metaHints, vcfCandidates, MAX_TEXT_CHARS } from '../utils/card-page'
-import { classifyCardPayload } from '~/types/card-link'
+import { cardDeskCardId, htmlToText, metaHints, pageLabel, vcfCandidates, MAX_TEXT_CHARS } from '../utils/card-page'
+import { classifyCardPayload, type CardLinkFailReason } from '~/types/card-link'
 import { parseVCards, type ShareableContact } from '~/types/vcard'
 import { SOCIAL_KEYS } from '~/types/socials'
 
@@ -43,6 +43,37 @@ interface ResolveResponse {
 
 const isVcardResponse = (contentType: string, body: string) =>
   /vcard|x-vcard|text\/directory/.test(contentType) || /BEGIN:VCARD/i.test(body.slice(0, 2000))
+
+/**
+ * Fail with a machine-readable *why*. The scan screen reacts differently to
+ * "that's a website, not a card" (keep the URL, read the printed card) than to
+ * "that link is dead", and neither should look like a successful scan — so the
+ * reason travels with the message instead of the client string-matching copy.
+ */
+function cardLinkError(
+  statusCode: number,
+  message: string,
+  reason: CardLinkFailReason,
+  extra: { url?: string | null; siteName?: string | null } = {},
+) {
+  return createError({
+    statusCode,
+    message,
+    data: { reason, url: extra.url ?? null, siteName: extra.siteName ?? null },
+  })
+}
+
+/** Chase a stranger's URL, re-labelling safeFetch's 4xx/5xx as 'unreachable'.
+ *  Its messages are already user-facing; only the reason needs attaching. */
+async function fetchOrUnreachable(url: string, accept?: string) {
+  try {
+    return accept ? await safeFetch(url, accept) : await safeFetch(url)
+  } catch (err: any) {
+    if (err?.statusCode)
+      throw cardLinkError(err.statusCode, err.message || "We couldn't reach that link.", 'unreachable', { url })
+    throw err
+  }
+}
 
 export default defineEventHandler(async (event): Promise<ResolveResponse> => {
   await getValidToken(event)
@@ -62,10 +93,11 @@ export default defineEventHandler(async (event): Promise<ResolveResponse> => {
     }
   }
   if (classified.kind !== 'url' || !classified.url)
-    throw createError({
-      statusCode: 422,
-      message: "That code isn't a contact card — it didn't contain contact details or a link.",
-    })
+    throw cardLinkError(
+      422,
+      "That code isn't a contact card — it didn't contain contact details or a link.",
+      'not-a-card',
+    )
 
   const target = classified.url
   const config = useRuntimeConfig()
@@ -102,7 +134,7 @@ export default defineEventHandler(async (event): Promise<ResolveResponse> => {
       }
     } catch (err: any) {
       if (err?.statusCode === 404)
-        throw createError({ statusCode: 404, message: "That CardDesk card doesn't exist any more." })
+        throw cardLinkError(404, "That CardDesk card doesn't exist any more.", 'missing-card', { url: target })
       // Anything else: fall through and treat it as a normal web page.
     }
   }
@@ -110,7 +142,7 @@ export default defineEventHandler(async (event): Promise<ResolveResponse> => {
   // 3) Fetch the link. A lot of digital-card services answer with the vCard
   //    itself (the QR points straight at the .vcf); the rest serve an HTML card
   //    page with a "Save contact" link we can follow.
-  const page = await safeFetch(target)
+  const page = await fetchOrUnreachable(target)
   if (isVcardResponse(page.contentType, page.body)) {
     const contacts = parseVCards(page.body)
     if (contacts.length) return { contacts, source: 'vcard', url: page.url, charged: false }
@@ -134,17 +166,24 @@ export default defineEventHandler(async (event): Promise<ResolveResponse> => {
   // 4) No machine-readable card anywhere. Read the page like a human would.
   //    This is the only branch that costs a credit.
   if (!isHtml)
-    throw createError({
-      statusCode: 422,
-      message: "That link isn't a contact card we can read.",
-    })
+    throw cardLinkError(422, "That link isn't a contact card we can read.", 'no-details', { url: page.url })
   if (!config.anthropicApiKey)
-    throw createError({ statusCode: 422, message: "That page doesn't offer a contact card we can import." })
+    throw cardLinkError(
+      422,
+      "That page doesn't offer a contact card we can import.",
+      'no-details',
+      { url: page.url, siteName: pageLabel(page.body, page.url) },
+    )
 
   const text = htmlToText(page.body).slice(0, MAX_TEXT_CHARS)
   const hints = metaHints(page.body)
   if (!text && !hints)
-    throw createError({ statusCode: 422, message: "That page doesn't offer a contact card we can import." })
+    throw cardLinkError(
+      422,
+      "That page doesn't offer a contact card we can import.",
+      'no-details',
+      { url: page.url, siteName: pageLabel(page.body, page.url) },
+    )
 
   const account = await enforceCredits(event, 'resolve-card-link')
   const socialJson = SOCIAL_KEYS.map((k) => `"${k}": string|null`).join(', ')
@@ -188,11 +227,22 @@ ${text}
     try {
       parsed = JSON.parse(out.replace(/```json|```/g, '').trim())
     } catch {
-      throw createError({ statusCode: 422, message: "We couldn't read a contact off that page." })
+      throw cardLinkError(422, "We couldn't read a contact off that page.", 'no-details', {
+        url: page.url,
+        siteName: pageLabel(page.body, page.url),
+      })
     }
     const name = parsed.name || [parsed.first_name, parsed.last_name].filter(Boolean).join(' ').trim()
+    // A QR printed on a business card is as often the company site as it is the
+    // person's card. Say which it turned out to be — with a label and the URL,
+    // so the scan screen can offer to keep the link and read the printed card.
     if (parsed.is_card === false || (!name && !parsed.email && !parsed.phone))
-      throw createError({ statusCode: 422, message: "That link doesn't look like someone's contact card." })
+      throw cardLinkError(
+        422,
+        "That link goes to a website, not someone's contact card.",
+        'website',
+        { url: page.url, siteName: parsed.company || pageLabel(page.body, page.url) },
+      )
 
     return {
       contacts: [{
@@ -217,6 +267,6 @@ ${text}
   } catch (err: any) {
     if (err.statusCode) throw err // our own 422/402 — pass through
     const detail = logAnthropicError('resolve-card-link', err)
-    throw createError({ statusCode: 502, message: `Couldn't read that card page: ${detail}` })
+    throw cardLinkError(502, `Couldn't read that card page: ${detail}`, 'no-details', { url: page.url })
   }
 })

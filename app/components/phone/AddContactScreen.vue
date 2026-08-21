@@ -2,15 +2,17 @@
 import { RATINGS, INDUSTRIES } from '~/composables/useConstants'
 import { SOCIALS, SOCIAL_KEYS } from '~/types/socials'
 import { cleanPhones } from '~/types/contact'
+import type { CardLinkFailReason } from '~/types/card-link'
+import { CardLinkError } from '~/composables/useCardLink'
 import confettiLib from 'canvas-confetti'
 
 const { contacts, createContact, logActivity } = useContacts()
 const { state: xp, earn, completeMission } = useXp()
-const { scanning, scanStep, error: scanError, captureFront, captureBackAndScan, scanFrontOnly, processImages, reset: resetScan } = useCardScan()
-const { resolve: resolveCardLink, isSelfContained, resolving: resolvingLink } = useCardLink()
+const { scanning, scanStep, error: scanError, captureFront, captureBack, scanBothSides, scanFrontOnly, processImages, reset: resetScan } = useCardScan()
+const { resolve: resolveCardLink, selfContainedCard, linkTarget, resolving: resolvingLink } = useCardLink()
 const { pending: pendingScans, remove: removePendingScan } = usePendingScans()
 const { nav, goDetail } = useNavigation()
-const { error: showError } = useToast()
+const { error: showError, info: showInfo } = useToast()
 const eventMode = useEventMode()
 const { show: openShareSheet } = useShareSheet()
 const { enabled: locEnabled, detecting: locDetecting, error: locError, venues: locVenues, location: locDetected, detect: detectLocation } = useLocation()
@@ -52,30 +54,72 @@ function fireConfetti() {
  * Fill the form from a captured card. `source` only changes the celebration
  * copy — a code and a photo are both "a card you scanned" as far as XP, the
  * scan mission, and contact provenance are concerned.
+ *
+ * `merge` fills the gaps instead of replacing the form: it's how a QR read
+ * *after* a photo scan tops up what the photo missed without throwing away
+ * what it got. The new values still win wherever both have something — the
+ * user asked for the code precisely because it's the more exact source.
  */
-function applyResult(result: any, source: 'photo' | 'code' = 'photo') {
+function applyResult(result: any, source: 'photo' | 'code' = 'photo', opts: { merge?: boolean } = {}) {
+  const prev = addForm.value
+  /** New value, falling back to what's already typed/scanned when merging. */
+  const pick = (next: any, key: string) => (next ?? '') || (opts.merge ? (prev[key] ?? '') : '')
+  // Some sources (a page read by AI, a sparse vCard) give a full name but no
+  // split parts — without this the name is dropped on the floor.
+  let first = result.first_name ?? ''
+  let last = result.last_name ?? ''
+  if (!first && !last && result.name) {
+    const parts = String(result.name).trim().split(/\s+/)
+    first = parts.shift() ?? ''
+    last = parts.join(' ')
+  }
   addForm.value = {
-    firstName: result.first_name ?? '',
-    lastName: result.last_name ?? '',
-    title: result.title ?? '',
-    company: result.company ?? '',
-    email: result.email ?? '',
-    phone: result.phone ?? '',
+    firstName: pick(first, 'firstName'),
+    lastName: pick(last, 'lastName'),
+    title: pick(result.title, 'title'),
+    company: pick(result.company, 'company'),
+    email: pick(result.email, 'email'),
+    phone: pick(result.phone, 'phone'),
     // A vCard from a QR can carry several numbers; the AI photo scan never does.
-    phones: Array.isArray(result.phones) ? result.phones : [],
-    website: result.website ?? '',
-    industry: result.industry ?? '',
-    metAt: addForm.value.metAt,
-    location: result.location ?? addForm.value.location ?? '',
-    address: result.address ?? '',
-    rating: '',
-    notes: '',
-    howMet: addForm.value.howMet,
-    ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, result[k] ?? ''])),
+    phones: Array.isArray(result.phones) && result.phones.length
+      ? result.phones
+      : (opts.merge ? prev.phones : []),
+    // Keep a URL the user chose to hang on to (the QR turned out to be their
+    // website) unless this scan found a better one.
+    website: result.website ?? prev.website ?? '',
+    industry: pick(result.industry, 'industry'),
+    metAt: prev.metAt,
+    location: result.location ?? prev.location ?? '',
+    address: pick(result.address, 'address'),
+    rating: opts.merge ? prev.rating : '',
+    notes: opts.merge ? prev.notes : '',
+    howMet: prev.howMet,
+    ...Object.fromEntries(SOCIAL_KEYS.map((k) => [k, pick(result[k], k)])),
   }
   wasScanned.value = true
   // Reveal the socials section if the scan pulled any handles, so they're not hidden.
   if (SOCIAL_KEYS.some((k) => addForm.value[k])) showSocials.value = true
+  // Only celebrate a scan that actually came back with a person. A QR that led
+  // to a thin page, or a photo the AI couldn't read, leaves the form empty —
+  // confetti and +50 XP over nothing reads as a bug and inflates the streak.
+  const gotSomeone = Boolean(
+    addForm.value.firstName || addForm.value.lastName || addForm.value.email || addForm.value.phone,
+  )
+  if (!gotSomeone) {
+    showInfo(
+      addForm.value.company || addForm.value.website
+        ? "Only the company came back from that — add their name and details to save it."
+        : "That didn't come back with any details — try a clearer photo, or type them in.",
+    )
+    return
+  }
+  // Reading the code after the photo (or the other way round) is still one
+  // card: top up the form, but don't hand out the scan reward twice.
+  if (earnedForCard.value) {
+    showInfo(source === 'code' ? 'Filled in from their QR code.' : 'Updated from that scan.')
+    return
+  }
+  earnedForCard.value = true
   earn(
     50,
     source === 'code' ? '🔗' : '📷',
@@ -87,39 +131,165 @@ function applyResult(result: any, source: 'photo' | 'code' = 'photo') {
   fireConfetti()
 }
 
-// A QR code found in the captured photo that's just a link. We ask before
-// following it: a code printed on a paper business card is as likely to be the
-// company website as it is to be the person's card, and only the user knows
-// which they were pointing the camera at.
+// A QR code found on the card that's just a link. We ask before following it: a
+// code printed on a paper business card is as likely to be the company website
+// as it is to be the person's card, and only the user knows which they were
+// pointing the camera at. It's kept for the whole capture rather than consumed
+// by one decision — photographing the back doesn't throw the code away, and the
+// offer comes back afterwards if the scan didn't get everything.
 const qrLink = ref<string | null>(null)
+/** Set once the code has had its turn — resolved into the form, or tried and
+ *  found wanting. Either way the offer stops following the user around. */
+const qrSettled = ref(false)
+/** XP is per card, not per attempt: a photo scan followed by "fetch from the
+ *  QR" is one card captured, so the 50 lands once. */
+const earnedForCard = ref(false)
+
+function clearQrState() {
+  qrLink.value = null
+  qrMiss.value = null
+  qrSettled.value = false
+  earnedForCard.value = false
+}
+
+/**
+ * A code we followed that didn't end in a contact. Kept as state rather than a
+ * toast because the way out differs per reason: a company website is worth
+ * keeping as a website, a dead link is worth retrying, and either way the
+ * printed card is still sitting there waiting to be read.
+ */
+interface QrMiss {
+  reason: CardLinkFailReason
+  message: string
+  /** The original code, so "Try again" can re-run it. */
+  payload: string
+  /** Where it actually pointed (after redirects), when we got that far. */
+  url: string | null
+  /** Short label for the page — a company or site name. */
+  siteName: string | null
+}
+const qrMiss = ref<QrMiss | null>(null)
+
+/** Headline + hint + which ways out to offer, per reason. */
+const qrMissCopy = computed(() => {
+  const miss = qrMiss.value
+  if (!miss) return null
+  const site = miss.siteName || (miss.url ? miss.url.replace(/^https?:\/\//, '').split('/')[0] : 'that page')
+  switch (miss.reason) {
+    case 'website':
+      return {
+        title: 'A Website, Not A Card',
+        hint: `That QR opens ${site} — a website, with no contact card on it to pull details from.`,
+        icon: 'lucide:globe',
+        emoji: '🌐',
+        retry: false,
+        keepWebsite: true,
+      }
+    case 'not-a-card':
+      return {
+        title: 'Not A Contact Code',
+        hint: "That QR isn't a card or a link — it's something else entirely (a wifi code, a product tag).",
+        icon: 'lucide:scan-line',
+        emoji: '🤷',
+        retry: false,
+        keepWebsite: false,
+      }
+    case 'unreachable':
+    case 'offline':
+      return {
+        title: miss.reason === 'offline' ? 'No Connection' : 'That Link Went Nowhere',
+        hint: miss.message,
+        icon: 'lucide:unplug',
+        emoji: '🔌',
+        retry: true,
+        keepWebsite: false,
+      }
+    default:
+      // 'no-details' (a card-ish page we got nothing off) and 'missing-card'
+      // (a deleted CardDesk card). Retrying re-reads the same page for the same
+      // result — and costs a credit — so it isn't offered.
+      return {
+        title: 'Nothing To Import',
+        hint: miss.message,
+        icon: 'lucide:file-question',
+        emoji: '📄',
+        retry: false,
+        keepWebsite: miss.reason === 'no-details' && Boolean(miss.url),
+      }
+  }
+})
 
 /** Resolve a scanned code into the form (free for codes that carry the whole
  *  card; a hosted card link may cost a credit — see resolve-card-link). */
-async function useScannedCode(payload: string) {
+async function useScannedCode(payload: string, opts: { merge?: boolean } = {}) {
   try {
     const { contacts } = await resolveCardLink(payload)
-    qrLink.value = null
-    applyResult(contacts[0], 'code')
+    qrMiss.value = null
+    qrSettled.value = true
+    applyResult(contacts[0], 'code', opts)
     resetScan()
   } catch (err: any) {
     console.error('[scan] code', err)
-    showError(err?.message || "We couldn't read that code.")
+    // No red toast: the panel below says what the code turned out to be and
+    // offers the way on, and the captured photo is still ready to OCR. The code
+    // is settled either way — re-offering one we've just shown to be a website
+    // would send the user round the same loop.
+    qrSettled.value = true
+    qrMiss.value = {
+      reason: err instanceof CardLinkError ? err.reason : 'no-details',
+      message: err?.message || "We couldn't read that code.",
+      payload,
+      url: (err instanceof CardLinkError ? err.url : null) ?? linkTarget(payload),
+      siteName: err instanceof CardLinkError ? err.siteName : null,
+    }
   }
 }
 
-/** Ignore the code and OCR the photo we already took instead. */
+/** Take a code that carries the whole card (vCard / MECARD / tel:). Nothing to
+ *  fetch and nothing to charge, so it's applied without asking. */
+function takeLocalCard(card: any) {
+  qrSettled.value = true
+  qrMiss.value = null
+  applyResult(card, 'code', { merge: wasScanned.value })
+  resetScan()
+}
+
+/** Dismiss the "that code went nowhere" panel and carry on with the photos. */
 function ignoreQrLink() {
-  qrLink.value = null
+  qrMiss.value = null
+}
+
+/** Re-run a code that failed on something transient (dead wifi, a slow host). */
+function retryQrLink() {
+  const payload = qrMiss.value?.payload
+  if (!payload) return
+  qrMiss.value = null
+  useScannedCode(payload, { merge: wasScanned.value })
+}
+
+/** The code was a website — not nothing. Keep it on the contact and carry on
+ *  reading the printed card for the details it didn't have. */
+function keepQrAsWebsite() {
+  const url = qrMiss.value?.url || qrMiss.value?.payload
+  if (url) {
+    addForm.value.website = url
+    showInfo('Kept as their website — scan the card for the rest.')
+  }
+  qrMiss.value = null
 }
 
 async function doScanFront() {
   try {
+    clearQrState()
     const qr = await captureFront()
     // A code carrying the whole card (vCard / MECARD / tel:) is unambiguous and
-    // costs nothing — take it. Anything else is offered, not assumed.
+    // costs nothing — take it. A link is offered, not assumed. Anything else
+    // isn't a card at all, and says so rather than posing as a link.
     if (qr) {
-      if (isSelfContained(qr)) await useScannedCode(qr)
-      else qrLink.value = qr
+      const card = selfContainedCard(qr)
+      if (card) takeLocalCard(card)
+      else if (linkTarget(qr)) qrLink.value = qr
+      else qrMiss.value = { reason: 'not-a-card', message: '', payload: qr, url: null, siteName: null }
     }
   } catch (err: any) {
     // 'Cancelled' = user backed out of the camera/picker; stay silent.
@@ -134,7 +304,17 @@ async function doScanFront() {
 
 async function doScanBack() {
   try {
-    const result = await captureBackAndScan()
+    // Plenty of cards put the QR on the back. Read it before spending the scan:
+    // a code carrying the whole card is exact and free, so it wins outright.
+    const qr = await captureBack()
+    if (qr) {
+      const card = selfContainedCard(qr)
+      if (card) { takeLocalCard(card); return }
+      // A link on the back is offered the same way a link on the front is —
+      // after the scan, once we know what the photos actually got.
+      if (!qrLink.value && linkTarget(qr)) qrLink.value = qr
+    }
+    const result = await scanBothSides()
     applyResult(result)
   } catch (err: any) {
     if (err?.message !== 'Cancelled') {
@@ -253,6 +433,7 @@ async function doSaveContact() {
   }
   wasScanned.value = false
   resetScan()
+  clearQrState()
   saving.value = false
   // In Event Mode, loop straight back for the next card; otherwise open the detail.
   if (eventMode.active.value) {
@@ -293,20 +474,26 @@ async function doSaveContact() {
         </div>
       </div>
 
-      <!-- Scan Zone: found a QR that points somewhere. Their digital card, or
-           just the company website printed on the back? Only the user knows. -->
-      <div v-else-if="qrLink" class="cd-scan-captured">
-        <div style="font-size: 36px; margin-bottom: 6px"><CdIcon emoji="🔗" icon="lucide:qr-code" :size="36" /></div>
-        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; color: var(--cd-accent); margin-bottom: 4px">
-          QR Code Found
+      <!-- Scan Zone: the code led somewhere, just not to a card. Says which —
+           a website, a dead link, a wifi QR — and hands back a way on. No XP,
+           no confetti: nothing was captured. -->
+      <div v-else-if="qrMiss && qrMissCopy" class="cd-scan-captured cd-qr-miss">
+        <div style="font-size: 36px; margin-bottom: 6px">
+          <CdIcon :emoji="qrMissCopy.emoji" :icon="qrMissCopy.icon" :size="36" />
         </div>
-        <div class="cd-qr-link" :title="qrLink">{{ qrLink }}</div>
+        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; color: var(--cd-gold, #ffd700); margin-bottom: 4px">
+          {{ qrMissCopy.title }}
+        </div>
+        <div v-if="qrMiss.url" class="cd-qr-link" :title="qrMiss.url">{{ qrMiss.url }}</div>
         <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">
-          Open their digital card, or read the printed card instead?
+          {{ qrMissCopy.hint }}
         </div>
-        <div style="display: flex; gap: 8px">
-          <button class="cd-abtn g" style="font-size: 13px; padding: 10px" @click="useScannedCode(qrLink)">
-            <CdIcon emoji="🔗" icon="lucide:link" :size="14" /> Use the code
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center">
+          <button v-if="qrMissCopy.keepWebsite" class="cd-abtn g" style="font-size: 13px; padding: 10px" @click="keepQrAsWebsite">
+            <CdIcon emoji="🌐" icon="lucide:globe" :size="14" /> Save as website
+          </button>
+          <button v-if="qrMissCopy.retry" class="cd-abtn g" style="font-size: 13px; padding: 10px" :disabled="resolvingLink" @click="retryQrLink">
+            <CdIcon emoji="🔄" icon="lucide:rotate-ccw" :size="14" /> Try again
           </button>
           <button class="cd-abtn b" style="font-size: 13px; padding: 10px" @click="ignoreQrLink">
             Scan the card →
@@ -335,13 +522,27 @@ async function doSaveContact() {
         <span class="cd-xpb" style="margin-top: 9px; display: inline-block">+50 XP</span>
       </div>
 
-      <!-- Scan Zone: Front captured, prompt for back -->
+      <!-- Scan Zone: front captured — with the card's QR offered alongside the
+           photos rather than instead of them. A code printed on a business card
+           is as often the company website as the person's card, so following it
+           stays a choice; picking the camera doesn't throw the code away. -->
       <div v-else-if="scanStep === 'captured-front'" class="cd-scan-captured">
-        <div style="font-size: 36px; margin-bottom: 6px"><CdIcon emoji="✅" icon="lucide:check-circle" :size="36" /></div>
-        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; color: var(--cd-accent); margin-bottom: 4px">
-          Front Captured
+        <div style="font-size: 36px; margin-bottom: 6px">
+          <CdIcon :emoji="qrLink && !qrSettled ? '🔗' : '✅'" :icon="qrLink && !qrSettled ? 'lucide:qr-code' : 'lucide:check-circle'" :size="36" />
         </div>
-        <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 14px">
+        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; color: var(--cd-accent); margin-bottom: 4px">
+          {{ qrLink && !qrSettled ? 'QR Code On This Card' : 'Front Captured' }}
+        </div>
+        <template v-if="qrLink && !qrSettled">
+          <div class="cd-qr-link" :title="qrLink">{{ qrLink }}</div>
+          <div style="font-size: 11px; color: var(--cd-muted); margin-bottom: 12px">
+            Fetch their details from the code, or carry on photographing the card.
+          </div>
+          <button class="cd-abtn g" style="font-size: 13px; padding: 10px; width: 100%; margin-bottom: 8px" @click="useScannedCode(qrLink)">
+            <CdIcon emoji="🔗" icon="lucide:link" :size="14" /> Use the code
+          </button>
+        </template>
+        <div v-else style="font-size: 11px; color: var(--cd-muted); margin-bottom: 14px">
           Flip the card to scan the back, or skip if single-sided
         </div>
         <div style="display: flex; gap: 8px">
@@ -368,6 +569,21 @@ async function doSaveContact() {
       <!-- The idle-only helpers below sit OUTSIDE the scan-state v-if/v-else-if/v-else
            chain above. They must come after the chain — interleaving extra v-if
            blocks would re-bind the chain's v-else to the wrong element. -->
+
+      <!-- The card had a QR we didn't follow, and the photos are done (or the
+           scan failed). Offer it once more: it fills the gaps the scan left
+           rather than replacing what it got, and it's the exact data where the
+           OCR was only ever a best reading. -->
+      <button
+        v-if="scanStep === 'idle' && !scanning && qrLink && !qrSettled"
+        type="button"
+        class="cd-qr-offer"
+        @click="useScannedCode(qrLink, { merge: true })"
+      >
+        <CdIcon emoji="🔗" icon="lucide:qr-code" :size="15" />
+        <span>This card had a QR code — fill in the rest from it</span>
+        <CdIcon icon="lucide:arrow-right" :size="15" />
+      </button>
 
       <!-- Cards captured offline, waiting for a connection — one tap replays them. -->
       <button
@@ -605,6 +821,27 @@ async function doSaveContact() {
 /* The scanned URL, shown so the user can see where the code actually points
    before we open it — a QR is unreadable by eye, so this is the only chance
    they get to notice it's not the card they expected. */
+.cd-qr-offer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  background: rgba(0, 255, 135, 0.07);
+  border: 1px solid rgba(0, 255, 135, 0.28);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cd-accent);
+  cursor: pointer;
+  font-family: inherit;
+}
+.cd-qr-miss {
+  /* Reads as "note", not "success" — same panel, warmer border than a capture. */
+  border-color: rgba(255, 215, 0, 0.28);
+}
 .cd-qr-link {
   max-width: 100%; margin: 0 auto 8px; padding: 5px 9px; border-radius: 8px;
   background: var(--cd-bg2); border: 1px solid var(--cd-bdr);
