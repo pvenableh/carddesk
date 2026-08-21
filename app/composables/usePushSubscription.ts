@@ -48,20 +48,56 @@ function detectSupport(): PushSupport {
   return { serviceWorker: swSupport, pushManager: pushSupport, notification: notifSupport, canSubscribe }
 }
 
-async function getReadyRegistration(): Promise<ServiceWorkerRegistration | null> {
+/**
+ * `navigator.serviceWorker.ready` never rejects — on iOS it can simply hang
+ * when activation stalls, which used to leave the toggle spinning with nothing
+ * to show for it. Racing a timeout turns that into a visible error.
+ */
+async function getReadyRegistration(timeoutMs = 8000): Promise<ServiceWorkerRegistration | null> {
   if (typeof window === 'undefined') return null
   if (!('serviceWorker' in navigator)) return null
   try {
-    return await navigator.serviceWorker.ready
+    return await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+    ])
   } catch (err) {
     console.error('[cd push] SW ready failed:', err)
     return null
   }
 }
 
+/**
+ * Ask for notification permission — FIRST, before anything is awaited.
+ *
+ * This is the whole iOS bug in one line. WebKit only honours
+ * `requestPermission()` while the tap that triggered it still counts as user
+ * activation, and activation does not survive an `await` on an unrelated
+ * promise. Waiting on the service worker (or the VAPID key) before asking meant
+ * iPhone users were never prompted at all: no dialog, no error, permission
+ * silently stuck at 'default'.
+ *
+ * Older WebKit only shipped the callback form, so both are handled.
+ */
+function requestPermission(): Promise<NotificationPermission> {
+  return new Promise((resolve) => {
+    try {
+      const maybe = Notification.requestPermission((perm) => resolve(perm))
+      if (maybe && typeof (maybe as any).then === 'function') (maybe as Promise<NotificationPermission>).then(resolve)
+    } catch (err) {
+      console.error('[cd push] requestPermission threw:', err)
+      resolve(Notification.permission)
+    }
+  })
+}
+
 export function usePushSubscription() {
   const support = ref<PushSupport>(detectSupport())
   const permission = ref<NotificationPermission | 'unknown'>('unknown')
+  /** Whether the service worker ever reached 'ready' — the settings panel shows
+   *  it, because on a phone there's no console to find this out from. */
+  const swReady = ref<boolean | null>(null)
+  const standalone = ref(false)
   const subscription = ref<PushSubscription | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -73,8 +109,12 @@ export function usePushSubscription() {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       permission.value = Notification.permission
     }
+    standalone.value =
+      typeof window !== 'undefined' &&
+      Boolean(window.matchMedia?.('(display-mode: standalone)').matches || (navigator as any).standalone === true)
     if (!support.value.canSubscribe) return
     const reg = await getReadyRegistration()
+    swReady.value = Boolean(reg)
     if (!reg) return
     try {
       subscription.value = await reg.pushManager.getSubscription()
@@ -89,24 +129,31 @@ export function usePushSubscription() {
       error.value = 'Add CardDesk to your Home Screen first to enable push.'
       return null
     }
+    // Before any await — see requestPermission(). Everything else can wait; the
+    // browser's permission dialog cannot.
+    const perm = await requestPermission()
+    permission.value = perm
+    if (perm !== 'granted') {
+      error.value =
+        perm === 'denied'
+          ? 'Permission denied — re-allow notifications in your browser settings.'
+          : 'Permission not granted — the prompt was dismissed.'
+      return null
+    }
+
     loading.value = true
     try {
       const reg = await getReadyRegistration()
-      if (!reg) throw new Error('Service worker not ready')
-
-      const perm = await Notification.requestPermission()
-      permission.value = perm
-      if (perm !== 'granted') {
-        error.value = perm === 'denied' ? 'Permission denied' : 'Permission not granted'
-        return null
-      }
+      if (!reg) throw new Error("Service worker isn't ready — reopen CardDesk and try again")
 
       const { key } = await $fetch<{ key: string }>('/api/push/vapid-public-key')
       if (!key) throw new Error('VAPID key not configured')
 
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: base64UrlToUint8Array(key),
+        // Cast: TS 5.7 types Uint8Array as Uint8Array<ArrayBufferLike>, which no
+        // longer satisfies BufferSource on its own. Pre-existing, tidied here.
+        applicationServerKey: base64UrlToUint8Array(key) as BufferSource,
       })
       const payload = {
         endpoint: sub.endpoint,
@@ -173,6 +220,8 @@ export function usePushSubscription() {
   return {
     support,
     permission,
+    swReady,
+    standalone,
     subscription,
     isSubscribed,
     loading,

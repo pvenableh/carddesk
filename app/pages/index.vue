@@ -254,6 +254,10 @@ onMounted(async () => {
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
+  /* Re-measured by plugins/viewport-height.client.ts. Same height as 100dvh
+     normally; the difference is that it recovers when a browser hands out a
+     stale viewport and never corrects it (iOS Chrome, after a camera prompt). */
+  height: var(--cd-app-h, 100dvh);
   overflow: hidden;
   position: relative;
   background: var(--cd-bg);

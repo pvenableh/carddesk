@@ -11,7 +11,7 @@
  * version are you on?": it names the build, says whether it's current, and lets
  * someone force the check rather than waiting for the poll.
  */
-const { support, permission, isSubscribed, loading, error, subscribe, unsubscribe, refreshState } =
+const { support, permission, swReady, standalone, isSubscribed, loading, error, subscribe, unsubscribe, refreshState } =
   usePushSubscription()
 const { current, pending, applyUpdate, checkNow, applying } = useAppUpdate()
 
@@ -27,6 +27,20 @@ const isIos = computed(() => {
 
 /** iOS only allows web push from a Home-Screen install (16.4+), never a tab. */
 const needsHomeScreen = computed(() => isIos.value && !support.value.canSubscribe)
+
+/**
+ * What a phone can't tell you on its own. Push failures on iOS are all
+ * invisible — no prompt, no console, no error — so the three facts that decide
+ * whether it CAN work are printed where the person debugging can read them.
+ */
+const diagnostics = computed(() => {
+  const parts = [
+    `permission: ${permission.value}`,
+    `installed: ${standalone.value ? 'yes' : 'no'}`,
+    `worker: ${swReady.value === null ? 'checking' : swReady.value ? 'ready' : 'not ready'}`,
+  ]
+  return parts.join(' · ')
+})
 
 const statusLabel = computed(() => {
   if (isSubscribed.value) return 'On for this device'
@@ -118,11 +132,15 @@ onMounted(() => refreshState())
       </p>
       <p v-if="error" class="cd-ns-err">{{ error }}</p>
 
-      <div v-if="isSubscribed" class="cd-ns-test">
+      <!-- Always available, not just once THIS device is subscribed: the test
+           reaches every device on the account, so "0 devices" is itself the
+           answer when a phone silently failed to subscribe. -->
+      <div class="cd-ns-test">
         <button type="button" class="cd-ns-ghost" :disabled="testing" @click="sendTest">
           <CdIcon icon="lucide:send" :size="13" /> {{ testing ? 'Sending…' : 'Send a test notification' }}
         </button>
         <span v-if="testResult" class="cd-ns-testmsg">{{ testResult }}</span>
+        <span class="cd-ns-diag">{{ diagnostics }}</span>
       </div>
 
       <!-- ── Version ───────────────────────────────────────────────────────── -->
@@ -242,6 +260,12 @@ onMounted(() => refreshState())
 }
 .cd-ns-ghost:disabled { opacity: 0.6; cursor: default; }
 .cd-ns-testmsg { font-size: 11px; color: var(--cd-muted); line-height: 1.45; }
+.cd-ns-diag {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 10px;
+  color: var(--cd-dim);
+  letter-spacing: 0.01em;
+}
 .cd-ns-sep {
   height: 1px;
   background: var(--cd-bdr);

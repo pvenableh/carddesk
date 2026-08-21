@@ -95,6 +95,11 @@ async function start() {
   // Torch is Android-only in practice; iOS Safari exposes no capability for it.
   torchAvailable.value = Boolean((track?.getCapabilities?.() as any)?.torch)
 
+  // iOS Chrome resizes the webview around its permission prompt and can settle
+  // on the wrong viewport height. A resize event lets the shell re-measure (see
+  // plugins/viewport-height.client.ts) rather than staying collapsed.
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 350)
+
   timer = setInterval(tick, SCAN_INTERVAL_MS)
   struggleTimer = setTimeout(() => { struggling.value = true }, STRUGGLE_AFTER_MS)
 }
@@ -126,6 +131,8 @@ function stop() {
   stream?.getTracks().forEach((t) => t.stop())
   stream = null
   torchOn.value = false
+  // Same on the way out: the webview resizes again as the camera is released.
+  if (import.meta.client) setTimeout(() => window.dispatchEvent(new Event('resize')), 350)
 }
 
 async function toggleTorch() {
