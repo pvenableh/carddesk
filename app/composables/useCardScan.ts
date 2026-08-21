@@ -60,7 +60,7 @@ export function useCardScan() {
     })
   }
 
-  async function captureFront(): Promise<string | null> {
+  async function captureFront(opts: { thorough?: boolean } = {}): Promise<string | null> {
     error.value = null
     qrPayload.value = null
     const file = await capturePhoto()
@@ -68,7 +68,9 @@ export function useCardScan() {
     // card on a phone screen has no printed text to OCR, and a code carries
     // exact details instead of Claude's best reading of them.
     scanStep.value = 'reading-code'
-    qrPayload.value = await decodeImage(file).catch(() => null)
+    // Thorough only when the user came here to photograph a *code* (the live
+    // scanner's fallback); a card scan takes the cheap pass — see decodeImage.
+    qrPayload.value = await decodeImage(file, { quick: !opts.thorough }).catch(() => null)
     // Keep the photo either way — if the user would rather scan the card than
     // follow its QR, we already have the image and don't re-open the camera.
     frontImage.value = await fileToBase64(file)
@@ -87,7 +89,7 @@ export function useCardScan() {
     backQrPayload.value = null
     const file = await capturePhoto()
     scanStep.value = 'reading-code'
-    backQrPayload.value = await decodeImage(file).catch(() => null)
+    backQrPayload.value = await decodeImage(file, { quick: true }).catch(() => null)
     backImage.value = await fileToBase64(file)
     scanStep.value = 'captured-front'
     return backQrPayload.value

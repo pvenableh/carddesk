@@ -117,7 +117,7 @@ export function useQrDecode() {
    * null when there's no readable code (the common case for a plain business
    * card — callers fall back to the AI text scan).
    */
-  async function decodeImage(file: File | Blob): Promise<string | null> {
+  async function decodeImage(file: File | Blob, opts: { quick?: boolean } = {}): Promise<string | null> {
     if (!import.meta.client) return null
     let img: HTMLImageElement
     try {
@@ -140,6 +140,13 @@ export function useQrDecode() {
     // A photo of a phone screen is usually 3-4k px wide; jsQR gets both slower
     // and *less* reliable at that size, so try a mid resolution first and only
     // then a larger one for small/distant codes.
+    //
+    // `quick` runs the first pass only. It's for the card-scan flow, where the
+    // decode is a free bonus on the way to the AI scan: on iOS (no
+    // BarcodeDetector) the full ladder is three fruitless jsQR passes on every
+    // plain card, delaying the app's core loop. A code big enough to print on
+    // card stock reads at 1400px, and anyone whose doesn't has the live scanner
+    // one tap away.
     let jsQR: typeof import('jsqr').default
     try {
       jsQR = (await import('jsqr')).default
@@ -147,7 +154,7 @@ export function useQrDecode() {
       console.error('[qr] decoder unavailable', err)
       return null
     }
-    for (const maxEdge of [1400, 2200, 800]) {
+    for (const maxEdge of opts.quick ? [1400] : [1400, 2200, 800]) {
       const data = toImageData(img, maxEdge)
       if (!data) continue
       const result = jsQR(data.data, data.width, data.height, { inversionAttempts: 'attemptBoth' })

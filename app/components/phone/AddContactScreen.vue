@@ -313,13 +313,14 @@ function onCodeScanned(payload: string) {
  *  decode codes too — `captureFront` looks for one before spending the scan. */
 function scannerFallbackToPhoto() {
   scannerOpen.value = false
-  doScanFront()
+  // Here the code IS the capture, so the decode gets every pass it has.
+  doScanFront({ thorough: true })
 }
 
-async function doScanFront() {
+async function doScanFront(opts: { thorough?: boolean } = {}) {
   try {
     clearQrState()
-    const qr = await captureFront()
+    const qr = await captureFront(opts)
     // A code carrying the whole card (vCard / MECARD / tel:) is unambiguous and
     // costs nothing — take it. A link is offered, not assumed. Anything else
     // isn't a card at all, and says so rather than posing as a link.
@@ -579,7 +580,7 @@ async function doSaveContact() {
           </button>
         </div>
 
-        <div v-if="captureMode === 'card'" class="cd-scan-zone" @click="doScanFront">
+        <div v-if="captureMode === 'card'" class="cd-scan-zone" @click="doScanFront()">
           <div style="font-size: 44px; margin-bottom: 8px"><CdIcon emoji="📷" icon="lucide:camera" :size="44" /></div>
           <div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: var(--cd-accent); margin-bottom: 2px">
             Scan Business Card
