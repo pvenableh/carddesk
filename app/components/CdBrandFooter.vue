@@ -33,7 +33,7 @@ const year = new Date().getFullYear()
         </svg>
       </a>
     </h5>
-    <h5 class="copyright">&#169; {{ year }} Hue Studios, LLC</h5>
+    <h5 class="copyright">&#169; {{ year }} Hue Studios</h5>
   </div>
 </template>
 
